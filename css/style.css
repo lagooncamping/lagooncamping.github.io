@@ -84,7 +84,15 @@ main > section + section { border-top: 1px solid var(--line); }
 .nav ul { display: flex; gap: 28px; list-style: none; margin: 0; padding: 0; flex-wrap: wrap; }
 .nav ul a { text-decoration: none; color: var(--muted); font-size: .92rem; }
 .nav ul a:hover { color: var(--ink); }
-@media (max-width: 720px) { .nav ul { display: none; } }
+.nav ul a[aria-current="page"] { color: var(--ink); text-decoration: underline; text-underline-offset: 8px; text-decoration-thickness: 1px; }
+/* มือถือ: เมนูย้ายลงแถวที่สอง เลื่อนซ้าย-ขวาได้ */
+@media (max-width: 720px) {
+  .nav .wrap { flex-wrap: wrap; row-gap: 2px; padding-bottom: 6px; }
+  .nav ul { order: 3; width: 100%; flex-wrap: nowrap; gap: 16px; overflow-x: auto; scrollbar-width: none; padding-block: 4px 6px; }
+  .nav ul a { font-size: .86rem; }
+  .nav ul::-webkit-scrollbar { display: none; }
+  .nav ul a { white-space: nowrap; }
+}
 
 /* ---------- ภาพปก (Hero) ---------- */
 .hero {
@@ -177,6 +185,25 @@ main > section + section { border-top: 1px solid var(--line); }
 .socials a span:last-child { color: var(--muted); font-size: .9rem; text-align: right; }
 .address { font-size: 1.3rem; margin: 0 0 24px; }
 .hint { color: var(--muted); font-size: .9rem; margin-top: 24px; }
+
+/* ---------- การ์ดลิงก์ในหน้าแรก ---------- */
+.teasers { display: grid; grid-template-columns: repeat(auto-fit, minmax(230px, 1fr)); gap: 40px 24px; }
+.teaser { display: block; min-width: 0; text-decoration: none; color: var(--ink); }
+.teaser img { width: 100%; aspect-ratio: 4 / 3; object-fit: cover; border-radius: 4px; display: block; margin-bottom: 14px; transition: opacity .3s; }
+.teaser:hover img { opacity: .85; }
+.teaser h3 { display: flex; justify-content: space-between; gap: 12px; font-size: 1.2rem; font-weight: 500; }
+.teaser h3::after { content: "→"; color: var(--muted); transition: transform .2s; }
+.teaser:hover h3::after { transform: translateX(4px); color: var(--ink); }
+.teaser p { margin: 4px 0 0; color: var(--muted); font-size: .92rem; }
+
+/* ---------- หน้าย่อย (บรรยากาศ / ราคา / ข้อมูลเข้าพัก / ติดต่อ) ---------- */
+.page h1 { font-size: clamp(1.8rem, 5vw, 2.6rem); font-weight: 400; }
+.page > section:first-child { padding-top: clamp(40px, 7vw, 72px); }
+.next {
+  display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 16px 24px;
+  margin-top: 64px; padding-top: 32px; border-top: 1px solid var(--line);
+}
+.next p { margin: 0; color: var(--muted); }
 
 /* ---------- ท้ายเว็บ ---------- */
 footer { border-top: 1px solid var(--line); padding-block: 32px; color: var(--muted); font-size: .85rem; }

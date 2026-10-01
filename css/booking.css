@@ -4,9 +4,6 @@
 
 [hidden] { display: none !important; }
 
-.nav-back { color: var(--muted); text-decoration: none; font-size: .92rem; }
-.nav-back:hover { color: var(--ink); }
-
 .book { padding-block: 40px 140px; }
 .book section { padding-block: 0; }
 .book h1 { font-size: clamp(1.8rem, 5vw, 2.6rem); font-weight: 400; }
@@ -60,7 +57,7 @@
 
 /* ---------- การ์ดบ้าน ---------- */
 .houses { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 48px 24px; }
-.house { min-width: 0; scroll-margin-top: 80px; border-radius: 6px; transition: box-shadow .4s; }
+.house { min-width: 0; scroll-margin-top: 120px; border-radius: 6px; transition: box-shadow .4s; }
 .house.flash { box-shadow: 0 0 0 3px var(--forest); }
 .house.is-booked .slides { opacity: .45; }
 
