@@ -1,0 +1,141 @@
+<!doctype html>
+<html lang="th">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>จองที่พัก | The Lagoon Camping Resort</title>
+  <meta name="description" content="เลือกวันและบ้านพักริมทะเลสาบ The Lagoon Camping Resort นายายอาม จันทบุรี">
+
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Anuphan:wght@300;400;500;600&display=swap">
+  <link rel="stylesheet" href="css/style.css">
+  <link rel="stylesheet" href="css/booking.css">
+</head>
+<body>
+
+  <!-- ===== เมนูด้านบน ===== -->
+  <nav class="nav" aria-label="เมนูหลัก">
+    <div class="wrap">
+      <a class="brand" href="index.html">The Lagoon</a>
+      <a class="nav-back" href="index.html">← กลับหน้าแรก</a>
+    </div>
+  </nav>
+
+  <main class="book">
+    <div class="wrap">
+      <!-- ลบกล่องนี้ออกเมื่อต่อ Google Sheets แล้ว -->
+      <p class="demo-note">โหมดทดลอง: แผนผัง รูป และการจองที่ขึ้นว่า "ถูกจองแล้ว" เป็นข้อมูลตัวอย่าง ยังไม่บันทึกการจองจริง</p>
+
+      <!-- ===== ขั้นที่ 1: เลือกวันและบ้าน ===== -->
+      <section id="step-pick" aria-labelledby="pick-h">
+        <div class="step-head">
+          <span class="eyebrow">จองที่พัก</span>
+          <h1 id="pick-h">เลือกวันและบ้านพัก</h1>
+        </div>
+
+        <div class="dates">
+          <label class="field">เช็คอิน
+            <input type="date" id="checkin" required>
+          </label>
+          <label class="field">เช็คเอาท์
+            <input type="date" id="checkout" required>
+          </label>
+        </div>
+        <p class="nights" id="nights" aria-live="polite">เลือกวันเข้าพักก่อน แล้วติ๊กเลือกบ้านที่ว่าง</p>
+
+        <!-- แผนผังจำลอง: แก้ตำแหน่งบ้านได้ที่ x, y ของแต่ละ <g class="m"> -->
+        <figure class="map">
+          <svg viewBox="0 0 300 220" role="group" aria-label="แผนผังบ้านพัก กดที่บ้านเพื่อดูรูปและเลือก">
+            <path class="lake" d="M0 0H300V62C250 88 205 56 160 74C112 94 60 70 0 90Z"/>
+            <text class="lake-label" x="24" y="34">ทะเลสาบ</text>
+            <path class="walk" d="M292 210C250 200 236 160 190 154S80 150 18 146"/>
+            <text class="entry" x="252" y="214">ทางเข้า →</text>
+
+            <g class="m" data-house="family-1" tabindex="0" role="button">
+              <rect x="28" y="98" width="72" height="28" rx="5"/><text x="64" y="112">Family 1</text>
+            </g>
+            <g class="m" data-house="family-2" tabindex="0" role="button">
+              <rect x="114" y="100" width="72" height="28" rx="5"/><text x="150" y="114">Family 2</text>
+            </g>
+            <g class="m" data-house="studio" tabindex="0" role="button">
+              <rect x="206" y="106" width="72" height="28" rx="5"/><text x="242" y="120">Studio</text>
+            </g>
+            <g class="m" data-house="lagoon-1" tabindex="0" role="button">
+              <rect x="18" y="166" width="72" height="28" rx="5"/><text x="54" y="180">Lagoon 1</text>
+            </g>
+            <g class="m" data-house="lagoon-2" tabindex="0" role="button">
+              <rect x="98" y="170" width="72" height="28" rx="5"/><text x="134" y="184">Lagoon 2</text>
+            </g>
+            <g class="m" data-house="lagoon-3" tabindex="0" role="button">
+              <rect x="178" y="172" width="72" height="28" rx="5"/><text x="214" y="186">Lagoon 3</text>
+            </g>
+          </svg>
+          <ul class="legend">
+            <li><i></i>ว่าง</li>
+            <li><i class="sel"></i>เลือกแล้ว</li>
+            <li><i class="bk"></i>ถูกจองแล้ว</li>
+          </ul>
+          <figcaption>แผนผังจำลอง กดที่บ้านเพื่อดูรูปและเลือก</figcaption>
+        </figure>
+
+        <div class="houses" id="houses"></div>
+      </section>
+
+      <!-- ===== ขั้นที่ 2: กรอกข้อมูล ===== -->
+      <section id="step-details" aria-labelledby="details-h" hidden>
+        <button class="back" type="button" data-back>← เปลี่ยนบ้านหรือวันที่</button>
+        <div class="step-head">
+          <span class="eyebrow">ขั้นตอนสุดท้าย</span>
+          <h1 id="details-h">กรอกข้อมูลผู้จอง</h1>
+        </div>
+        <dl class="summary" id="summary"></dl>
+
+        <form class="form" id="details-form" novalidate>
+          <label class="field">ชื่อผู้จอง
+            <input type="text" name="name" autocomplete="name" required>
+          </label>
+          <label class="field">เบอร์โทร
+            <input type="tel" name="phone" autocomplete="tel" inputmode="tel" pattern="0[0-9\- ]{8,11}" placeholder="08X-XXX-XXXX" required>
+          </label>
+          <label class="field">จำนวนผู้เข้าพัก (ท่าน)
+            <input type="number" name="guests" min="1" max="30" value="2" required>
+          </label>
+          <p class="hint" id="capacity"></p>
+          <label class="field">หมายเหตุ (ถ้ามี)
+            <textarea name="note" rows="3" placeholder="เช่น พาน้องหมามาด้วย, มาถึงประมาณ 15:00"></textarea>
+          </label>
+          <!-- ช่องลับกันบอท: คนจริงมองไม่เห็น ห้ามลบ -->
+          <label class="hp" aria-hidden="true">เว็บไซต์<input type="text" name="website" tabindex="-1" autocomplete="off"></label>
+          <p class="form-error" id="form-error" role="alert"></p>
+          <button class="btn btn-primary" type="submit">ยืนยันการจอง</button>
+        </form>
+      </section>
+
+      <!-- ===== ขั้นที่ 3: ส่งเข้า LINE ===== -->
+      <section id="step-done" aria-labelledby="done-h" hidden>
+        <div class="step-head">
+          <span class="eyebrow">เกือบเสร็จแล้ว</span>
+          <h1 id="done-h">ส่งรายละเอียดการจองเข้า LINE</h1>
+          <p>กดปุ่มด้านล่าง แล้วกดส่งข้อความในแชต แอดมินจะตอบยืนยันการจองและแจ้งวิธีชำระเงินกลับไป</p>
+        </div>
+        <p class="done-text" id="done-text"></p>
+        <div class="btns">
+          <a class="btn btn-primary" id="line-link" href="#" target="_blank" rel="noopener">ส่งเข้า LINE</a>
+          <a class="btn btn-ghost" href="index.html">กลับหน้าแรก</a>
+        </div>
+      </section>
+    </div>
+
+    <!-- แถบสรุปด้านล่าง (โชว์เมื่อเลือกบ้านแล้ว) -->
+    <div class="book-bar" id="bar" hidden>
+      <div class="wrap">
+        <p id="bar-text"></p>
+        <button class="btn btn-primary" type="button" id="to-details">จอง</button>
+      </div>
+    </div>
+  </main>
+
+  <script src="js/booking.js"></script>
+</body>
+</html>

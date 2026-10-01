@@ -1,0 +1,128 @@
+/* =========================================================
+   หน้าจองที่พัก — ใช้สีและฟอนต์ชุดเดียวกับ style.css
+   ========================================================= */
+
+[hidden] { display: none !important; }
+
+.nav-back { color: var(--muted); text-decoration: none; font-size: .92rem; }
+.nav-back:hover { color: var(--ink); }
+
+.book { padding-block: 40px 140px; }
+.book section { padding-block: 0; }
+.book h1 { font-size: clamp(1.8rem, 5vw, 2.6rem); font-weight: 400; }
+.step-head { display: flex; flex-direction: column; gap: 8px; margin-bottom: 32px; max-width: 640px; }
+.step-head p { color: var(--muted); margin: 0; }
+
+.demo-note {
+  font-size: .85rem; color: var(--muted);
+  border: 1px dashed var(--line); border-radius: 6px;
+  padding: 8px 12px; margin: 0 0 32px;
+}
+
+/* ---------- ช่องกรอก ---------- */
+.field { display: flex; flex-direction: column; gap: 6px; font-size: .9rem; color: var(--muted); min-width: 0; }
+.field input, .field textarea {
+  font: inherit; font-size: 1rem; color: var(--ink);
+  background: var(--surface); border: 1px solid var(--line); border-radius: 6px;
+  padding: 10px 12px; min-width: 0; width: 100%;
+}
+.field input:focus, .field textarea:focus { outline: 2px solid var(--forest); outline-offset: 1px; }
+
+/* ---------- เลือกวัน ---------- */
+.dates { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px; max-width: 520px; }
+.nights { margin: 12px 0 40px; font-size: .95rem; }
+.nights b { font-weight: 500; }
+
+/* ---------- แผนผัง ---------- */
+.map { margin: 0 0 56px; max-width: 720px; }
+.map svg { width: 100%; height: auto; display: block; background: var(--surface); border: 1px solid var(--line); border-radius: 6px; }
+.map .lake { fill: color-mix(in srgb, #5f9ea0 28%, var(--surface)); }
+.map .lake-label { fill: var(--muted); font-size: 10px; letter-spacing: .15em; font-family: var(--font); }
+.map .walk { fill: none; stroke: var(--line); stroke-width: 6; stroke-linecap: round; }
+.map .entry { fill: var(--muted); font-size: 9px; font-family: var(--font); }
+.map figcaption { font-size: .8rem; color: var(--muted); margin-top: 8px; }
+
+.m { cursor: pointer; }
+.m:focus { outline: none; }
+.m rect { fill: var(--bg); stroke: var(--forest); stroke-width: 1.5; transition: fill .2s; }
+.m text { fill: var(--ink); font-size: 11px; font-family: var(--font); text-anchor: middle; dominant-baseline: central; pointer-events: none; }
+.m:hover rect, .m:focus-visible rect { stroke-width: 3; }
+.m.is-selected rect { fill: var(--forest); }
+.m.is-selected text { fill: var(--bg); }
+.m.is-booked rect { fill: var(--line); stroke: var(--muted); stroke-dasharray: 3 2; }
+.m.is-booked text { fill: var(--muted); }
+
+.legend { display: flex; flex-wrap: wrap; gap: 8px 20px; list-style: none; padding: 0; margin: 12px 0 0; font-size: .85rem; color: var(--muted); }
+.legend li { display: flex; align-items: center; gap: 8px; }
+.legend i { width: 16px; height: 12px; border-radius: 2px; border: 1.5px solid var(--forest); background: var(--bg); }
+.legend .sel { background: var(--forest); }
+.legend .bk { background: var(--line); border: 1.5px dashed var(--muted); }
+
+/* ---------- การ์ดบ้าน ---------- */
+.houses { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 48px 24px; }
+.house { min-width: 0; scroll-margin-top: 80px; border-radius: 6px; transition: box-shadow .4s; }
+.house.flash { box-shadow: 0 0 0 3px var(--forest); }
+.house.is-booked .slides { opacity: .45; }
+
+.slides {
+  display: flex; overflow-x: auto; scroll-snap-type: x mandatory;
+  border-radius: 4px; aspect-ratio: 4 / 3; scrollbar-width: none;
+}
+.slides::-webkit-scrollbar { display: none; }
+.slides img { flex: 0 0 100%; width: 100%; height: 100%; object-fit: cover; scroll-snap-align: start; display: block; }
+
+.slide-nav { display: flex; align-items: center; justify-content: space-between; margin: 10px 0 14px; }
+.slide-nav button {
+  border: 1px solid var(--line); background: transparent; color: var(--ink);
+  width: 34px; height: 34px; border-radius: 50%; cursor: pointer; font: inherit; line-height: 1;
+}
+.slide-nav button:hover { border-color: var(--ink); }
+.dots { display: flex; gap: 6px; }
+.dots i { width: 6px; height: 6px; border-radius: 50%; background: var(--line); transition: background .2s; }
+.dots i.on { background: var(--ink); }
+
+.house-head { display: flex; justify-content: space-between; align-items: baseline; gap: 12px; }
+.house h3 { font-size: 1.25rem; font-weight: 500; }
+.status { font-size: .8rem; color: var(--muted); white-space: nowrap; }
+.house.is-booked .status { color: var(--ink); background: var(--line); padding: 0 10px; border-radius: 4px; }
+.house-type { color: var(--muted); font-size: .92rem; margin: 2px 0 6px; }
+.house-price { margin: 0 0 16px; }
+.house-price b { font-weight: 500; font-size: 1.15rem; font-variant-numeric: tabular-nums; }
+
+.pick {
+  display: flex; align-items: center; gap: 10px;
+  padding: 12px 14px; border: 1px solid var(--line); border-radius: 6px; cursor: pointer;
+}
+.pick input { width: 20px; height: 20px; margin: 0; accent-color: var(--forest); }
+.pick:has(input:checked) { border-color: var(--forest); background: color-mix(in srgb, var(--forest) 8%, transparent); }
+.pick:has(input:disabled) { cursor: not-allowed; color: var(--muted); }
+
+/* ---------- แถบสรุปด้านล่าง ---------- */
+.book-bar {
+  position: fixed; inset: auto 0 0 0; z-index: 20;
+  background: color-mix(in srgb, var(--bg) 94%, transparent); backdrop-filter: blur(10px);
+  border-top: 1px solid var(--line);
+  padding-block: 12px calc(12px + env(safe-area-inset-bottom));
+}
+.book-bar .wrap { display: flex; align-items: center; justify-content: space-between; gap: 16px; }
+.book-bar p { margin: 0; font-size: .92rem; line-height: 1.45; min-width: 0; }
+.book-bar b { font-weight: 500; }
+
+/* ---------- ขั้นกรอกข้อมูล / ส่ง LINE ---------- */
+.back { background: none; border: 0; padding: 0; color: var(--muted); font: inherit; cursor: pointer; margin-bottom: 24px; }
+.back:hover { color: var(--ink); }
+.summary { display: grid; grid-template-columns: auto 1fr; gap: 8px 20px; margin: 0 0 40px; padding: 20px 0; border-block: 1px solid var(--line); max-width: 520px; }
+.summary dt { color: var(--muted); }
+.summary dd { margin: 0; }
+.form { display: grid; gap: 20px; max-width: 520px; }
+.form .hint { font-size: .85rem; color: var(--muted); margin: -12px 0 0; }
+.form .btn { justify-self: start; }
+.form .btn:disabled { opacity: .6; cursor: wait; }
+.form-error { margin: 0; color: #b4462f; font-size: .92rem; }
+.form-error:empty { display: none; }
+@media (prefers-color-scheme: dark) { .form-error { color: #f0a08c; } }
+.hp { position: absolute; left: -9999px; width: 1px; height: 1px; overflow: hidden; }
+.done-text {
+  white-space: pre-line; background: var(--surface); border: 1px solid var(--line); border-radius: 6px;
+  padding: 16px; font-size: .92rem; margin: 0 0 24px; max-width: 520px; overflow-wrap: anywhere;
+}
