@@ -4,7 +4,9 @@
 
 [hidden] { display: none !important; }
 
-.book { padding-block: 40px 140px; }
+.book { padding-block: 40px 80px; }
+/* เว้นที่ด้านล่างให้แถบสรุปการจอง ไม่ให้บังท้ายเว็บ */
+body:has(.book-bar:not([hidden])) { padding-bottom: 90px; }
 .book section { padding-block: 0; }
 .book h1 { font-size: clamp(1.8rem, 5vw, 2.6rem); font-weight: 400; }
 .step-head { display: flex; flex-direction: column; gap: 8px; margin-bottom: 32px; max-width: 640px; }
