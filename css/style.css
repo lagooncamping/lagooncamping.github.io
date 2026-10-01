@@ -228,6 +228,39 @@ main > section + section { border-top: 1px solid var(--line); }
 }
 .next p { margin: 0; color: var(--muted); }
 
+/* ---------- ภาพขยาย (js/lightbox.js) ---------- */
+.gallery img, .board .photo, .slides img { cursor: zoom-in; }
+.lightbox {
+  width: 100vw; height: 100dvh; max-width: none; max-height: none;
+  margin: 0; padding: 0; border: 0;
+  background: #0b0d0a; color: #f1ede3;
+}
+.lightbox::backdrop { background: #0b0d0a; }
+.lightbox figure {
+  margin: 0; height: 100%; box-sizing: border-box; padding: 60px 16px 48px;
+  display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 14px;
+}
+.lightbox img { max-width: 100%; max-height: calc(100dvh - 150px); object-fit: contain; border-radius: 4px; }
+.lightbox figcaption { font-size: .95rem; text-align: center; }
+.lb-count { position: absolute; top: 22px; left: 0; right: 0; margin: 0; text-align: center; font-size: .85rem; opacity: .8; pointer-events: none; }
+.lightbox button {
+  position: absolute; width: 46px; height: 46px; border: 0; border-radius: 50%;
+  background: rgba(255, 255, 255, .14); color: #fff; font: inherit; font-size: 1.6rem; line-height: 1; cursor: pointer;
+}
+.lightbox button:hover { background: rgba(255, 255, 255, .26); }
+.lightbox :focus-visible { outline-color: #f1ede3; }
+.lb-close { top: 12px; right: 12px; }
+.lb-prev, .lb-next { top: 50%; transform: translateY(-50%); }
+.lb-prev { left: 12px; }
+.lb-next { right: 12px; }
+.lightbox.single .lb-prev, .lightbox.single .lb-next { display: none; }
+/* มือถือ: ปุ่มเลื่อนรูปย้ายไปด้านล่าง ไม่บังรูป */
+@media (max-width: 600px) {
+  .lightbox figure { padding-bottom: 80px; }
+  .lb-prev, .lb-next { top: auto; bottom: 16px; transform: none; }
+}
+html:has(.lightbox[open]) { overflow: hidden; }
+
 /* ---------- ท้ายเว็บ ---------- */
 .site-footer { background: var(--plate); color: var(--plate-muted); font-size: .92rem; padding-top: clamp(48px, 8vw, 72px); }
 .site-footer a { color: var(--plate-ink); text-decoration: none; }
