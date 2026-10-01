@@ -11,7 +11,7 @@ const LINE_ID = '@477nvamb';
 const PHONE = '081-930-4969';
 
 // ---------- ข้อมูลบ้าน (แก้ชื่อ ราคา รูป ได้ตรงนี้) ----------
-// TODO: เช็กกับเจ้าของ — Lagoon Studio มีกี่หลัง (ตอนนี้ใส่ 1) และราคา Lagoon Family 1/2
+// TODO: เช็กกับเจ้าของ — Lagoon Studio มีกี่หลัง (ตอนนี้ใส่ 1)
 // TODO: เปลี่ยนรูปตัวอย่างเป็นรูปจริงของแต่ละหลัง
 const HOUSES = [
   {
@@ -45,7 +45,7 @@ const HOUSES = [
     ],
   },
   {
-    id: 'family-1', name: 'Lagoon Family 1', type: 'บ้านหลังใหญ่ · 1 ห้องนอน 1 ห้องน้ำ', guests: 4, price: 2500,
+    id: 'family-1', name: 'Lagoon Family 1', type: 'บ้านหลังกลาง · 1 ห้องนอน 1 ห้องน้ำ', guests: 4, price: 2500,
     photos: [
       { src: 'img/houses.jpg', alt: 'รูปตัวอย่าง: บ้านพักไม้ท่ามกลางสนามหญ้า' },
       { src: 'img/kayak.jpg', alt: 'รูปตัวอย่าง: พายเรือแคนูในทะเลสาบ' },
@@ -53,7 +53,7 @@ const HOUSES = [
     ],
   },
   {
-    id: 'family-2', name: 'Lagoon Family 2', type: 'บ้านหลังใหญ่ · 2 ห้องนอน 2 ห้องน้ำ', guests: 4, price: 3000,
+    id: 'family-2', name: 'Lagoon Family 2', type: 'บ้านหลังใหญ่ · 2 ห้องนอน 2 ห้องน้ำ · มีครัว', guests: 4, price: 3000,
     photos: [
       { src: 'img/house-orchid.jpg', alt: 'รูปตัวอย่าง: บ้านพักไม้' },
       { src: 'img/lake-view.jpg', alt: 'รูปตัวอย่าง: วิวทะเลสาบ' },
