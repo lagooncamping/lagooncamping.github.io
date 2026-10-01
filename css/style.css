@@ -240,7 +240,9 @@ main > section + section { border-top: 1px solid var(--line); }
   margin: 0; height: 100%; box-sizing: border-box; padding: 60px 16px 48px;
   display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 14px;
 }
-.lightbox img { max-width: 100%; max-height: calc(100dvh - 150px); object-fit: contain; border-radius: 4px; }
+/* รูปต้นฉบับความละเอียดไม่สูง (สูง ~812px) — จำกัดไม่ให้ขยายใหญ่เกินจนเห็นรูปแตก
+   ถ้าเปลี่ยนเป็นรูปต้นฉบับคมๆ แล้ว เพิ่มเลข 900px นี้ได้ */
+.lightbox img { max-width: min(100%, 900px); max-height: min(calc(100dvh - 150px), 640px); object-fit: contain; border-radius: 4px; }
 .lightbox figcaption { font-size: .95rem; text-align: center; }
 .lb-count { position: absolute; top: 22px; left: 0; right: 0; margin: 0; text-align: center; font-size: .85rem; opacity: .8; pointer-events: none; }
 .lightbox button {
