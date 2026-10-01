@@ -148,7 +148,7 @@ function render() {
   $('#nights').innerHTML = state.loading ? 'กำลังเช็กวันว่าง…'
     : state.loadError ? `เช็กวันว่างไม่สำเร็จ กรุณารีเฟรชหน้า หรือโทรจอง ${PHONE}`
     : dated ? `${thaiDate(state.checkin)} – ${thaiDate(state.checkout)} · <b>${nights()} คืน</b>`
-    : (state.checkin && state.checkout ? 'วันเช็คเอาท์ต้องหลังวันเช็คอิน' : 'เลือกวันเข้าพักก่อน แล้วติ๊กเลือกบ้านที่ว่าง');
+    : (state.checkin && state.checkout ? 'วันเช็กเอาต์ต้องหลังวันเช็กอิน' : 'เลือกวันเข้าพักก่อน แล้วติ๊กเลือกบ้านที่ว่าง');
 
   const count = state.selected.size;
   $('#bar').hidden = !count || $('#step-pick').hidden;
@@ -212,8 +212,8 @@ $('#to-details').addEventListener('click', () => {
   const capacity = selectedHouses().reduce((sum, h) => sum + h.guests, 0);
   $('#summary').innerHTML = `
     <dt>บ้าน</dt><dd>${selectedHouses().map((h) => h.name).join(', ')}</dd>
-    <dt>เช็คอิน</dt><dd>${thaiDate(state.checkin)} (ตั้งแต่ 11:00)</dd>
-    <dt>เช็คเอาท์</dt><dd>${thaiDate(state.checkout)} (ก่อน 12:00)</dd>
+    <dt>เช็กอิน</dt><dd>${thaiDate(state.checkin)} (ตั้งแต่ 11:00)</dd>
+    <dt>เช็กเอาต์</dt><dd>${thaiDate(state.checkout)} (ก่อน 12:00)</dd>
     <dt>รวม</dt><dd>${nights()} คืน · ${baht(total())} บาท</dd>`;
   $('#capacity').textContent = `บ้านที่เลือกรองรับได้ ${capacity} ท่าน`;
   go('details');
@@ -276,8 +276,8 @@ $('#details-form').addEventListener('submit', async (e) => {
     'ขอจองที่พัก The Lagoon 🏕️',
     id ? `รหัสการจอง: ${id}` : '',
     `บ้าน: ${houses.map((h) => h.name).join(', ')}`,
-    `เช็คอิน: ${thaiDate(state.checkin)}`,
-    `เช็คเอาท์: ${thaiDate(state.checkout)}`,
+    `เช็กอิน: ${thaiDate(state.checkin)}`,
+    `เช็กเอาต์: ${thaiDate(state.checkout)}`,
     `${nights()} คืน · ${data.guests} ท่าน`,
     `ยอดรวม: ${baht(total())} บาท`,
     `ชื่อ: ${data.name.trim()}`,

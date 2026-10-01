@@ -9,7 +9,7 @@
   <!-- ตัวอย่างลิงก์เวลาแชร์ใน Facebook / LINE -->
   <meta property="og:title" content="The Lagoon Camping Resort">
   <meta property="og:description" content="ลานกางเต็นท์และบ้านพักริมทะเลสาบ นายายอาม จันทบุรี">
-  <meta property="og:image" content="img/sunset.jpg">
+  <meta property="og:image" content="https://lagooncamping.github.io/img/sunset.jpg">
   <meta property="og:type" content="website">
 
   <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -36,11 +36,12 @@
   <!-- ===== ภาพปก ===== -->
   <header class="hero" id="top">
     <div class="wrap hero-text">
-      <div class="badge"><b>94%</b> แนะนำ · จาก 14 รีวิวบน Facebook</div>
-      <h1>The Lagoon<br>Camping Resort</h1>
-      <p class="lead">ลานกางเต็นท์และบ้านพักริมทะเลสาบ ที่นายายอาม จันทบุรี บรรยากาศดี วิวสวย พาเพื่อน พาครอบครัว และพาน้องหมาน้องแมวมาพักได้</p>
+      <p class="hero-name" lang="en">The Lagoon Camping Resort</p>
+      <h1>ตื่นมาเจอ<span class="nw">ทะเลสาบ</span><br><span class="nw">หน้าเต็นท์</span></h1>
+      <p class="lead">ลานกางเต็นท์และบ้านพักริมทะเลสาบ ที่<span class="nw">นายายอาม</span> <span class="nw">จันทบุรี</span> บรรยากาศดี วิวสวย พาเพื่อน พาครอบครัว และพาน้องหมาน้องแมวมาพักได้</p>
       <div class="btns">
-        <a class="btn btn-primary" href="tel:+66819304969">โทรจอง 081-930-4969</a>
+        <a class="btn btn-primary" href="booking.html">เช็กวันว่าง &amp; จองออนไลน์</a>
+        <a class="btn btn-ghost" href="tel:+66819304969">โทรจอง 081-930-4969</a>
         <a class="btn btn-ghost" href="prices.html">ดูราคา</a>
       </div>
     </div>
@@ -51,10 +52,12 @@
     <section class="free" aria-labelledby="free-h">
       <div class="wrap">
         <h2 id="free-h">ฟรี ทุกการเข้าพัก</h2>
-        <div class="item"><strong>ตกปลา</strong><span>ริมทะเลสาบหน้าที่พัก</span></div>
-        <div class="item"><strong>พายเรือแคนู 1 ชม.</strong><span>ต่อ 1 ท่าน (ปกติชั่วโมงละ 100 บาท)</span></div>
-        <div class="item"><strong>ชูชีพ</strong><span>สำหรับลงเล่นน้ำ</span></div>
-        <div class="item"><strong>สัตว์เลี้ยงพักฟรี</strong><span>ไม่มีค่าใช้จ่ายเพิ่ม</span></div>
+        <div class="free-items">
+          <div class="item"><strong>ตกปลา</strong><span>ริมทะเลสาบหน้าที่พัก</span></div>
+          <div class="item"><strong>พายเรือแคนู 1 ชม.</strong><span>ต่อ 1 ท่าน (ปกติชั่วโมงละ 100 บาท)</span></div>
+          <div class="item"><strong>ชูชีพ</strong><span>สำหรับลงเล่นน้ำ</span></div>
+          <div class="item"><strong>สัตว์เลี้ยงพักฟรี</strong><span>ไม่มีค่าใช้จ่ายเพิ่ม</span></div>
+        </div>
       </div>
     </section>
 
@@ -62,7 +65,7 @@
     <section aria-labelledby="explore-h">
       <div class="wrap">
         <div class="head">
-          <span class="eyebrow">The Lagoon</span>
+          <span class="eyebrow" lang="en">The Lagoon</span>
           <h2 id="explore-h">ก่อนมาพัก ดูอะไรก่อนดี</h2>
         </div>
         <div class="teasers">
@@ -79,7 +82,7 @@
           <a class="teaser" href="stay.html">
             <img src="img/tents-lawn.jpg" alt="ลานเต็นท์ยามเช้าริมทะเลสาบ" loading="lazy">
             <h3>ข้อมูลการเข้าพัก</h3>
-            <p>เช็คอิน 11:00 · เช็คเอาท์ 12:00</p>
+            <p>เช็กอิน 11:00 · เช็กเอาต์ 12:00</p>
           </a>
           <a class="teaser" href="contact.html">
             <img src="img/lake-view.jpg" alt="วิวทะเลสาบน้ำสีฟ้าใต้ร่มไม้" loading="lazy">
@@ -134,5 +137,6 @@
       <span>ธรรมชาติ + เพื่อน = ความสุข</span>
     </div>
   </footer>
+  <script src="js/nav.js" defer></script>
 </body>
 </html>

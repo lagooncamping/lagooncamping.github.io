@@ -36,7 +36,7 @@ body:has(.book-bar:not([hidden])) { padding-bottom: 90px; }
 .map { margin: 0 0 56px; max-width: 720px; }
 .map svg { width: 100%; height: auto; display: block; background: var(--surface); border: 1px solid var(--line); border-radius: 6px; }
 .map .lake { fill: color-mix(in srgb, #5f9ea0 28%, var(--surface)); }
-.map .lake-label { fill: var(--muted); font-size: 10px; letter-spacing: .15em; font-family: var(--font); }
+.map .lake-label { fill: var(--muted); font-size: 10px; font-family: var(--font); }
 .map .walk { fill: none; stroke: var(--line); stroke-width: 6; stroke-linecap: round; }
 .map .entry { fill: var(--muted); font-size: 9px; font-family: var(--font); }
 .map figcaption { font-size: .8rem; color: var(--muted); margin-top: 8px; }
