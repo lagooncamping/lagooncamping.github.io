@@ -14,6 +14,8 @@ const SPREADSHEET_ID = '';
 const SHEET_NAME = 'การจอง';
 const TZ = 'Asia/Bangkok';
 const STATUS = { PENDING: 'รอยืนยัน', CONFIRMED: 'ยืนยันแล้ว', CANCELLED: 'ยกเลิก' };
+// อีเมลที่จะได้รับแจ้งเตือนเมื่อมีการจองใหม่ (เว้นว่าง = ไม่ส่ง)
+const NOTIFY_EMAIL = 'lagooncampingresort@gmail.com';
 
 // ต้องตรงกับ id ของบ้านใน js/booking.js
 const HOUSES = {
@@ -79,6 +81,7 @@ function doPost(e) {
   // ล็อกไว้ กันสองคนจองบ้านเดียวกันพร้อมกัน
   const lock = LockService.getScriptLock();
   lock.waitLock(10000);
+  let id;
   try {
     const sh = sheet_();
     const current = activeBookings_(sh);
@@ -86,16 +89,51 @@ function doPost(e) {
     if (taken.length) return json_({ ok: false, error: 'booked', houses: taken });
 
     const now = new Date();
-    const id = 'LG' + Utilities.formatDate(now, TZ, 'yyMMdd') + '-' + Math.floor(1000 + Math.random() * 9000);
+    id = 'LG' + Utilities.formatDate(now, TZ, 'yyMMdd') + '-' + Math.floor(1000 + Math.random() * 9000);
     const nights = nights_(d.checkin, d.checkout);
     const rows = d.houses.map((h) => [
       Utilities.formatDate(now, TZ, 'yyyy-MM-dd HH:mm'), id, h, HOUSES[h], d.checkin, d.checkout, nights,
       Number(d.guests), safe_(d.name), safe_(d.phone), safe_(d.note), Number(d.total) || '', STATUS.PENDING,
     ]);
     sh.getRange(sh.getLastRow() + 1, 1, rows.length, HEADERS.length).setValues(rows);
-    return json_({ ok: true, id });
   } finally {
     lock.releaseLock();
+  }
+
+  notify_(id, d); // ส่งหลังปลดล็อก จะได้ไม่ทำให้คนอื่นที่กำลังจองต้องรอ
+  return json_({ ok: true, id });
+}
+
+/** กด Run ครั้งเดียวหลังเพิ่มการแจ้งเตือนอีเมล เพื่อให้ Google ขออนุญาตส่งอีเมล */
+function authorizeEmail() {
+  MailApp.getRemainingDailyQuota();
+}
+
+// ส่งอีเมลแจ้งแอดมินว่ามีการจองใหม่ (ถ้าส่งไม่ได้ การจองยังบันทึกอยู่ในชีตตามปกติ)
+function notify_(id, d) {
+  if (!NOTIFY_EMAIL) return;
+  try {
+    const names = d.houses.map((h) => HOUSES[h]).join(', ');
+    const subject = 'จองใหม่ ' + id + ' · ' + names + ' · ' + d.checkin + ' ถึง ' + d.checkout;
+    const body = [
+      'มีคำขอจองใหม่จากหน้าเว็บ (สถานะ: ' + STATUS.PENDING + ')',
+      '',
+      'รหัสการจอง: ' + id,
+      'บ้าน: ' + names,
+      'เช็กอิน: ' + d.checkin,
+      'เช็กเอาต์: ' + d.checkout + ' (' + nights_(d.checkin, d.checkout) + ' คืน)',
+      'ผู้เข้าพัก: ' + Number(d.guests) + ' ท่าน',
+      'ชื่อ: ' + String(d.name).trim(),
+      'เบอร์โทร: ' + String(d.phone).trim(),
+      'หมายเหตุ: ' + (String(d.note || '').trim() || '-'),
+      'ยอดรวม: ' + (Number(d.total) || 0) + ' บาท',
+      '',
+      'เปิดชีตการจอง: ' + spreadsheet_().getUrl(),
+      'อย่าลืมโทรหรือทักไลน์ยืนยันกับลูกค้า แล้วเปลี่ยนสถานะในชีต',
+    ].join('\n');
+    MailApp.sendEmail(NOTIFY_EMAIL, subject, body);
+  } catch (err) {
+    console.error('ส่งอีเมลแจ้งเตือนไม่สำเร็จ: ' + err);
   }
 }
 
