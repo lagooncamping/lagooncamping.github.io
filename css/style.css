@@ -110,11 +110,13 @@ main > section + section { border-top: 1px solid var(--line); }
 .nav .wrap { display: flex; align-items: center; justify-content: space-between; gap: 16px; padding-block: 12px; }
 .brand { font-family: var(--font-display); font-size: 1.25rem; font-weight: 400; text-decoration: none; color: var(--ink); }
 .nav .brand { color: var(--nav-ink); display: inline-flex; align-items: center; gap: 10px; }
-/* โลโก้เต็นท์เล็กๆ หน้าชื่อ (วาดด้วย CSS ไม่ต้องใช้ไฟล์รูป) */
-.nav .brand::before {
-  content: ""; width: 26px; height: 22px; background: var(--sun);
-  clip-path: polygon(50% 0, 100% 100%, 62% 100%, 50% 72%, 38% 100%, 0 100%);
+/* โลโก้รีสอร์ท (อันเดียวกับเพจ Facebook) หน้าชื่อ — ใช้ทั้งเมนูด้านบนและท้ายเว็บ */
+.brand::before {
+  content: ""; flex: none; width: 40px; height: 40px; border-radius: 50%;
+  background: url(../img/favicon-192.png) center / cover no-repeat;
+  box-shadow: 0 0 0 2px rgba(255, 255, 255, .85);
 }
+.footer-brand .brand::before { width: 56px; height: 56px; }
 .nav ul { display: flex; gap: 28px; list-style: none; margin: 0; padding: 0; flex-wrap: wrap; }
 .nav ul a { text-decoration: none; color: color-mix(in srgb, var(--nav-ink) 80%, transparent); font-size: .95rem; }
 .nav ul a:hover { color: var(--nav-ink); }
@@ -332,7 +334,7 @@ html:has(.lightbox[open]) { overflow: hidden; }
 .site-footer :focus-visible { outline-color: var(--plate-ink); }
 .footer-grid { display: grid; grid-template-columns: 1.2fr 1.5fr .8fr .9fr; gap: 40px 32px; }
 .footer-grid > div { min-width: 0; }
-.footer-brand .brand { display: inline-block; margin-bottom: 12px; }
+.footer-brand .brand { display: inline-flex; align-items: center; gap: 12px; margin-bottom: 12px; }
 .footer-brand p { margin: 0 0 12px; }
 .footer-map { font-weight: 500; }
 .site-footer h2 { font-size: .88rem; font-weight: 500; color: var(--plate-muted); margin: 0 0 14px; }
