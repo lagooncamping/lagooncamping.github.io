@@ -213,6 +213,16 @@ function nights_(from, to) {
   return Math.round((new Date(to + 'T00:00:00Z') - new Date(from + 'T00:00:00Z')) / 86400000);
 }
 
+// แอดมินพิมพ์การจองเองในชีต อาจพิมพ์รหัสบ้านเป็นชื่อ เช่น "Lagoon 1", "Studio", "Family 2" — แปลงเป็นรหัสให้
+function houseId_(v) {
+  const s = String(v || '').trim().toLowerCase().replace(/\s+/g, ' ');
+  if (HOUSES[s]) return s;
+  const key = s.replace(/^lagoon /, '').replace(/ /g, '');
+  const alias = { '1': 'lagoon-1', '2': 'lagoon-2', '3': 'lagoon-3', lagoon1: 'lagoon-1', lagoon2: 'lagoon-2', lagoon3: 'lagoon-3',
+    studio: 'studio', family1: 'family-1', family2: 'family-2' };
+  return alias[key] || s;
+}
+
 // การจองที่ยังล็อกบ้านอยู่ (ส่งเฉพาะบ้านกับวันที่ ไม่ส่งข้อมูลลูกค้า)
 function activeBookings_(sh) {
   const last = sh.getLastRow();
@@ -221,7 +231,7 @@ function activeBookings_(sh) {
   const now = nowText_();
   return sh.getRange(2, 1, last - 1, HEADERS.length).getValues()
     .map((r) => ({
-      house: String(r[COL.house - 1]).trim(),
+      house: houseId_(r[COL.house - 1]) || houseId_(r[3]), // ช่องรหัสบ้านว่าง ลองดูช่องชื่อบ้าน
       from: iso_(r[COL.checkin - 1]),
       to: iso_(r[COL.checkout - 1]),
       status: r[COL.status - 1],
@@ -388,7 +398,8 @@ function bookingGroups_() {
       houses: [], from: iso_(r[COL.checkin - 1]), to: iso_(r[COL.checkout - 1]),
       guests: r[7], name: String(r[8]), phone: String(r[9]), note: String(r[10] || ''), status,
     });
-    g.houses.push(String(r[3]));
+    const hid = houseId_(r[COL.house - 1]) || houseId_(r[3]);
+    g.houses.push(HOUSES[hid] ? HOUSES[hid].name : String(r[3] || r[COL.house - 1]));
   });
   return Object.values(groups).sort((a, b) => (a.from < b.from ? -1 : a.from > b.from ? 1 : 0));
 }

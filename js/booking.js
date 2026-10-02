@@ -272,7 +272,7 @@ $('#to-details').addEventListener('click', () => {
     <dt>เช็กอิน</dt><dd>${thaiDate(state.checkin)} (ตั้งแต่ 11:00)</dd>
     <dt>เช็กเอาต์</dt><dd>${thaiDate(state.checkout)} (ก่อน 12:00)</dd>
     <dt>รวม</dt><dd>${nights()} คืน · ${baht(total())} บาท</dd>`;
-  $('#capacity').textContent = `บ้านที่เลือกรองรับได้ ${capacity} ท่าน`;
+  $('#capacity').textContent = `บ้านที่เลือกรองรับได้ ${capacity} ท่าน (มากกว่านี้ ทัก LINE ขอเสริมเตียงก่อน)`;
   // ยอดในตัวเลือกแบบชำระเงิน
   document.querySelector('[data-amount="deposit"]').textContent = `${baht(Math.ceil(total() * DEPOSIT_RATE))} บาท`;
   document.querySelector('[data-amount="full"]').textContent = `${baht(total())} บาท`;
@@ -290,6 +290,13 @@ $('#details-form').addEventListener('submit', async (e) => {
   const data = Object.fromEntries(new FormData(form));
   const houses = selectedHouses();
   if (!houses.length) { go('pick'); return; }
+
+  // คนเกินที่บ้านรับได้: ยังไม่มีราคาเสริมเตียง ให้ทักแอดมินก่อน (หรือเลือกบ้านเพิ่ม)
+  const capacity = houses.reduce((sum, h) => sum + h.guests, 0);
+  if (Number(data.guests) > capacity) {
+    errorEl.innerHTML = `บ้านที่เลือกพักได้สูงสุด ${capacity} ท่าน ถ้ามา ${Number(data.guests)} ท่าน กรุณาเลือกบ้านเพิ่ม หรือทัก <a href="https://line.me/R/ti/p/${LINE_ID}" target="_blank" rel="noopener">LINE ${LINE_ID}</a> / โทร ${PHONE} เพื่อขอเสริมเตียง`;
+    return;
+  }
 
   // ยอดและเวลาชำระ: ถ้าต่อ Google Sheets จะใช้ตัวเลขที่ Google คำนวณ (ด้านล่าง)
   const payType = data.payType === 'full' ? 'full' : 'deposit';
