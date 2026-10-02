@@ -8,6 +8,11 @@
  * - doPost : รับการจองใหม่ เช็กว่าไม่ซ้อนกับการจองเดิม คำนวณยอดที่ต้องชำระ (มัดจำ 50% หรือเต็มจำนวน)
  *            แล้วบันทึกลงชีตเป็น "รอชำระเงิน" (ล็อกบ้านไว้ HOLD_HOURS ชั่วโมง)
  * - expireBookings : ตั้งเวลาให้รันทุก 15 นาที เปลี่ยนการจองที่เลยเวลาชำระเป็น "หมดเวลา"
+ * - LINE (ถ้าตั้งค่าแล้ว): แจ้งเตือนแอดมินทาง LINE เมื่อมีการจองใหม่ และให้แอดมินพิมพ์ถามรายการจองได้
+ *   ค่าลับเก็บใน Project Settings > Script properties (ห้ามใส่ในไฟล์นี้ เพราะไฟล์นี้อยู่บน GitHub):
+ *     LINE_TOKEN = Channel access token ของ LINE OA
+ *     ADMIN_CODE = รหัสลับสำหรับลงทะเบียนแอดมิน (ตั้งเอง ยาว ๆ เดายาก)
+ *     ADMIN_IDS  = ระบบเติมเองเมื่อแอดมินพิมพ์ "ลงทะเบียน <รหัสลับ>" ในแชท LINE OA
  */
 
 // ID ของไฟล์ชีต (ตัวอักษรยาว ๆ ในลิงก์ชีต ระหว่าง /d/ กับ /edit)
@@ -121,6 +126,12 @@ function doPost(e) {
     return json_({ ok: false, error: 'bad_request' });
   }
 
+  // ข้อความจาก LINE (webhook) ไม่ใช่การจองจากหน้าเว็บ
+  if (Array.isArray(d.events)) {
+    d.events.forEach((ev) => { try { lineEvent_(ev); } catch (err) { console.error('LINE: ' + err); } });
+    return json_({ ok: true });
+  }
+
   // ช่องลับกันบอท: คนจริงมองไม่เห็นช่องนี้ ถ้ามีค่ามาแปลว่าเป็นบอท ทำเหมือนสำเร็จแต่ไม่บันทึก
   if (d.website) return json_({ ok: true, id: 'LG000000-0000', total: 0, due: 0, payType: 'deposit', deadline: '' });
 
@@ -158,6 +169,7 @@ function doPost(e) {
   }
 
   notify_(id, d, total, due, payType, deadline); // ส่งหลังปลดล็อก จะได้ไม่ทำให้คนอื่นที่กำลังจองต้องรอ
+  lineNotify_(id, d, due, payType);
   return json_({ ok: true, id, total, due, payType, deadline });
 }
 
@@ -268,4 +280,187 @@ function notify_(id, d, total, due, payType, deadline) {
   } catch (err) {
     console.error('ส่งอีเมลแจ้งเตือนไม่สำเร็จ: ' + err);
   }
+}
+
+// ---------- LINE: แจ้งเตือนแอดมิน + ถามรายการจองในแชท ----------
+// แอดมิน (เช่น คุณพ่อ) แอด LINE OA เป็นเพื่อน แล้วพิมพ์ "ลงทะเบียน <รหัสลับ>" ครั้งเดียว
+// จากนั้นพิมพ์: จอง · วันนี้ · พรุ่งนี้ · วันที่ เช่น 15/10 · เมนู
+// คนที่ไม่ใช่แอดมินพิมพ์มา บอทจะเงียบ (ข้อความตอบกลับอัตโนมัติของ LINE OA ทำงานตามปกติ)
+
+const LINE_HELP = [
+  'พิมพ์ได้ตามนี้ครับ',
+  '• จอง = การจองที่กำลังจะมาถึงทั้งหมด',
+  '• วันนี้ = คืนนี้ใครพักบ้าง',
+  '• พรุ่งนี้ = คืนพรุ่งนี้ใครพักบ้าง',
+  '• 15/10 = คืนวันที่ 15 ต.ค. ใครพักบ้าง',
+  '• หยุดแจ้งเตือน = เลิกรับแจ้งเตือนการจองใหม่',
+].join('\n');
+
+function props_() {
+  return PropertiesService.getScriptProperties();
+}
+
+function adminIds_() {
+  return (props_().getProperty('ADMIN_IDS') || '').split(',').filter(Boolean);
+}
+
+function lineEvent_(ev) {
+  if (ev.type !== 'message' || !ev.message || ev.message.type !== 'text' || !ev.source || !ev.source.userId) return;
+  const user = ev.source.userId;
+  const text = String(ev.message.text).trim();
+  const admins = adminIds_();
+
+  // ลงทะเบียนแอดมินด้วยรหัสลับ
+  const reg = text.match(/^ลงทะเบียน\s+(.+)$/);
+  if (reg) {
+    const code = props_().getProperty('ADMIN_CODE');
+    if (!code || reg[1].trim() !== code) return; // รหัสผิด: เงียบ ไม่บอกว่ามีระบบนี้
+    if (!admins.includes(user)) props_().setProperty('ADMIN_IDS', admins.concat(user).join(','));
+    lineReply_(ev.replyToken, 'ลงทะเบียนแอดมินแล้วครับ ✅\nมีคนจองใหม่จะแจ้งเตือนที่แชทนี้\n\n' + LINE_HELP);
+    return;
+  }
+  if (!admins.includes(user)) return;
+
+  if (text === 'หยุดแจ้งเตือน') {
+    props_().setProperty('ADMIN_IDS', admins.filter((id) => id !== user).join(','));
+    lineReply_(ev.replyToken, 'หยุดแจ้งเตือนแล้วครับ ถ้าจะกลับมารับแจ้งเตือน พิมพ์ "ลงทะเบียน <รหัสลับ>" อีกครั้ง');
+    return;
+  }
+
+  const today = todayISO_();
+  const date = parseDate_(text, today);
+  let reply;
+  if (text === 'จอง' || text === 'รายการจอง') reply = upcomingText_(today);
+  else if (text === 'วันนี้' || text === 'คืนนี้') reply = nightText_(today);
+  else if (text === 'พรุ่งนี้') reply = nightText_(addDaysISO_(today, 1));
+  else if (date) reply = nightText_(date);
+  else reply = LINE_HELP;
+  lineReply_(ev.replyToken, reply);
+}
+
+// แจ้งแอดมินทุกคนเมื่อมีการจองใหม่ (นับเป็นข้อความ push ของ LINE OA: แพ็กเกจฟรี 200 ข้อความ/เดือน)
+function lineNotify_(id, d, due, payType) {
+  const admins = adminIds_();
+  if (!admins.length || !props_().getProperty('LINE_TOKEN')) return;
+  const text = [
+    '🔔 มีคนจองใหม่',
+    '🏠 ' + d.houses.map((h) => HOUSES[h].name).join(', '),
+    '📅 ' + thaiRange_(d.checkin, d.checkout),
+    '👤 ' + String(d.name).trim() + ' · ' + Number(d.guests) + ' ท่าน',
+    '📞 ' + String(d.phone).trim(),
+    '💰 ' + PAY_TYPES[payType] + ' ' + due.toLocaleString('en-US') + ' บาท (รอชำระเงิน)',
+    'รหัส ' + id,
+  ].join('\n');
+  try {
+    lineApi_('/v2/bot/message/multicast', { to: admins, messages: [{ type: 'text', text }] });
+  } catch (err) {
+    console.error('ส่ง LINE แจ้งเตือนไม่สำเร็จ: ' + err);
+  }
+}
+
+function lineReply_(token, text) {
+  lineApi_('/v2/bot/message/reply', { replyToken: token, messages: [{ type: 'text', text: text.slice(0, 4900) }] });
+}
+
+function lineApi_(path, body) {
+  const res = UrlFetchApp.fetch('https://api.line.me' + path, {
+    method: 'post',
+    contentType: 'application/json',
+    headers: { Authorization: 'Bearer ' + props_().getProperty('LINE_TOKEN') },
+    payload: JSON.stringify(body),
+    muteHttpExceptions: true,
+  });
+  if (res.getResponseCode() !== 200) throw new Error(res.getResponseCode() + ' ' + res.getContentText());
+}
+
+// การจองที่ยังมีผล (ไม่ยกเลิก/ไม่หมดเวลา) รวมแถวที่จองหลายบ้านในรหัสเดียวกัน
+function bookingGroups_() {
+  const sh = sheet_();
+  const last = sh.getLastRow();
+  if (last < 2) return [];
+  const now = nowText_();
+  const groups = {};
+  sh.getRange(2, 1, last - 1, HEADERS.length).getValues().forEach((r, i) => {
+    const status = r[COL.status - 1];
+    if (status === STATUS.CANCELLED || status === STATUS.EXPIRED || isExpired_(status, r[COL.deadline - 1], now)) return;
+    const key = String(r[1]).trim() || 'row' + i; // แถวที่แอดมินพิมพ์เองอาจไม่มีรหัส
+    const g = groups[key] || (groups[key] = {
+      houses: [], from: iso_(r[COL.checkin - 1]), to: iso_(r[COL.checkout - 1]),
+      guests: r[7], name: String(r[8]), phone: String(r[9]), note: String(r[10] || ''), status,
+    });
+    g.houses.push(String(r[3]));
+  });
+  return Object.values(groups).sort((a, b) => (a.from < b.from ? -1 : a.from > b.from ? 1 : 0));
+}
+
+function bookingText_(g) {
+  return [
+    '🏠 ' + g.houses.join(', '),
+    '👤 ' + g.name + ' · ' + g.guests + ' ท่าน',
+    '📞 ' + g.phone,
+    '📅 ' + thaiRange_(g.from, g.to),
+    (g.status === STATUS.CONFIRMED ? '✅ ' : '⏳ ') + g.status + (g.note ? '\n📝 ' + g.note : ''),
+  ].join('\n');
+}
+
+function upcomingText_(today) {
+  const list = bookingGroups_().filter((g) => g.to > today);
+  if (!list.length) return 'ยังไม่มีการจองที่กำลังจะมาถึงครับ';
+  const shown = list.slice(0, 25);
+  return '📋 การจองที่กำลังจะมาถึง ' + list.length + ' รายการ\n\n' + shown.map(bookingText_).join('\n\n')
+    + (list.length > shown.length ? '\n\n…และอีก ' + (list.length - shown.length) + ' รายการ ดูทั้งหมดในชีต' : '');
+}
+
+// ใครพักคืนวันที่ day (เช็กอินแล้ว ยังไม่เช็กเอาต์)
+function nightText_(day) {
+  const list = bookingGroups_().filter((g) => g.from <= day && g.to > day);
+  const head = '🌙 คืนวัน' + thaiDate_(day, true);
+  if (!list.length) return head + '\nยังไม่มีคนจองครับ บ้านว่างทุกหลัง';
+  const guests = list.reduce((sum, g) => sum + Number(g.guests || 0), 0);
+  const houses = list.reduce((sum, g) => sum + g.houses.length, 0);
+  return head + '\nจอง ' + houses + ' หลัง · ' + guests + ' ท่าน\n\n' + list.map(bookingText_).join('\n\n');
+}
+
+const TH_MONTHS = ['ม.ค.', 'ก.พ.', 'มี.ค.', 'เม.ย.', 'พ.ค.', 'มิ.ย.', 'ก.ค.', 'ส.ค.', 'ก.ย.', 'ต.ค.', 'พ.ย.', 'ธ.ค.'];
+const TH_DAYS = ['อา.', 'จ.', 'อ.', 'พ.', 'พฤ.', 'ศ.', 'ส.'];
+
+function thaiDate_(iso, withDay) {
+  const [y, m, d] = iso.split('-').map(Number);
+  const dow = new Date(Date.UTC(y, m - 1, d)).getUTCDay();
+  return (withDay ? TH_DAYS[dow] + ' ' : '') + d + ' ' + TH_MONTHS[m - 1] + ' ' + String(y + 543).slice(2);
+}
+
+function thaiRange_(from, to) {
+  return thaiDate_(from, true) + ' – ' + thaiDate_(to, true) + ' (' + nights_(from, to) + ' คืน)';
+}
+
+function addDaysISO_(iso, n) {
+  const t = new Date(iso + 'T00:00:00Z');
+  t.setUTCDate(t.getUTCDate() + n);
+  return t.toISOString().slice(0, 10);
+}
+
+// "15/10", "15/10/69", "15/10/2569", "15/10/2026" → yyyy-mm-dd (ไม่ใส่ปี = ครั้งถัดไปที่ถึงวันนั้น)
+function parseDate_(text, today) {
+  const m = text.match(/^(\d{1,2})\s*[/.-]\s*(\d{1,2})(?:\s*[/.-]\s*(\d{2,4}))?$/);
+  if (!m) return '';
+  const day = Number(m[1]);
+  const month = Number(m[2]);
+  if (month < 1 || month > 12 || day < 1 || day > 31) return '';
+  const pad = (n) => String(n).padStart(2, '0');
+  let year;
+  if (m[3]) {
+    year = Number(m[3]);
+    if (year < 100) year += year >= 60 ? 2500 : 2000; // 69 = พ.ศ. 2569, 26 = ค.ศ. 2026
+    if (year > 2400) year -= 543;
+  } else {
+    year = Number(today.slice(0, 4));
+    if (year + '-' + pad(month) + '-' + pad(day) < today) year += 1;
+  }
+  return year + '-' + pad(month) + '-' + pad(day);
+}
+
+/** กด Run ครั้งเดียวหลังเพิ่มส่วน LINE เพื่อให้ Google ขออนุญาตเชื่อมต่อ LINE (UrlFetchApp) */
+function authorizeLine() {
+  UrlFetchApp.fetch('https://api.line.me/v2/bot/info', { muteHttpExceptions: true });
 }
