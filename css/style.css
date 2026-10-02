@@ -415,3 +415,22 @@ html:has(.lightbox[open]) { overflow: hidden; }
 .footer-bottom span:last-child { font-family: var(--font-display); font-size: 1.25rem; color: var(--sun); }
 .site-footer .brand { color: var(--plate-ink); }
 @media (max-width: 820px) { .footer-grid { grid-template-columns: 1fr 1fr; } .footer-brand { grid-column: 1 / -1; } }
+
+/* ---------- ปุ่ม LINE ลอยมุมขวาล่าง ---------- */
+.line-float {
+  position: fixed; right: 18px; bottom: calc(18px + env(safe-area-inset-bottom)); z-index: 30;
+  display: inline-flex; align-items: center; gap: 8px;
+  padding: 12px 20px 12px 16px; border-radius: 999px;
+  background: #06c755; color: #fff; text-decoration: none; font-weight: 600; font-size: .98rem;
+  box-shadow: 0 6px 20px rgba(0,0,0,.22);
+  transition: transform .2s ease, box-shadow .2s ease;
+}
+.line-float svg { width: 24px; height: 24px; fill: currentColor; flex: none; }
+.line-float:hover { transform: translateY(-3px); box-shadow: 0 10px 26px rgba(0,0,0,.28); }
+.line-float:focus-visible { outline-color: #06c755; outline-offset: 4px; }
+@media (max-width: 480px) { .line-float { right: 14px; bottom: calc(14px + env(safe-area-inset-bottom)); padding: 11px 16px 11px 13px; font-size: .92rem; } }
+@media (prefers-reduced-motion: reduce) { .line-float:hover { transform: none; } }
+@media print { .line-float { display: none; } }
+
+/* ---------- หน้า 404 ---------- */
+.notfound { min-height: 60vh; display: flex; align-items: center; }
