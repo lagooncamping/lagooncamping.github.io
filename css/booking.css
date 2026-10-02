@@ -120,6 +120,20 @@ body:has(.book-bar:not([hidden])) { padding-bottom: 90px; }
 .form-error { margin: 0; color: #b4462f; font-size: .92rem; }
 .form-error:empty { display: none; }
 @media (prefers-color-scheme: dark) { .form-error { color: #f0a08c; } }
+/* ---------- เลือกแบบชำระเงิน ---------- */
+.paytype { border: 0; margin: 0; padding: 0; display: grid; gap: 10px; min-width: 0; }
+.paytype legend { font-size: .9rem; color: var(--muted); margin-bottom: 6px; padding: 0; }
+.paytype-opt {
+  display: flex; align-items: flex-start; gap: 12px; cursor: pointer;
+  padding: 14px 16px; border: 1px solid var(--line); border-radius: 6px;
+}
+.paytype-opt input { width: 20px; height: 20px; margin: 2px 0 0; flex: none; accent-color: var(--forest); }
+.paytype-opt b { font-weight: 500; }
+.paytype-amount { color: var(--forest); font-weight: 500; font-variant-numeric: tabular-nums; margin-left: 6px; }
+.paytype-opt small { display: block; color: var(--muted); font-size: .85rem; margin-top: 2px; }
+.paytype-opt:has(input:checked) { border-color: var(--forest); background: color-mix(in srgb, var(--forest) 8%, transparent); }
+.pay-refund { margin: -12px 0 28px; font-size: .9rem; color: var(--muted); max-width: 640px; }
+
 /* ---------- เงื่อนไขการจอง ---------- */
 .policy { border: 1px solid var(--line); border-radius: 6px; padding: 16px 18px; background: var(--surface); }
 .policy h2 { font-size: 1rem; font-weight: 500; margin-bottom: 8px; }

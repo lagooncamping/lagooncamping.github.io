@@ -114,13 +114,29 @@
           <label class="field">หมายเหตุ (ถ้ามี)
             <textarea name="note" rows="3" placeholder="เช่น พาน้องหมามาด้วย, มาถึงประมาณ 15:00"></textarea>
           </label>
+          <!-- เลือกแบบชำระเงิน (ยอดเงินเติมโดย js/booking.js) -->
+          <fieldset class="paytype">
+            <legend>เลือกแบบชำระเงิน</legend>
+            <label class="paytype-opt">
+              <input type="radio" name="payType" value="deposit" required>
+              <span><b>มัดจำ 50%</b> <span class="paytype-amount" data-amount="deposit"></span>
+                <small>ยกเลิกการจอง ไม่คืนเงินมัดจำ</small></span>
+            </label>
+            <label class="paytype-opt">
+              <input type="radio" name="payType" value="full" required>
+              <span><b>ชำระเต็มจำนวน</b> <span class="paytype-amount" data-amount="full"></span>
+                <small>ยกเลิกการจอง รับเงินคืน 50% ของยอดจอง</small></span>
+            </label>
+          </fieldset>
+
           <!-- เงื่อนไขการจอง (แก้ข้อความได้ที่นี่ และใน stay.html) -->
           <div class="policy">
             <h2>เงื่อนไขการจอง</h2>
             <ul>
-              <li>ชำระมัดจำ <b>50%</b> ผ่านพร้อมเพย์ <b>ภายใน 6 ชั่วโมง</b>หลังจอง ไม่เช่นนั้นการจองจะถูกยกเลิกอัตโนมัติ</li>
-              <li>ชำระมัดจำแล้ว แจ้งแอดมินเพื่อขอเลื่อนวันเข้าพักได้</li>
-              <li>จองแล้วไม่มาเข้าพัก ไม่คืนเงินมัดจำ</li>
+              <li>ชำระผ่านพร้อมเพย์ <b>ภายใน 6 ชั่วโมง</b>หลังจอง ไม่เช่นนั้นการจองจะถูกยกเลิกอัตโนมัติ</li>
+              <li>ชำระแล้ว แจ้งแอดมินเพื่อขอเลื่อนวันเข้าพักได้</li>
+              <li><b>มัดจำ 50%:</b> ยกเลิกหรือไม่มาเข้าพัก ไม่คืนเงินมัดจำ</li>
+              <li><b>ชำระเต็มจำนวน:</b> ยกเลิกการจอง รับเงินคืน 50% ของยอดจอง</li>
             </ul>
           </div>
           <label class="agree"><input type="checkbox" name="agree" required> ฉันอ่านและยอมรับเงื่อนไขการจอง</label>
@@ -131,30 +147,31 @@
         </form>
       </section>
 
-      <!-- ===== ขั้นที่ 3: ชำระมัดจำ ===== -->
+      <!-- ===== ขั้นที่ 3: ชำระเงิน ===== -->
       <section id="step-done" aria-labelledby="done-h" hidden>
         <div class="step-head">
           <span class="eyebrow">ขั้นตอนสุดท้าย</span>
-          <h1 id="done-h">ชำระมัดจำเพื่อยืนยันการจอง</h1>
-          <p>ล็อกบ้านไว้ให้คุณแล้ว กรุณาชำระมัดจำภายในเวลาที่กำหนด ไม่เช่นนั้นการจองจะถูกยกเลิกอัตโนมัติ</p>
+          <h1 id="done-h">ชำระเงินเพื่อยืนยันการจอง</h1>
+          <p>ล็อกบ้านไว้ให้คุณแล้ว กรุณาชำระเงินภายในเวลาที่กำหนด ไม่เช่นนั้นการจองจะถูกยกเลิกอัตโนมัติ</p>
         </div>
 
         <div class="pay">
           <figure class="pay-qr">
-            <div id="pay-qr" role="img" aria-label="QR พร้อมเพย์สำหรับชำระมัดจำ"></div>
+            <div id="pay-qr" role="img" aria-label="QR พร้อมเพย์สำหรับชำระเงิน"></div>
             <figcaption>สแกนด้วยแอปธนาคาร ยอดเงินขึ้นให้อัตโนมัติ</figcaption>
           </figure>
           <dl class="pay-info">
             <dt>รหัสการจอง</dt><dd id="pay-id"></dd>
-            <dt>ยอดมัดจำ 50%</dt><dd class="pay-amount" id="pay-deposit"></dd>
-            <dt>ยอดคงเหลือ</dt><dd id="pay-rest"></dd>
+            <dt id="pay-due-label">ยอดที่ต้องชำระ</dt><dd class="pay-amount" id="pay-due"></dd>
+            <dt class="pay-rest-row">ยอดคงเหลือ</dt><dd class="pay-rest-row" id="pay-rest"></dd>
             <dt>ชำระภายใน</dt><dd class="pay-deadline" id="pay-deadline"></dd>
             <dt>พร้อมเพย์</dt><dd><span>090-936-5562</span> <button class="copy" data-copy="0909365562" type="button">คัดลอก</button></dd>
           </dl>
         </div>
+        <p class="pay-refund" id="pay-refund"></p>
 
         <ol class="pay-steps">
-          <li>สแกน QR หรือโอนเข้าพร้อมเพย์ 090-936-5562 ตามยอดมัดจำ</li>
+          <li>สแกน QR หรือโอนเข้าพร้อมเพย์ 090-936-5562 ตามยอดที่ต้องชำระ</li>
           <li>กดปุ่ม <b>"ส่งสลิปทาง LINE"</b> แล้วแนบรูปสลิปโอนเงินในแชต</li>
           <li>แอดมินตรวจสอบยอดแล้วจะตอบยืนยันการจองในแชต</li>
         </ol>

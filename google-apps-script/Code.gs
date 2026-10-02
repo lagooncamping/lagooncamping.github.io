@@ -5,8 +5,8 @@
  * วิธีติดตั้งทีละขั้นอยู่ในไฟล์ SETUP-GOOGLE-SHEETS.md
  *
  * - doGet  : ส่งรายการ "บ้านไหนถูกจองวันไหน" ให้หน้าเว็บ (ไม่ส่งชื่อ/เบอร์ลูกค้า)
- * - doPost : รับการจองใหม่ เช็กว่าไม่ซ้อนกับการจองเดิม คำนวณยอดมัดจำ
- *            แล้วบันทึกลงชีตเป็น "รอชำระมัดจำ" (ล็อกบ้านไว้ HOLD_HOURS ชั่วโมง)
+ * - doPost : รับการจองใหม่ เช็กว่าไม่ซ้อนกับการจองเดิม คำนวณยอดที่ต้องชำระ (มัดจำ 50% หรือเต็มจำนวน)
+ *            แล้วบันทึกลงชีตเป็น "รอชำระเงิน" (ล็อกบ้านไว้ HOLD_HOURS ชั่วโมง)
  * - expireBookings : ตั้งเวลาให้รันทุก 15 นาที เปลี่ยนการจองที่เลยเวลาชำระเป็น "หมดเวลา"
  */
 
@@ -15,13 +15,15 @@
 const SPREADSHEET_ID = '';
 const SHEET_NAME = 'การจอง';
 const TZ = 'Asia/Bangkok';
-const STATUS = { PENDING: 'รอชำระมัดจำ', CONFIRMED: 'ยืนยันแล้ว', CANCELLED: 'ยกเลิก', EXPIRED: 'หมดเวลา' };
+const STATUS = { PENDING: 'รอชำระเงิน', CONFIRMED: 'ยืนยันแล้ว', CANCELLED: 'ยกเลิก', EXPIRED: 'หมดเวลา' };
 // อีเมลที่จะได้รับแจ้งเตือนเมื่อมีการจองใหม่ (เว้นว่าง = ไม่ส่ง)
 const NOTIFY_EMAIL = 'lagooncampingresort@gmail.com';
 
-// เงื่อนไขมัดจำ (ตามที่เจ้าของกำหนด 2 ต.ค. 2026)
+// เงื่อนไขการชำระ (ตามที่เจ้าของกำหนด 2 ต.ค. 2026)
+// ลูกค้าเลือกเอง: มัดจำ 50% (ยกเลิกไม่คืนเงิน) หรือ เต็มจำนวน (ยกเลิกคืน 50% ของยอดจอง)
 const DEPOSIT_RATE = 0.5; // มัดจำ 50%
 const HOLD_HOURS = 6;     // ต้องชำระภายใน 6 ชั่วโมง ไม่งั้นบ้านหลุด
+const PAY_TYPES = { deposit: 'มัดจำ 50%', full: 'เต็มจำนวน' };
 
 // ราคาต่อคืน — ต้องตรงกับ js/booking.js (ระบบคำนวณยอดจากราคานี้ ไม่เชื่อยอดที่ส่งมาจากหน้าเว็บ)
 const HOUSES = {
@@ -34,7 +36,7 @@ const HOUSES = {
 };
 
 const HEADERS = ['เวลาที่จอง', 'รหัสการจอง', 'รหัสบ้าน', 'บ้าน', 'เช็กอิน', 'เช็กเอาต์', 'คืน', 'ผู้เข้าพัก',
-  'ชื่อ', 'เบอร์โทร', 'หมายเหตุ', 'ยอดรวม (บาท)', 'สถานะ', 'มัดจำ (บาท)', 'ชำระภายใน'];
+  'ชื่อ', 'เบอร์โทร', 'หมายเหตุ', 'ยอดรวม (บาท)', 'สถานะ', 'ยอดที่ต้องชำระ (บาท)', 'ชำระภายใน', 'แบบชำระ'];
 const COL = { house: 3, checkin: 5, checkout: 6, status: 13, deadline: 15 }; // ลำดับคอลัมน์ (เริ่มที่ 1)
 
 /** กด Run ตอนติดตั้ง (รันซ้ำได้): สร้างหัวตาราง ช่องเลือกสถานะ และสีตามสถานะ */
@@ -78,7 +80,7 @@ function authorizeEmail() {
   MailApp.getRemainingDailyQuota();
 }
 
-/** เปลี่ยนการจองที่เลยเวลาชำระมัดจำเป็น "หมดเวลา" ให้แอดมินเห็นในชีต
+/** เปลี่ยนการจองที่เลยเวลาชำระเงินเป็น "หมดเวลา" ให้แอดมินเห็นในชีต
  *  (หน้าเว็บปลดบ้านให้อยู่แล้วตั้งแต่เลยเวลา ไม่ต้องรอฟังก์ชันนี้) */
 function expireBookings() {
   const sh = sheet_();
@@ -109,7 +111,7 @@ function doPost(e) {
   }
 
   // ช่องลับกันบอท: คนจริงมองไม่เห็นช่องนี้ ถ้ามีค่ามาแปลว่าเป็นบอท ทำเหมือนสำเร็จแต่ไม่บันทึก
-  if (d.website) return json_({ ok: true, id: 'LG000000-0000', total: 0, deposit: 0, deadline: '' });
+  if (d.website) return json_({ ok: true, id: 'LG000000-0000', total: 0, due: 0, payType: 'deposit', deadline: '' });
 
   d.houses = Array.isArray(d.houses) ? [...new Set(d.houses)] : [];
   const problem = validate_(d);
@@ -117,7 +119,8 @@ function doPost(e) {
 
   const nights = nights_(d.checkin, d.checkout);
   const total = d.houses.reduce((sum, h) => sum + HOUSES[h].price, 0) * nights;
-  const deposit = Math.ceil(total * DEPOSIT_RATE);
+  const payType = d.payType === 'full' ? 'full' : 'deposit';
+  const due = payType === 'full' ? total : Math.ceil(total * DEPOSIT_RATE);
 
   // ล็อกไว้ กันสองคนจองบ้านเดียวกันพร้อมกัน
   const lock = LockService.getScriptLock();
@@ -135,15 +138,16 @@ function doPost(e) {
     deadline = Utilities.formatDate(new Date(now.getTime() + HOLD_HOURS * 3600000), TZ, 'yyyy-MM-dd HH:mm');
     const rows = d.houses.map((h) => [
       Utilities.formatDate(now, TZ, 'yyyy-MM-dd HH:mm'), id, h, HOUSES[h].name, d.checkin, d.checkout, nights,
-      Number(d.guests), safe_(d.name), safe_(d.phone), safe_(d.note), total, STATUS.PENDING, deposit, deadline,
+      Number(d.guests), safe_(d.name), safe_(d.phone), safe_(d.note), total, STATUS.PENDING, due, deadline,
+      PAY_TYPES[payType],
     ]);
     sh.getRange(sh.getLastRow() + 1, 1, rows.length, HEADERS.length).setValues(rows);
   } finally {
     lock.releaseLock();
   }
 
-  notify_(id, d, total, deposit, deadline); // ส่งหลังปลดล็อก จะได้ไม่ทำให้คนอื่นที่กำลังจองต้องรอ
-  return json_({ ok: true, id, total, deposit, deadline });
+  notify_(id, d, total, due, payType, deadline); // ส่งหลังปลดล็อก จะได้ไม่ทำให้คนอื่นที่กำลังจองต้องรอ
+  return json_({ ok: true, id, total, due, payType, deadline });
 }
 
 // ---------- ตัวช่วย ----------
@@ -176,7 +180,7 @@ function stamp_(v) {
   return v instanceof Date ? Utilities.formatDate(v, TZ, 'yyyy-MM-dd HH:mm') : String(v || '').trim();
 }
 
-// รอชำระมัดจำ + เลยเวลาแล้ว = หมดเวลา (แถวที่แอดมินพิมพ์เองโดยไม่ใส่เวลาชำระ จะไม่หมดเวลา)
+// รอชำระเงิน + เลยเวลาแล้ว = หมดเวลา (แถวที่แอดมินพิมพ์เองโดยไม่ใส่เวลาชำระ จะไม่หมดเวลา)
 function isExpired_(status, deadline, now) {
   const dl = stamp_(deadline);
   return status === STATUS.PENDING && dl !== '' && dl <= now;
@@ -226,7 +230,7 @@ function safe_(v) {
 }
 
 // ส่งอีเมลแจ้งแอดมินว่ามีการจองใหม่ (ถ้าส่งไม่ได้ การจองยังบันทึกอยู่ในชีตตามปกติ)
-function notify_(id, d, total, deposit, deadline) {
+function notify_(id, d, total, due, payType, deadline) {
   if (!NOTIFY_EMAIL) return;
   try {
     const names = d.houses.map((h) => HOUSES[h].name).join(', ');
@@ -243,7 +247,7 @@ function notify_(id, d, total, deposit, deadline) {
       'เบอร์โทร: ' + String(d.phone).trim(),
       'หมายเหตุ: ' + (String(d.note || '').trim() || '-'),
       'ยอดรวม: ' + total + ' บาท',
-      'มัดจำ 50%: ' + deposit + ' บาท — ต้องชำระภายใน ' + deadline,
+      'แบบชำระ: ' + PAY_TYPES[payType] + ' — ยอดที่ต้องชำระ ' + due + ' บาท ภายใน ' + deadline,
       '',
       'เปิดชีตการจอง: ' + spreadsheet_().getUrl(),
       'ได้รับสลิปและเช็กยอดเข้าแล้ว ให้เปลี่ยนสถานะในชีตเป็น "' + STATUS.CONFIRMED + '"',

@@ -239,6 +239,9 @@ $('#to-details').addEventListener('click', () => {
     <dt>เช็กเอาต์</dt><dd>${thaiDate(state.checkout)} (ก่อน 12:00)</dd>
     <dt>รวม</dt><dd>${nights()} คืน · ${baht(total())} บาท</dd>`;
   $('#capacity').textContent = `บ้านที่เลือกรองรับได้ ${capacity} ท่าน`;
+  // ยอดในตัวเลือกแบบชำระเงิน
+  document.querySelector('[data-amount="deposit"]').textContent = `${baht(Math.ceil(total() * DEPOSIT_RATE))} บาท`;
+  document.querySelector('[data-amount="full"]').textContent = `${baht(total())} บาท`;
   go('details');
 });
 document.querySelector('[data-back]').addEventListener('click', () => history.back());
@@ -255,11 +258,12 @@ $('#details-form').addEventListener('submit', async (e) => {
   if (!houses.length) { go('pick'); return; }
 
   // ยอดและเวลาชำระ: ถ้าต่อ Google Sheets จะใช้ตัวเลขที่ Google คำนวณ (ด้านล่าง)
+  const payType = data.payType === 'full' ? 'full' : 'deposit';
   let id = '';
   let bookingTotal = total();
-  let deposit = Math.ceil(bookingTotal * DEPOSIT_RATE);
-  const due = new Date(Date.now() + HOLD_HOURS * 3600000);
-  let deadline = `${toISO(due)} ${pad(due.getHours())}:${pad(due.getMinutes())}`;
+  let amountDue = payType === 'full' ? bookingTotal : Math.ceil(bookingTotal * DEPOSIT_RATE);
+  const dueAt = new Date(Date.now() + HOLD_HOURS * 3600000);
+  let deadline = `${toISO(dueAt)} ${pad(dueAt.getHours())}:${pad(dueAt.getMinutes())}`;
   if (API_URL) {
     const btn = form.querySelector('[type=submit]');
     btn.disabled = true;
@@ -276,7 +280,7 @@ $('#details-form').addEventListener('submit', async (e) => {
           name: data.name.trim(),
           phone: data.phone.trim(),
           note: data.note.trim(),
-          total: total(),
+          payType,
           website: data.website, // ช่องลับกันบอท
         }),
       });
@@ -291,7 +295,7 @@ $('#details-form').addEventListener('submit', async (e) => {
       }
       if (!out.ok) throw new Error(out.error);
       id = out.id;
-      if (out.deposit) ({ total: bookingTotal, deposit, deadline } = out);
+      if (out.due) ({ total: bookingTotal, due: amountDue, deadline } = out);
     } catch (err) {
       errorEl.textContent = `ส่งการจองไม่สำเร็จ กรุณาลองใหม่อีกครั้ง หรือโทรจอง ${PHONE}`;
       return;
@@ -313,11 +317,12 @@ $('#details-form').addEventListener('submit', async (e) => {
     `เบอร์: ${data.phone.trim()}`,
     data.note.trim() ? `หมายเหตุ: ${data.note.trim()}` : '',
   ].filter(Boolean).join('\n');
+  const payLabel = payType === 'full' ? 'ยอดชำระเต็มจำนวน' : 'ยอดมัดจำ 50%';
   // ข้อความที่ลูกค้าส่งเข้าแชต LINE พร้อมแนบสลิป
   const message = [
-    'ส่งสลิปมัดจำ The Lagoon 🏕️',
+    'ส่งสลิปการจอง The Lagoon 🏕️',
     id ? `รหัสการจอง: ${id}` : null,
-    `ยอดมัดจำ 50%: ${baht(deposit)} บาท`,
+    `${payLabel}: ${baht(amountDue)} บาท`,
     '(แนบรูปสลิปโอนเงินในแชตนี้)',
     '',
     summary,
@@ -326,19 +331,24 @@ $('#details-form').addEventListener('submit', async (e) => {
   // จำไว้ในหน้านี้ด้วย เพื่อให้บ้านขึ้นว่า "ถูกจองแล้ว" ทันที
   houses.forEach((h) => BOOKINGS.push({ house: h.id, from: state.checkin, to: state.checkout }));
 
-  // หน้าชำระมัดจำ
+  // หน้าชำระเงิน
   $('#pay-id').textContent = id || '(โหมดทดลอง)';
-  $('#pay-deposit').textContent = `${baht(deposit)} บาท`;
-  $('#pay-rest').textContent = `${baht(bookingTotal - deposit)} บาท`;
+  $('#pay-due-label').textContent = payLabel;
+  $('#pay-due').textContent = `${baht(amountDue)} บาท`;
+  $('#pay-rest').textContent = `${baht(bookingTotal - amountDue)} บาท`;
+  document.querySelectorAll('.pay-rest-row').forEach((el) => { el.hidden = payType === 'full'; });
   $('#pay-deadline').textContent = deadlineText;
+  $('#pay-refund').textContent = payType === 'full'
+    ? `ชำระเต็มจำนวน: หากยกเลิกการจอง รับเงินคืน 50% ของยอดจอง (${baht(Math.floor(bookingTotal / 2))} บาท)`
+    : 'มัดจำ 50%: หากยกเลิกหรือไม่มาเข้าพัก ไม่คืนเงินมัดจำ';
   const qrBox = $('#pay-qr');
   if (window.qrcode) {
     const qr = qrcode(0, 'M');
-    qr.addData(promptPayPayload(PROMPTPAY, deposit));
+    qr.addData(promptPayPayload(PROMPTPAY, amountDue));
     qr.make();
     qrBox.innerHTML = qr.createSvgTag({ cellSize: 6, margin: 2, scalable: true });
   } else {
-    qrBox.textContent = `โหลด QR ไม่สำเร็จ — โอนเข้าพร้อมเพย์ 090-936-5562 ยอด ${baht(deposit)} บาท`;
+    qrBox.textContent = `โหลด QR ไม่สำเร็จ — โอนเข้าพร้อมเพย์ 090-936-5562 ยอด ${baht(amountDue)} บาท`;
   }
   $('#done-text').textContent = (id ? `รหัสการจอง: ${id}\n` : '') + summary;
   $('#line-link').href = `https://line.me/R/oaMessage/${encodeURIComponent(LINE_ID)}/?${encodeURIComponent(message)}`;
