@@ -88,13 +88,25 @@ main > section + section { border-top: 1px solid var(--line); }
   padding: 12px 26px; border-radius: 999px;
   font-weight: 500; text-decoration: none; font-family: var(--font); font-size: 1rem;
   border: 1px solid transparent; cursor: pointer;
-  transition: opacity .2s;
+  transition: opacity .2s, transform .2s ease;
 }
 .btn-primary { background: var(--forest); color: var(--bg); }
 .btn-primary:hover { opacity: .88; }
 /* ปุ่มรอง: เป็นลิงก์ขีดเส้นใต้ ดูเบากว่า */
 .btn-ghost { padding-inline: 0; color: var(--ink); text-decoration: underline; text-underline-offset: 6px; text-decoration-thickness: 1px; }
 .btn-small { padding: 8px 16px; font-size: .9rem; }
+/* ปุ่มกระจกใส (บนภาพปก): ขอบขาวบาง พื้นโปร่ง มีไอคอน */
+.btn-glass {
+  color: #fbf8f1; background: rgba(255, 255, 255, .12);
+  border-color: rgba(255, 255, 255, .45);
+  -webkit-backdrop-filter: blur(6px); backdrop-filter: blur(6px);
+  transition: background .2s ease, color .2s ease, border-color .2s ease, transform .2s ease;
+}
+.btn-glass svg { width: 18px; height: 18px; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; flex: none; }
+.btn-glass:hover { background: #fbf8f1; color: #1f231f; border-color: #fbf8f1; transform: translateY(-2px); }
+.btn-primary:hover { transform: translateY(-2px); }
+@media (prefers-reduced-motion: reduce) { .btn:hover { transform: none; } }
+@media (max-width: 480px) { .hero .btns { column-gap: 10px; } .btn-glass { padding-inline: 14px; gap: 6px; font-size: .92rem; } .btn-glass svg { width: 16px; height: 16px; } }
 
 .badge { font-size: .88rem; margin-bottom: 16px; opacity: .9; }
 
@@ -119,8 +131,16 @@ main > section + section { border-top: 1px solid var(--line); }
 .footer-brand .brand::before { width: 56px; height: 56px; }
 .nav ul { display: flex; gap: 28px; list-style: none; margin: 0; padding: 0; flex-wrap: wrap; }
 .nav ul a { text-decoration: none; color: color-mix(in srgb, var(--nav-ink) 80%, transparent); font-size: .95rem; }
-.nav ul a:hover { color: var(--nav-ink); }
-.nav ul a[aria-current="page"] { color: var(--nav-ink); text-decoration: underline; text-decoration-color: var(--sun); text-underline-offset: 8px; text-decoration-thickness: 2px; }
+/* เอาเมาส์ชี้: ตัวหนังสือเด้งขึ้นนิดๆ + เส้นสีส้มยืดออกจากตรงกลาง */
+.nav ul a { position: relative; display: inline-block; padding-bottom: 4px; transition: color .2s ease, transform .2s cubic-bezier(.34, 1.56, .64, 1); }
+.nav ul a::after {
+  content: ""; position: absolute; left: 0; right: 0; bottom: -2px; height: 2px; border-radius: 2px;
+  background: var(--sun); transform: scaleX(0); transition: transform .25s ease;
+}
+.nav ul a:hover { color: var(--nav-ink); transform: translateY(-3px); }
+.nav ul a:hover::after, .nav ul a[aria-current="page"]::after { transform: scaleX(1); }
+.nav ul a[aria-current="page"] { color: var(--nav-ink); }
+@media (prefers-reduced-motion: reduce) { .nav ul a, .nav ul a::after { transition: none; } .nav ul a:hover { transform: none; } }
 .nav .btn-primary { background: var(--sun); color: #1f231f; font-weight: 600; }
 
 /* หน้าแรก: เมนูโปร่งใสลอยบนรูปปก → เลื่อนลงเกิน 40px จะกลายเป็นแถบสีเขียว (js/nav.js ใส่คลาส is-solid) */
@@ -211,11 +231,55 @@ main > section + section { border-top: 1px solid var(--line); }
 .row .detail { grid-column: 1 / -1; color: var(--muted); font-size: .9rem; }
 .row .baht { font-variant-numeric: tabular-nums; font-size: 1.2rem; font-weight: 600; white-space: nowrap; color: var(--clay); }
 .row .baht small { color: var(--muted); font-size: .8rem; font-weight: 400; margin-left: 6px; }
+/* ชื่อบ้านกดได้: ปกติดูเป็นตัวหนังสือธรรมดา เอาเมาส์ชี้แล้วเปลี่ยนสี + มีลูกศรโผล่ */
+.row .name a { color: inherit; text-decoration: none; }
+.row .name a::after { content: " →"; opacity: 0; transition: opacity .2s; }
+.row .name a:hover { color: var(--forest); }
+.row .name a:hover::after { opacity: 1; }
+
+/* ป้ายข้อมูลเล็กๆ มีไอคอน (ใช้ในหน้าราคาและหน้าจอง) */
+.house-feats { list-style: none; margin: 0 0 12px; padding: 0; display: flex; flex-wrap: wrap; gap: 6px; }
+.house-feats li {
+  display: inline-flex; align-items: center; gap: 6px;
+  padding: 4px 10px; border-radius: 999px; font-size: .86rem;
+  background: color-mix(in srgb, var(--forest) 10%, transparent);
+}
+.house-feats svg { width: 16px; height: 16px; fill: none; stroke: currentColor; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; flex: none; opacity: .8; }
+.board .house-feats { margin: 16px 0 0; padding-top: 16px; border-top: 1px solid var(--line); }
+
+/* กล่องเงื่อนไขการชำระเงิน */
+.pay-terms { margin-top: 48px; display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+@media (max-width: 720px) { .pay-terms { grid-template-columns: 1fr; } }
+.pay-terms h2 { grid-column: 1 / -1; font-size: 1.3rem; margin: 0; }
+.pay-terms .lead-in { grid-column: 1 / -1; margin: -4px 0 4px; color: var(--muted); }
+.pay-card { padding: 20px 22px; border-radius: var(--radius); border: 1px solid var(--line); background: color-mix(in srgb, var(--forest) 5%, transparent); }
+.pay-card h3 { margin: 0 0 10px; font-size: 1.05rem; color: var(--forest); }
+.pay-card ul { margin: 0; padding-left: 1.2em; }
+.pay-card li { margin: 4px 0; font-size: .95rem; }
+.next .btn-glass { color: var(--ink); border-color: var(--line); background: transparent; }
+.next .btn-glass:hover { background: var(--ink); color: var(--bg); border-color: var(--ink); }
+
 .note { margin-top: 40px; font-size: .9rem; color: var(--muted); border-left: 2px solid var(--forest); padding-left: 16px; }
 
 /* ---------- ข้อมูลการเข้าพัก ---------- */
 .stay-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 48px; }
 .stay-grid > div { min-width: 0; }
+/* FAQ: กดเปิด-ปิดได้ */
+.faq-band { border-top: 1px solid var(--line); }
+.faq { max-width: 760px; }
+.faq details { border-bottom: 1px solid var(--line); }
+.faq summary {
+  list-style: none; cursor: pointer; padding: 18px 40px 18px 0; position: relative;
+  font-weight: 500; font-size: 1.05rem; transition: color .2s;
+}
+.faq summary:hover { color: var(--forest); }
+.faq summary::-webkit-details-marker { display: none; }
+.faq summary::after {
+  content: "+"; position: absolute; right: 4px; top: 50%; transform: translateY(-50%);
+  font-size: 1.5rem; color: var(--clay); transition: transform .2s;
+}
+.faq details[open] summary::after { transform: translateY(-50%) rotate(45deg); }
+.faq details p { margin: 0 0 20px; color: var(--muted); }
 .stay h3 { font-size: .88rem; font-weight: 500; color: var(--muted); margin-bottom: 16px; }
 .ticks { list-style: none; margin: 0; padding: 0; }
 .ticks li { padding-block: 10px; border-bottom: 1px solid var(--line); }
@@ -227,6 +291,7 @@ main > section + section { border-top: 1px solid var(--line); }
 /* ---------- ติดต่อ ---------- */
 .contact-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 64px; }
 @media (max-width: 820px) { .contact-grid { grid-template-columns: 1fr; gap: 48px; } }
+.map-embed { width: 100%; aspect-ratio: 4 / 3; border: 0; border-radius: var(--radius); display: block; margin-bottom: 20px; background: var(--line); }
 .card { min-width: 0; }
 .card h3 { font-size: .88rem; font-weight: 500; color: var(--muted); margin-bottom: 16px; }
 .phones { list-style: none; margin: 0 0 32px; padding: 0; display: grid; gap: 8px; }

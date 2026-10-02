@@ -28,9 +28,9 @@ const PAY_TYPES = { deposit: 'มัดจำ 50%', full: 'เต็มจำน
 
 // ราคาต่อคืน — ต้องตรงกับ js/booking.js (ระบบคำนวณยอดจากราคานี้ ไม่เชื่อยอดที่ส่งมาจากหน้าเว็บ)
 const HOUSES = {
-  'lagoon-1': { name: 'Lagoon 1', price: 1300 },
-  'lagoon-2': { name: 'Lagoon 2', price: 1300 },
-  'lagoon-3': { name: 'Lagoon 3', price: 1300 },
+  'lagoon-1': { name: 'Lagoon 1', price: 1500 },
+  'lagoon-2': { name: 'Lagoon 2', price: 1500 },
+  'lagoon-3': { name: 'Lagoon 3', price: 1500 },
   'studio': { name: 'Lagoon Studio', price: 1500 },
   'family-1': { name: 'Lagoon Family 1', price: 2500 },
   'family-2': { name: 'Lagoon Family 2', price: 3000 },

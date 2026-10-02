@@ -37,7 +37,8 @@ function promptPayPayload(phone, amount) {
 // TODO: เปลี่ยนรูปตัวอย่างเป็นรูปจริงของแต่ละหลัง
 const HOUSES = [
   {
-    id: 'lagoon-1', name: 'Lagoon 1', type: 'บ้านหลังเล็ก', guests: 2, price: 1300,
+    id: 'lagoon-1', name: 'Lagoon 1', type: 'บ้านหลังเล็ก', guests: 2, price: 1500,
+    features: ['1 เตียงใหญ่', 'ห้องน้ำในตัว'],
     photos: [
       { src: 'img/houses.jpg', alt: 'รูปตัวอย่าง: บ้านพักไม้ท่ามกลางสนามหญ้า' },
       { src: 'img/house-orchid.jpg', alt: 'รูปตัวอย่าง: บ้านพักไม้' },
@@ -45,7 +46,8 @@ const HOUSES = [
     ],
   },
   {
-    id: 'lagoon-2', name: 'Lagoon 2', type: 'บ้านหลังเล็ก', guests: 2, price: 1300,
+    id: 'lagoon-2', name: 'Lagoon 2', type: 'บ้านหลังเล็ก', guests: 2, price: 1500,
+    features: ['1 เตียงใหญ่', 'ห้องน้ำในตัว'],
     photos: [
       { src: 'img/house-orchid.jpg', alt: 'รูปตัวอย่าง: บ้านพักไม้' },
       { src: 'img/houses.jpg', alt: 'รูปตัวอย่าง: บ้านพักไม้ท่ามกลางสนามหญ้า' },
@@ -53,7 +55,8 @@ const HOUSES = [
     ],
   },
   {
-    id: 'lagoon-3', name: 'Lagoon 3', type: 'บ้านหลังเล็ก', guests: 2, price: 1300,
+    id: 'lagoon-3', name: 'Lagoon 3', type: 'บ้านหลังเล็ก', guests: 2, price: 1500,
+    features: ['1 เตียงใหญ่', 'ห้องน้ำในตัว'],
     photos: [
       { src: 'img/houses.jpg', alt: 'รูปตัวอย่าง: บ้านพักไม้ท่ามกลางสนามหญ้า' },
       { src: 'img/lake-view.jpg', alt: 'รูปตัวอย่าง: วิวทะเลสาบ' },
@@ -61,13 +64,15 @@ const HOUSES = [
   },
   {
     id: 'studio', name: 'Lagoon Studio', type: 'บ้านหลังใหม่ สไตล์โมเดิร์น', guests: 2, price: 1500,
+    features: ['1 เตียงใหญ่', 'ห้องน้ำในตัว'],
     photos: [
       { src: 'img/house-orchid.jpg', alt: 'รูปตัวอย่าง: บ้านพัก' },
       { src: 'img/sunset.jpg', alt: 'รูปตัวอย่าง: พระอาทิตย์ตกริมทะเลสาบ' },
     ],
   },
   {
-    id: 'family-1', name: 'Lagoon Family 1', type: 'บ้านหลังกลาง · 1 ห้องนอน 1 ห้องน้ำ', guests: 4, price: 2500,
+    id: 'family-1', name: 'Lagoon Family 1', type: 'บ้านหลังกลาง', guests: 4, price: 2500,
+    features: ['2 เตียง', 'ห้องน้ำในตัว'],
     photos: [
       { src: 'img/houses.jpg', alt: 'รูปตัวอย่าง: บ้านพักไม้ท่ามกลางสนามหญ้า' },
       { src: 'img/kayak.jpg', alt: 'รูปตัวอย่าง: พายเรือแคนูในทะเลสาบ' },
@@ -75,7 +80,8 @@ const HOUSES = [
     ],
   },
   {
-    id: 'family-2', name: 'Lagoon Family 2', type: 'บ้านหลังใหญ่ · 2 ห้องนอน 2 ห้องน้ำ · มีครัว', guests: 4, price: 3000,
+    id: 'family-2', name: 'Lagoon Family 2', type: 'บ้านหลังใหญ่ · มีครัว', guests: 4, price: 3000,
+    features: ['2 ห้องนอน (ห้องละ 1 เตียงใหญ่)', '2 ห้องน้ำในตัว'],
     photos: [
       { src: 'img/house-orchid.jpg', alt: 'รูปตัวอย่าง: บ้านพักไม้' },
       { src: 'img/lake-view.jpg', alt: 'รูปตัวอย่าง: วิวทะเลสาบ' },
@@ -83,6 +89,14 @@ const HOUSES = [
     ],
   },
 ];
+
+// ไอคอนเล็กๆ หน้าข้อมูลบ้าน
+const svg = (d) => `<svg viewBox="0 0 24 24" aria-hidden="true">${d}</svg>`;
+const ICON = {
+  guests: svg('<circle cx="9" cy="8" r="3.5"/><path d="M2.5 20a6.5 6.5 0 0 1 13 0"/><path d="M16 4.5a3.5 3.5 0 0 1 0 7M18 14a6 6 0 0 1 3.5 6"/>'),
+  bed: svg('<path d="M3 18V6M3 13h18v5M21 13a3 3 0 0 0-3-3h-7v3"/><circle cx="7" cy="10.5" r="1.8"/>'),
+  bath: svg('<path d="M4 12h16v3a4 4 0 0 1-4 4H8a4 4 0 0 1-4-4zM6 12V5.5A2 2 0 0 1 9.5 4M7 19l-1 2M17 19l1 2"/>'),
+};
 
 // ---------- วันที่ ----------
 const pad = (n) => String(n).padStart(2, '0');
@@ -127,7 +141,11 @@ housesEl.innerHTML = HOUSES.map((h) => `
       <button type="button" data-step="1" aria-label="รูปถัดไป">›</button>
     </div>
     <div class="house-head"><h3>${h.name}</h3><span class="status"></span></div>
-    <p class="house-type">${h.type} · ${h.guests} ท่าน</p>
+    <p class="house-type">${h.type}</p>
+    <ul class="house-feats">
+      <li>${ICON.guests}พักได้ ${h.guests} ท่าน</li>
+      ${(h.features || []).map((f) => `<li>${/ห้องน้ำ/.test(f) ? ICON.bath : ICON.bed}${f}</li>`).join('')}
+    </ul>
     <p class="house-price"><b>${baht(h.price)}</b> บาท/คืน</p>
     <label class="pick"><input type="checkbox" value="${h.id}"><span>เลือกบ้านหลังนี้</span></label>
   </article>`).join('');
@@ -213,6 +231,16 @@ document.querySelectorAll('.m').forEach((marker) => {
   marker.addEventListener('click', open);
   marker.addEventListener('keydown', (e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); open(); } });
 });
+
+// ---------- มาจากลิงก์ชื่อบ้านในหน้าราคา (เช่น booking.html#house-family-1) → เลื่อนไปที่การ์ดนั้น ----------
+const linked = location.hash.startsWith('#house-') && document.getElementById(location.hash.slice(1));
+if (linked) {
+  const jump = () => linked.scrollIntoView({ behavior: 'instant', block: 'start' });
+  jump();
+  window.addEventListener('load', jump, { once: true }); // เลื่อนซ้ำหลังโหลดเสร็จ เผื่อหน้ายังขยับอยู่
+  linked.classList.add('flash');
+  setTimeout(() => linked.classList.remove('flash'), 1600);
+}
 
 // ---------- สลับขั้นตอน (ปุ่มย้อนกลับของเบราว์เซอร์ใช้ได้) ----------
 const STEPS = ['pick', 'details', 'done'];

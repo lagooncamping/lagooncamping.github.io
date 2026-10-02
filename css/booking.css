@@ -85,6 +85,10 @@ body:has(.book-bar:not([hidden])) { padding-bottom: 90px; }
 .status { font-size: .8rem; color: var(--muted); white-space: nowrap; }
 .house.is-booked .status { color: var(--ink); background: var(--line); padding: 0 10px; border-radius: 4px; }
 .house-type { color: var(--muted); font-size: .92rem; margin: 2px 0 6px; }
+.house-all { margin: 0 0 24px; padding: 18px 20px; border-radius: var(--radius); background: color-mix(in srgb, var(--forest) 6%, transparent); }
+.house-all-title { margin: 0 0 10px; font-weight: 600; }
+.house-all .house-feats { margin: 0; }
+.house-all-note { margin: 12px 0 0; font-size: .88rem; color: var(--muted); }
 .house-price { margin: 0 0 16px; }
 .house-price b { font-weight: 500; font-size: 1.15rem; font-variant-numeric: tabular-nums; }
 
