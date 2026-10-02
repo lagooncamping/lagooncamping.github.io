@@ -63,14 +63,6 @@ const HOUSES = [
     ],
   },
   {
-    id: 'studio', name: 'Lagoon Studio', type: 'บ้านหลังใหม่ สไตล์โมเดิร์น', guests: 2, price: 1500,
-    features: ['1 เตียงใหญ่', 'ห้องน้ำในตัว'],
-    photos: [
-      { src: 'img/house-orchid.jpg', alt: 'รูปตัวอย่าง: บ้านพัก' },
-      { src: 'img/sunset.jpg', alt: 'รูปตัวอย่าง: พระอาทิตย์ตกริมทะเลสาบ' },
-    ],
-  },
-  {
     id: 'family-1', name: 'Lagoon Family 1', type: 'บ้านหลังกลาง', guests: 4, price: 2500,
     features: ['2 เตียง', 'ห้องน้ำในตัว'],
     photos: [
@@ -86,6 +78,14 @@ const HOUSES = [
       { src: 'img/house-orchid.jpg', alt: 'รูปตัวอย่าง: บ้านพักไม้' },
       { src: 'img/lake-view.jpg', alt: 'รูปตัวอย่าง: วิวทะเลสาบ' },
       { src: 'img/night.jpg', alt: 'รูปตัวอย่าง: ลานแคมป์ยามค่ำคืน' },
+    ],
+  },
+  {
+    id: 'studio', name: 'Lagoon Studio', type: 'บ้านหลังใหม่ สไตล์โมเดิร์น', guests: 2, price: 1500,
+    features: ['1 เตียงใหญ่', 'ห้องน้ำในตัว'],
+    photos: [
+      { src: 'img/house-orchid.jpg', alt: 'รูปตัวอย่าง: บ้านพัก' },
+      { src: 'img/sunset.jpg', alt: 'รูปตัวอย่าง: พระอาทิตย์ตกริมทะเลสาบ' },
     ],
   },
 ];

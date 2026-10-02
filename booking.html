@@ -53,32 +53,65 @@
         </div>
         <p class="nights" id="nights" aria-live="polite">เลือกวันเข้าพักก่อน แล้วติ๊กเลือกบ้านที่ว่าง</p>
 
-        <!-- แผนผังจำลอง: แก้ตำแหน่งบ้านได้ที่ x, y ของแต่ละ <g class="m"> -->
+        <!-- แผนผังจำลองมุมสูง: บ้านทุกหลังเรียงแถวเดียวริมเขื่อน จากซ้ายไปขวา Lagoon 1–3, Family 1–2, Studio (ตามที่เจ้าของบอก)
+             เลื่อนบ้านได้ที่ translate(x,y) ของแต่ละ <g class="m"> -->
         <figure class="map">
-          <svg viewBox="0 0 300 220" role="group" aria-label="แผนผังบ้านพัก กดที่บ้านเพื่อดูรูปและเลือก">
-            <path class="lake" d="M0 0H300V62C250 88 205 56 160 74C112 94 60 70 0 90Z"/>
-            <text class="lake-label" x="24" y="34">ทะเลสาบ</text>
-            <path class="walk" d="M292 210C250 200 236 160 190 154S80 150 18 146"/>
-            <text class="entry" x="252" y="214">ทางเข้า →</text>
+          <svg viewBox="0 0 360 220" role="group" aria-label="แผนผังบ้านพักมุมสูง กดที่บ้านเพื่อดูรูปและเลือก">
+            <rect class="lawn" x="0" y="0" width="360" height="152"/>
+            <!-- ต้นไม้ (มองจากด้านบน) -->
+            <g class="trees">
+              <circle cx="8" cy="26" r="15"/><circle cx="58" cy="18" r="12"/><circle cx="116" cy="24" r="14"/><circle cx="172" cy="16" r="11"/>
+              <circle cx="232" cy="22" r="14"/><circle cx="296" cy="16" r="12"/><circle cx="352" cy="28" r="15"/>
+              <circle cx="6" cy="136" r="9"/><circle cx="172" cy="138" r="8"/><circle cx="354" cy="136" r="9"/>
+            </g>
+            <g class="tree-tops">
+              <circle cx="4" cy="22" r="6"/><circle cx="55" cy="15" r="5"/><circle cx="112" cy="20" r="6"/><circle cx="169" cy="13" r="4"/>
+              <circle cx="228" cy="18" r="6"/><circle cx="293" cy="13" r="5"/><circle cx="348" cy="24" r="6"/>
+            </g>
 
-            <g class="m" data-house="family-1" tabindex="0" role="button">
-              <rect x="28" y="100" width="72" height="28" rx="5"/><text x="64" y="114">Family 1</text>
+            <!-- บ้าน: หลังคามองจากด้านบน เรียงซ้ายไปขวา Lagoon 1–3, Family 1–2, Studio -->
+            <g class="m" data-house="lagoon-1" tabindex="0" role="button" transform="translate(34 76)">
+              <rect class="hit" x="-27" y="-24" width="54" height="64"/>
+              <rect class="hs" x="-19" y="-15" width="38" height="30" rx="2"/>
+              <path class="ridge" d="M-4 0H4M-19-15L-4 0-19 15M19-15L4 0 19 15"/>
+              <text x="0" y="30">Lagoon 1</text>
             </g>
-            <g class="m" data-house="family-2" tabindex="0" role="button">
-              <rect x="114" y="100" width="72" height="28" rx="5"/><text x="150" y="114">Family 2</text>
+            <g class="m" data-house="lagoon-2" tabindex="0" role="button" transform="translate(88 76)">
+              <rect class="hit" x="-27" y="-24" width="54" height="64"/>
+              <rect class="hs" x="-19" y="-15" width="38" height="30" rx="2"/>
+              <path class="ridge" d="M-4 0H4M-19-15L-4 0-19 15M19-15L4 0 19 15"/>
+              <text x="0" y="30">Lagoon 2</text>
             </g>
-            <g class="m" data-house="studio" tabindex="0" role="button">
-              <rect x="200" y="100" width="72" height="28" rx="5"/><text x="236" y="114">Studio</text>
+            <g class="m" data-house="lagoon-3" tabindex="0" role="button" transform="translate(142 76)">
+              <rect class="hit" x="-27" y="-24" width="54" height="64"/>
+              <rect class="hs" x="-19" y="-15" width="38" height="30" rx="2"/>
+              <path class="ridge" d="M-4 0H4M-19-15L-4 0-19 15M19-15L4 0 19 15"/>
+              <text x="0" y="30">Lagoon 3</text>
             </g>
-            <g class="m" data-house="lagoon-1" tabindex="0" role="button">
-              <rect x="28" y="170" width="72" height="28" rx="5"/><text x="64" y="184">Lagoon 1</text>
+            <g class="m" data-house="family-1" tabindex="0" role="button" transform="translate(201 76)">
+              <rect class="hit" x="-28" y="-24" width="56" height="64"/>
+              <rect class="hs" x="-23" y="-17" width="46" height="34" rx="2"/>
+              <path class="ridge" d="M-6 0H6M-23-17L-6 0-23 17M23-17L6 0 23 17"/>
+              <text x="0" y="30">Family 1</text>
             </g>
-            <g class="m" data-house="lagoon-2" tabindex="0" role="button">
-              <rect x="114" y="170" width="72" height="28" rx="5"/><text x="150" y="184">Lagoon 2</text>
+            <g class="m" data-house="family-2" tabindex="0" role="button" transform="translate(263 76)">
+              <rect class="hit" x="-30" y="-24" width="60" height="64"/>
+              <rect class="hs" x="-26" y="-19" width="52" height="38" rx="2"/>
+              <path class="ridge" d="M-7 0H7M-26-19L-7 0-26 19M26-19L7 0 26 19"/>
+              <text x="0" y="31">Family 2</text>
             </g>
-            <g class="m" data-house="lagoon-3" tabindex="0" role="button">
-              <rect x="200" y="170" width="72" height="28" rx="5"/><text x="236" y="184">Lagoon 3</text>
+            <g class="m" data-house="studio" tabindex="0" role="button" transform="translate(324 76)">
+              <rect class="hit" x="-28" y="-24" width="56" height="64"/>
+              <rect class="hs" x="-20" y="-15" width="40" height="30" rx="2"/>
+              <rect class="ridge" x="-15" y="-10" width="30" height="20" rx="1"/>
+              <text x="0" y="30">Studio</text>
             </g>
+
+            <!-- ตลิ่งหิน + น้ำ -->
+            <rect class="bank" x="0" y="152" width="360" height="8"/>
+            <rect class="lake" x="0" y="160" width="360" height="60"/>
+            <path class="wave" d="M36 180q10-5 20 0t20 0M150 194q10-5 20 0t20 0M262 178q10-5 20 0t20 0"/>
+            <text class="lake-label" x="180" y="210">ทะเลสาบ (ริมเขื่อน)</text>
           </svg>
           <ul class="legend">
             <li><i></i>ว่าง</li>

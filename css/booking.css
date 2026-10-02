@@ -35,20 +35,30 @@ body:has(.book-bar:not([hidden])) { padding-bottom: 90px; }
 /* ---------- แผนผัง ---------- */
 .map { margin: 0 0 56px; max-width: 720px; }
 .map svg { width: 100%; height: auto; display: block; background: var(--surface); border: 1px solid var(--line); border-radius: 6px; }
-.map .lake { fill: color-mix(in srgb, #5f9ea0 28%, var(--surface)); }
-.map .lake-label { fill: var(--muted); font-size: 10px; font-family: var(--font); }
-.map .walk { fill: none; stroke: var(--line); stroke-width: 6; stroke-linecap: round; }
-.map .entry { fill: var(--muted); font-size: 9px; font-family: var(--font); }
+.map .lawn { fill: color-mix(in srgb, var(--forest) 10%, var(--surface)); }
+.map .trees circle { fill: color-mix(in srgb, var(--forest) 22%, var(--surface)); }
+.map .tree-tops circle { fill: color-mix(in srgb, var(--forest) 30%, var(--surface)); }
+.map .bank { fill: color-mix(in srgb, var(--clay) 25%, var(--surface)); }
+.map .lake { fill: color-mix(in srgb, #5f9ea0 30%, var(--surface)); }
+.map .wave { fill: none; stroke: color-mix(in srgb, #5f9ea0 55%, var(--surface)); stroke-width: 1.5; stroke-linecap: round; }
+.map .lake-label { fill: var(--muted); font-size: 10px; font-family: var(--font); text-anchor: middle; }
 .map figcaption { font-size: .8rem; color: var(--muted); margin-top: 8px; }
 
+/* บ้านแต่ละหลัง (กดได้) */
 .m { cursor: pointer; }
 .m:focus { outline: none; }
-.m rect { fill: var(--bg); stroke: var(--forest); stroke-width: 1.5; transition: fill .2s; }
-.m text { fill: var(--ink); font-size: 11px; font-family: var(--font); text-anchor: middle; dominant-baseline: central; pointer-events: none; }
-.m:hover rect, .m:focus-visible rect { stroke-width: 3; }
-.m.is-selected rect { fill: var(--forest); }
-.m.is-selected text { fill: var(--bg); }
-.m.is-booked rect { fill: var(--line); stroke: var(--muted); stroke-dasharray: 3 2; }
+.m .hs { fill: var(--bg); stroke: var(--forest); stroke-width: 1.5; stroke-linejoin: round; transition: fill .2s, stroke-width .2s; }
+.m text { fill: var(--ink); font-family: var(--font); text-anchor: middle; dominant-baseline: central; pointer-events: none; }
+.m text { font-size: 9px; font-weight: 500; }
+.m .hit { fill: transparent; }
+.m .ridge { fill: none; stroke: var(--forest); stroke-width: 1; opacity: .7; }
+.m:hover .hs, .m:focus-visible .hs { stroke-width: 3; }
+.m:hover text, .m:focus-visible text { fill: var(--forest); }
+.m.is-selected .hs { fill: var(--forest); }
+.m.is-selected .ridge { stroke: var(--bg); }
+.m.is-selected text { fill: var(--forest); font-weight: 700; }
+.m.is-booked .hs { fill: var(--line); stroke: var(--muted); stroke-dasharray: 3 2; }
+.m.is-booked .ridge { stroke: var(--muted); }
 .m.is-booked text { fill: var(--muted); }
 
 .legend { display: flex; flex-wrap: wrap; gap: 8px 20px; list-style: none; padding: 0; margin: 12px 0 0; font-size: .85rem; color: var(--muted); }
