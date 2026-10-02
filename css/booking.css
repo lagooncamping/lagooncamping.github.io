@@ -125,17 +125,6 @@ body:has(.book-bar:not([hidden])) { padding-bottom: 90px; }
 .status { font-size: .8rem; color: var(--muted); white-space: nowrap; }
 .house.is-booked .status { color: var(--ink); background: var(--line); padding: 0 10px; border-radius: 4px; }
 .house-type { color: var(--muted); font-size: .92rem; margin: 2px 0 6px; }
-/* การ์ดลานกางเต็นท์ + ปุ่ม − / + */
-.tent-card { margin: 24px 0 0; padding: 20px; border: 1px solid var(--line); border-radius: var(--radius); background: var(--surface); }
-.tent-card h3 { margin: 0 0 2px; }
-.qty-row { display: flex; align-items: center; justify-content: space-between; gap: 12px 20px; flex-wrap: wrap; padding: 14px 0 0; margin-top: 14px; border-top: 1px solid var(--line); }
-.qty-row small { display: block; color: var(--muted); font-size: .86rem; }
-.qty { display: inline-flex; align-items: center; gap: 8px; }
-.qty button { width: 44px; height: 44px; border-radius: 50%; border: 1.5px solid var(--forest); background: transparent; color: var(--forest); font-size: 1.4rem; line-height: 1; cursor: pointer; }
-.qty button:hover { background: var(--forest); color: var(--bg); }
-.qty input { width: 3.2em; height: 44px; text-align: center; font: inherit; font-size: 1.1rem; font-weight: 600; border: 1px solid var(--line); border-radius: 8px; background: var(--bg); color: var(--ink); -moz-appearance: textfield; }
-.qty input::-webkit-inner-spin-button, .qty input::-webkit-outer-spin-button { -webkit-appearance: none; margin: 0; }
-.qty span { color: var(--muted); font-size: .9rem; min-width: 2.2em; }
 .house-all { margin: 0 0 24px; padding: 18px 20px; border-radius: var(--radius); background: color-mix(in srgb, var(--forest) 6%, transparent); }
 .house-all-title { margin: 0 0 10px; font-weight: 600; }
 .house-all .house-feats { margin: 0; }
