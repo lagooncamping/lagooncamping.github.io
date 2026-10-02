@@ -33,33 +33,58 @@ body:has(.book-bar:not([hidden])) { padding-bottom: 90px; }
 .nights b { font-weight: 500; }
 
 /* ---------- แผนผัง ---------- */
-.map { margin: 0 0 56px; max-width: 720px; }
-.map svg { width: 100%; height: auto; display: block; background: var(--surface); border: 1px solid var(--line); border-radius: 6px; }
-.map .lawn { fill: color-mix(in srgb, var(--forest) 10%, var(--surface)); }
-.map .trees circle { fill: color-mix(in srgb, var(--forest) 22%, var(--surface)); }
-.map .tree-tops circle { fill: color-mix(in srgb, var(--forest) 30%, var(--surface)); }
-.map .bank { fill: color-mix(in srgb, var(--clay) 25%, var(--surface)); }
-.map .lake { fill: color-mix(in srgb, #5f9ea0 30%, var(--surface)); }
-.map .wave { fill: none; stroke: color-mix(in srgb, #5f9ea0 55%, var(--surface)); stroke-width: 1.5; stroke-linecap: round; }
-.map .lake-label { fill: var(--muted); font-size: 10px; font-family: var(--font); text-anchor: middle; }
+.map { margin: 0 0 56px; max-width: 800px; }
+/* แผนผังมุมสูง (จากงาน Claude Design): วาดที่ขนาด 800×640 แล้ว js/booking.js ย่อด้วย --s ให้พอดีจอ
+   จอแคบมาก ย่อไม่ต่ำกว่า 0.6 แล้วเลื่อนซ้ายขวาดูได้ */
+.aerial-scroll { overflow-x: auto; border-radius: 6px; scrollbar-width: thin; }
+.aerial-fit { width: calc(800px * var(--s, 1)); height: calc(640px * var(--s, 1)); }
+.aerial {
+  position: relative; width: 800px; height: 640px; overflow: hidden; transform: scale(var(--s, 1)); transform-origin: 0 0;
+  font-family: var(--font); line-height: 1.6;
+  background-color: #6E8757;
+  background-image: radial-gradient(ellipse 260px 120px at 18% 58%, rgba(160,175,110,.4), transparent 70%), radial-gradient(ellipse 300px 140px at 72% 40%, rgba(80,105,60,.45), transparent 70%), radial-gradient(ellipse 200px 90px at 55% 64%, rgba(165,165,110,.3), transparent 70%), repeating-linear-gradient(115deg, rgba(255,255,255,.025) 0 3px, rgba(0,0,0,.03) 3px 6px);
+}
+.aerial i { display: block; }
+.aerial .road { position: absolute; inset: 0 0 auto; height: 52px; background-color: #5E605A; background-image: repeating-linear-gradient(0deg, rgba(255,255,255,.03) 0 2px, rgba(0,0,0,.04) 2px 4px); box-shadow: 0 3px 6px rgba(0,0,0,.2); }
+.aerial .road::after { content: ""; position: absolute; left: 0; right: 0; top: 25px; border-top: 2px dashed rgba(236,232,223,.45); }
+.aerial .road span { position: absolute; left: 16px; top: 9px; z-index: 1; padding: 1px 12px; border-radius: 999px; background: rgba(20,22,19,.78); color: #ece8df; font-size: 13px; }
+.aerial .tree { position: absolute; background: radial-gradient(circle at 34% 30%, #8AA477 0%, #5A7448 45%, #38492F 100%); box-shadow: 10px 14px 16px rgba(15,25,8,.45); }
+.aerial .tree i { position: absolute; background: radial-gradient(circle at 35% 32%, #94AD80 0%, #61794D 50%, #3E5233 100%); opacity: .92; }
+.aerial .tents { position: absolute; left: 456px; top: 368px; display: flex; gap: 18px; }
+.aerial .tents i { width: 28px; height: 28px; background: linear-gradient(135deg, #F1EDE3 0 50%, #D6CDBA 50% 100%); transform: rotate(45deg); box-shadow: 5px 6px 8px rgba(20,30,10,.35); }
+.aerial .tents-label { position: absolute; left: 440px; top: 404px; font-size: 12px; color: #F1EDE3; font-weight: 500; text-shadow: 0 1px 2px rgba(0,0,0,.55); }
+.aerial .row { position: absolute; left: 22px; top: 150px; display: flex; gap: 10px; align-items: flex-end; }
+.aerial .bank { position: absolute; left: 0; top: 424px; width: 800px; height: 34px; background-color: #A39276; background-image: radial-gradient(circle at 20% 30%, #BBAA88 0 3px, transparent 4px), radial-gradient(circle at 70% 65%, #8A795B 0 3px, transparent 4px), radial-gradient(circle at 45% 80%, #B3A280 0 2px, transparent 3px), radial-gradient(circle at 85% 20%, #978664 0 2.5px, transparent 3.5px); background-size: 14px 12px, 17px 13px, 11px 10px, 19px 15px; box-shadow: inset 0 3px 4px rgba(50,60,30,.35); }
+.aerial .water { position: absolute; left: 0; top: 458px; width: 800px; height: 182px; background: linear-gradient(180deg, #355F63 0%, #437A7D 35%, #4F8B8D 100%); }
+.aerial .water::before { content: ""; position: absolute; inset: 0 0 auto; height: 6px; background: rgba(15,35,30,.35); }
+.aerial .refl { position: absolute; top: 4px; border-radius: 0 0 50% 50%; background: rgba(25,50,38,.38); filter: blur(10px); }
+.aerial .ripple { position: absolute; fill: none; stroke: rgba(230,240,236,.32); stroke-width: 1.2; stroke-linecap: round; }
+.aerial .water-title { position: absolute; left: 0; right: 0; top: 112px; text-align: center; color: #F1EDE3; font-family: var(--font-display); font-size: 20px; text-shadow: 0 1px 3px rgba(0,0,0,.35); }
+.aerial .water-sub { position: absolute; left: 0; right: 0; top: 146px; text-align: center; color: #E4ECE6; font-size: 13px; text-shadow: 0 1px 2px rgba(0,0,0,.35); }
 .map figcaption { font-size: .8rem; color: var(--muted); margin-top: 8px; }
 
-/* บ้านแต่ละหลัง (กดได้) */
-.m { cursor: pointer; }
-.m:focus { outline: none; }
-.m .hs { fill: var(--bg); stroke: var(--forest); stroke-width: 1.5; stroke-linejoin: round; transition: fill .2s, stroke-width .2s; }
-.m text { fill: var(--ink); font-family: var(--font); text-anchor: middle; dominant-baseline: central; pointer-events: none; }
-.m text { font-size: 9px; font-weight: 500; }
-.m .hit { fill: transparent; }
-.m .ridge { fill: none; stroke: var(--forest); stroke-width: 1; opacity: .7; }
-.m:hover .hs, .m:focus-visible .hs { stroke-width: 3; }
-.m:hover text, .m:focus-visible text { fill: var(--forest); }
-.m.is-selected .hs { fill: var(--forest); }
-.m.is-selected .ridge { stroke: var(--bg); }
-.m.is-selected text { fill: var(--forest); font-weight: 700; }
-.m.is-booked .hs { fill: var(--line); stroke: var(--muted); stroke-dasharray: 3 2; }
-.m.is-booked .ridge { stroke: var(--muted); }
-.m.is-booked text { fill: var(--muted); }
+/* บ้านแต่ละหลัง (กดได้): หลังคาสังกะสี + ระเบียงไม้ + ป้ายชื่อ */
+.m { display: flex; flex-direction: column; align-items: center; padding: 4px; border: 0; border-radius: 14px; background: transparent; color: inherit; font: inherit; cursor: pointer; transition: transform .2s ease, background .2s, box-shadow .2s; }
+.m:hover { transform: translateY(-3px); }
+.m:focus-visible { outline: 2px solid var(--sun); outline-offset: 4px; }
+.m .roof { width: var(--w); height: var(--rh); display: flex; flex-direction: column; border-radius: 2px; overflow: hidden; box-shadow: 8px 12px 14px rgba(15,25,10,.45), 2px 3px 3px rgba(15,25,10,.3); }
+.m .roof i { flex: 1; }
+.m .roof i:first-child { background-image: linear-gradient(180deg, rgba(255,255,255,.14), rgba(255,255,255,0)), repeating-linear-gradient(90deg, #A05B40 0 5px, #8E513A 5px 6px); border-bottom: 3px solid rgba(55,38,28,.55); }
+.m .roof i:last-child { background-image: linear-gradient(180deg, rgba(0,0,0,0), rgba(0,0,0,.12)), repeating-linear-gradient(90deg, #83472F 0 5px, #743F2A 5px 6px); }
+.m .deck { width: calc(var(--w) - 14px); height: 22px; background: repeating-linear-gradient(90deg, #A08766 0 8px, #8F7756 8px 9px); box-shadow: 4px 5px 6px rgba(15,25,10,.35); }
+.m .pill { margin-top: 10px; display: flex; flex-direction: column; align-items: center; min-width: max(var(--w), 92px); box-sizing: border-box; padding: 4px 8px; border-radius: 999px; box-shadow: 0 2px 6px rgba(0,0,0,.25); background: var(--surface); color: var(--ink); border: 1.5px solid var(--forest); }
+.m .pill b { font-weight: 600; font-size: 15px; line-height: 1.25; }
+.m .st { font-size: 12px; line-height: 1.25; opacity: .85; }
+.m .st:empty { display: none; }
+.m.is-selected { background: rgba(20,22,19,.28); box-shadow: 0 0 0 2px var(--forest); }
+.m.is-selected .pill { background: var(--forest); color: var(--bg); }
+.m.is-booked { cursor: not-allowed; }
+.m.is-booked:hover { transform: none; }
+.m.is-booked .roof i:first-child { background-image: repeating-linear-gradient(90deg, #A9A8A3 0 5px, #9A9994 5px 6px); }
+.m.is-booked .roof i:last-child { background-image: repeating-linear-gradient(90deg, #8E8D88 0 5px, #81807B 5px 6px); }
+.m.is-booked .deck { background: repeating-linear-gradient(90deg, #B4B1A9 0 8px, #A4A199 8px 9px); }
+.m.is-booked .pill { background: var(--line); color: var(--muted); border-style: dashed; border-color: var(--muted); }
+@media (prefers-reduced-motion: reduce) { .m, .m:hover { transition: none; transform: none; } }
 
 .legend { display: flex; flex-wrap: wrap; gap: 8px 20px; list-style: none; padding: 0; margin: 12px 0 0; font-size: .85rem; color: var(--muted); }
 .legend li { display: flex; align-items: center; gap: 8px; }

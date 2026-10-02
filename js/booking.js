@@ -183,6 +183,7 @@ function render() {
     marker.classList.toggle('is-booked', booked);
     marker.classList.toggle('is-selected', picked);
     marker.setAttribute('aria-label', `${h.name}${booked ? ' ถูกจองแล้ว' : picked ? ' เลือกแล้ว' : ''}`);
+    marker.querySelector('.st').textContent = !dated ? '' : booked ? 'ถูกจองแล้ว' : picked ? 'เลือกแล้ว' : 'ว่าง';
   });
 
   $('#nights').innerHTML = state.loading ? 'กำลังเช็กวันว่าง…'
@@ -231,6 +232,12 @@ document.querySelectorAll('.m').forEach((marker) => {
   marker.addEventListener('click', open);
   marker.addEventListener('keydown', (e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); open(); } });
 });
+
+// ---------- ย่อแผนผังมุมสูง (วาดไว้กว้าง 800px) ให้พอดีความกว้างจอ ไม่เล็กกว่า 0.6 เท่า (เล็กกว่านั้นเลื่อนซ้ายขวาเอา) ----------
+const aerialBox = $('.aerial-scroll');
+const fitAerial = () => aerialBox.style.setProperty('--s', Math.max(0.6, Math.min(1, aerialBox.clientWidth / 800)));
+new ResizeObserver(fitAerial).observe(aerialBox);
+fitAerial();
 
 // ---------- มาจากลิงก์ชื่อบ้านในหน้าราคา (เช่น booking.html#house-family-1) → เลื่อนไปที่การ์ดนั้น ----------
 const linked = location.hash.startsWith('#house-') && document.getElementById(location.hash.slice(1));

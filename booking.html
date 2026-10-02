@@ -64,66 +64,64 @@
         </div>
         <p class="nights" id="nights" aria-live="polite">เลือกวันเข้าพักก่อน แล้วติ๊กเลือกบ้านที่ว่าง</p>
 
-        <!-- แผนผังจำลองมุมสูง: บ้านทุกหลังเรียงแถวเดียวริมเขื่อน จากซ้ายไปขวา Lagoon 1–3, Family 1–2, Studio (ตามที่เจ้าของบอก)
-             เลื่อนบ้านได้ที่ translate(x,y) ของแต่ละ <g class="m"> -->
+        <!-- แผนผังมุมสูง (ออกแบบใน Claude Design): บ้านเรียงแถวเดียวริมเขื่อน ซ้ายไปขวา Lagoon 1–3, Family 1–2, Studio
+             ภาพวาดขนาด 800×640 แล้วย่อให้พอดีจอด้วย js/booking.js (จอเล็กเลื่อนซ้ายขวาได้) -->
         <figure class="map">
-          <svg viewBox="0 0 360 220" role="group" aria-label="แผนผังบ้านพักมุมสูง กดที่บ้านเพื่อดูรูปและเลือก">
-            <rect class="lawn" x="0" y="0" width="360" height="152"/>
-            <!-- ต้นไม้ (มองจากด้านบน) -->
-            <g class="trees">
-              <circle cx="8" cy="26" r="15"/><circle cx="58" cy="18" r="12"/><circle cx="116" cy="24" r="14"/><circle cx="172" cy="16" r="11"/>
-              <circle cx="232" cy="22" r="14"/><circle cx="296" cy="16" r="12"/><circle cx="352" cy="28" r="15"/>
-              <circle cx="6" cy="136" r="9"/><circle cx="172" cy="138" r="8"/><circle cx="354" cy="136" r="9"/>
-            </g>
-            <g class="tree-tops">
-              <circle cx="4" cy="22" r="6"/><circle cx="55" cy="15" r="5"/><circle cx="112" cy="20" r="6"/><circle cx="169" cy="13" r="4"/>
-              <circle cx="228" cy="18" r="6"/><circle cx="293" cy="13" r="5"/><circle cx="348" cy="24" r="6"/>
-            </g>
-
-            <!-- บ้าน: หลังคามองจากด้านบน เรียงซ้ายไปขวา Lagoon 1–3, Family 1–2, Studio -->
-            <g class="m" data-house="lagoon-1" tabindex="0" role="button" transform="translate(34 76)">
-              <rect class="hit" x="-27" y="-24" width="54" height="64"/>
-              <rect class="hs" x="-19" y="-15" width="38" height="30" rx="2"/>
-              <path class="ridge" d="M-4 0H4M-19-15L-4 0-19 15M19-15L4 0 19 15"/>
-              <text x="0" y="30">Lagoon 1</text>
-            </g>
-            <g class="m" data-house="lagoon-2" tabindex="0" role="button" transform="translate(88 76)">
-              <rect class="hit" x="-27" y="-24" width="54" height="64"/>
-              <rect class="hs" x="-19" y="-15" width="38" height="30" rx="2"/>
-              <path class="ridge" d="M-4 0H4M-19-15L-4 0-19 15M19-15L4 0 19 15"/>
-              <text x="0" y="30">Lagoon 2</text>
-            </g>
-            <g class="m" data-house="lagoon-3" tabindex="0" role="button" transform="translate(142 76)">
-              <rect class="hit" x="-27" y="-24" width="54" height="64"/>
-              <rect class="hs" x="-19" y="-15" width="38" height="30" rx="2"/>
-              <path class="ridge" d="M-4 0H4M-19-15L-4 0-19 15M19-15L4 0 19 15"/>
-              <text x="0" y="30">Lagoon 3</text>
-            </g>
-            <g class="m" data-house="family-1" tabindex="0" role="button" transform="translate(201 76)">
-              <rect class="hit" x="-28" y="-24" width="56" height="64"/>
-              <rect class="hs" x="-23" y="-17" width="46" height="34" rx="2"/>
-              <path class="ridge" d="M-6 0H6M-23-17L-6 0-23 17M23-17L6 0 23 17"/>
-              <text x="0" y="30">Family 1</text>
-            </g>
-            <g class="m" data-house="family-2" tabindex="0" role="button" transform="translate(263 76)">
-              <rect class="hit" x="-30" y="-24" width="60" height="64"/>
-              <rect class="hs" x="-26" y="-19" width="52" height="38" rx="2"/>
-              <path class="ridge" d="M-7 0H7M-26-19L-7 0-26 19M26-19L7 0 26 19"/>
-              <text x="0" y="31">Family 2</text>
-            </g>
-            <g class="m" data-house="studio" tabindex="0" role="button" transform="translate(324 76)">
-              <rect class="hit" x="-28" y="-24" width="56" height="64"/>
-              <rect class="hs" x="-20" y="-15" width="40" height="30" rx="2"/>
-              <rect class="ridge" x="-15" y="-10" width="30" height="20" rx="1"/>
-              <text x="0" y="30">Studio</text>
-            </g>
-
-            <!-- ตลิ่งหิน + น้ำ -->
-            <rect class="bank" x="0" y="152" width="360" height="8"/>
-            <rect class="lake" x="0" y="160" width="360" height="60"/>
-            <path class="wave" d="M36 180q10-5 20 0t20 0M150 194q10-5 20 0t20 0M262 178q10-5 20 0t20 0"/>
-            <text class="lake-label" x="180" y="210">ทะเลสาบ (ริมเขื่อน)</text>
-          </svg>
+          <div class="aerial-scroll">
+          <div class="aerial-fit">
+          <div class="aerial" role="group" aria-label="แผนผังบ้านพักมุมสูง กดที่บ้านเพื่อดูรูปและเลือก">
+            <div class="road"><span>ถนนทางเข้า · ลานจอดรถ</span></div>
+            <div class="trees">
+              <i class="tree" style="left:8px;top:64px;width:64px;height:64px;border-radius:48% 52% 44% 56% / 52% 45% 55% 48%"><i style="left:27px;top:-8px;width:40px;height:40px;border-radius:55% 45% 50% 50% / 45% 55% 48% 52%"></i></i>
+              <i class="tree" style="left:92px;top:82px;width:56px;height:56px;border-radius:55% 45% 50% 50% / 45% 55% 48% 52%"><i style="left:24px;top:-7px;width:35px;height:35px;border-radius:42% 58% 53% 47% / 50% 52% 48% 50%"></i></i>
+              <i class="tree" style="left:168px;top:62px;width:70px;height:70px;border-radius:42% 58% 53% 47% / 50% 52% 48% 50%"><i style="left:29px;top:-8px;width:43px;height:43px;border-radius:48% 52% 44% 56% / 52% 45% 55% 48%"></i></i>
+              <i class="tree" style="left:262px;top:86px;width:52px;height:52px;border-radius:48% 52% 44% 56% / 52% 45% 55% 48%"><i style="left:22px;top:-6px;width:32px;height:32px;border-radius:55% 45% 50% 50% / 45% 55% 48% 52%"></i></i>
+              <i class="tree" style="left:330px;top:64px;width:66px;height:66px;border-radius:55% 45% 50% 50% / 45% 55% 48% 52%"><i style="left:28px;top:-8px;width:41px;height:41px;border-radius:42% 58% 53% 47% / 50% 52% 48% 50%"></i></i>
+              <i class="tree" style="left:420px;top:84px;width:58px;height:58px;border-radius:42% 58% 53% 47% / 50% 52% 48% 50%"><i style="left:24px;top:-7px;width:36px;height:36px;border-radius:48% 52% 44% 56% / 52% 45% 55% 48%"></i></i>
+              <i class="tree" style="left:494px;top:60px;width:70px;height:70px;border-radius:48% 52% 44% 56% / 52% 45% 55% 48%"><i style="left:29px;top:-8px;width:43px;height:43px;border-radius:55% 45% 50% 50% / 45% 55% 48% 52%"></i></i>
+              <i class="tree" style="left:590px;top:86px;width:54px;height:54px;border-radius:55% 45% 50% 50% / 45% 55% 48% 52%"><i style="left:23px;top:-6px;width:33px;height:33px;border-radius:42% 58% 53% 47% / 50% 52% 48% 50%"></i></i>
+              <i class="tree" style="left:660px;top:62px;width:66px;height:66px;border-radius:42% 58% 53% 47% / 50% 52% 48% 50%"><i style="left:28px;top:-8px;width:41px;height:41px;border-radius:48% 52% 44% 56% / 52% 45% 55% 48%"></i></i>
+              <i class="tree" style="left:742px;top:84px;width:58px;height:58px;border-radius:48% 52% 44% 56% / 52% 45% 55% 48%"><i style="left:24px;top:-7px;width:36px;height:36px;border-radius:55% 45% 50% 50% / 45% 55% 48% 52%"></i></i>
+              <i class="tree" style="left:16px;top:362px;width:46px;height:46px;border-radius:55% 45% 50% 50% / 45% 55% 48% 52%"><i style="left:19px;top:-6px;width:29px;height:29px;border-radius:42% 58% 53% 47% / 50% 52% 48% 50%"></i></i>
+              <i class="tree" style="left:250px;top:370px;width:40px;height:40px;border-radius:42% 58% 53% 47% / 50% 52% 48% 50%"><i style="left:17px;top:-5px;width:25px;height:25px;border-radius:48% 52% 44% 56% / 52% 45% 55% 48%"></i></i>
+              <i class="tree" style="left:730px;top:360px;width:50px;height:50px;border-radius:48% 52% 44% 56% / 52% 45% 55% 48%"><i style="left:21px;top:-6px;width:31px;height:31px;border-radius:55% 45% 50% 50% / 45% 55% 48% 52%"></i></i>
+            </div>
+            <div class="tents"><i></i><i></i></div>
+            <span class="tents-label">ลานกางเต็นท์</span>
+            <div class="row">
+              <button class="m" type="button" data-house="lagoon-1" style="--w:100px;--rh:92px">
+                <span class="roof"><i></i><i></i></span><span class="deck"></span>
+                <span class="pill"><b>Lagoon 1</b><span class="st"></span></span>
+              </button>
+              <button class="m" type="button" data-house="lagoon-2" style="--w:100px;--rh:92px">
+                <span class="roof"><i></i><i></i></span><span class="deck"></span>
+                <span class="pill"><b>Lagoon 2</b><span class="st"></span></span>
+              </button>
+              <button class="m" type="button" data-house="lagoon-3" style="--w:100px;--rh:92px">
+                <span class="roof"><i></i><i></i></span><span class="deck"></span>
+                <span class="pill"><b>Lagoon 3</b><span class="st"></span></span>
+              </button>
+              <button class="m" type="button" data-house="family-1" style="--w:132px;--rh:112px">
+                <span class="roof"><i></i><i></i></span><span class="deck"></span>
+                <span class="pill"><b>Family 1</b><span class="st"></span></span>
+              </button>
+              <button class="m" type="button" data-house="family-2" style="--w:132px;--rh:112px">
+                <span class="roof"><i></i><i></i></span><span class="deck"></span>
+                <span class="pill"><b>Family 2</b><span class="st"></span></span>
+              </button>
+              <button class="m" type="button" data-house="studio" style="--w:84px;--rh:80px">
+                <span class="roof"><i></i><i></i></span><span class="deck"></span>
+                <span class="pill"><b>Studio</b><span class="st"></span></span>
+              </button>
+            </div>
+            <div class="bank"></div>
+            <div class="water"><i class="refl" style="left:0px;width:140px;height:70px"></i><i class="refl" style="left:150px;width:160px;height:90px"></i><i class="refl" style="left:320px;width:140px;height:70px"></i><i class="refl" style="left:480px;width:150px;height:80px"></i><i class="refl" style="left:640px;width:160px;height:90px"></i><svg class="ripple" style="left:60px;top:26px" width="70" height="10" viewBox="0 0 70 10" aria-hidden="true"><path d="M2 6C14 2 24 2 35 5S56 9 68 4"/></svg><svg class="ripple" style="left:250px;top:56px" width="70" height="10" viewBox="0 0 70 10" aria-hidden="true"><path d="M2 6C14 2 24 2 35 5S56 9 68 4"/></svg><svg class="ripple" style="left:470px;top:22px" width="70" height="10" viewBox="0 0 70 10" aria-hidden="true"><path d="M2 6C14 2 24 2 35 5S56 9 68 4"/></svg><svg class="ripple" style="left:650px;top:48px" width="70" height="10" viewBox="0 0 70 10" aria-hidden="true"><path d="M2 6C14 2 24 2 35 5S56 9 68 4"/></svg><svg class="ripple" style="left:140px;top:86px" width="70" height="10" viewBox="0 0 70 10" aria-hidden="true"><path d="M2 6C14 2 24 2 35 5S56 9 68 4"/></svg><svg class="ripple" style="left:560px;top:92px" width="70" height="10" viewBox="0 0 70 10" aria-hidden="true"><path d="M2 6C14 2 24 2 35 5S56 9 68 4"/></svg><svg class="ripple" style="left:360px;top:96px" width="70" height="10" viewBox="0 0 70 10" aria-hidden="true"><path d="M2 6C14 2 24 2 35 5S56 9 68 4"/></svg>
+              <span class="water-title">ทะเลสาบ (ริมเขื่อน)</span>
+              <span class="water-sub">ทุกหลังหันระเบียงรับวิวน้ำ</span>
+            </div>
+          </div>
+          </div>
+          </div>
           <ul class="legend">
             <li><i></i>ว่าง</li>
             <li><i class="sel"></i>เลือกแล้ว</li>
