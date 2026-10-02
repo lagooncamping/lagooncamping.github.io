@@ -114,6 +114,16 @@
           <label class="field">หมายเหตุ (ถ้ามี)
             <textarea name="note" rows="3" placeholder="เช่น พาน้องหมามาด้วย, มาถึงประมาณ 15:00"></textarea>
           </label>
+          <!-- เงื่อนไขการจอง (แก้ข้อความได้ที่นี่ และใน stay.html) -->
+          <div class="policy">
+            <h2>เงื่อนไขการจอง</h2>
+            <ul>
+              <li>ชำระมัดจำ <b>50%</b> ผ่านพร้อมเพย์ <b>ภายใน 6 ชั่วโมง</b>หลังจอง ไม่เช่นนั้นการจองจะถูกยกเลิกอัตโนมัติ</li>
+              <li>ชำระมัดจำแล้ว แจ้งแอดมินเพื่อขอเลื่อนวันเข้าพักได้</li>
+              <li>จองแล้วไม่มาเข้าพัก ไม่คืนเงินมัดจำ</li>
+            </ul>
+          </div>
+          <label class="agree"><input type="checkbox" name="agree" required> ฉันอ่านและยอมรับเงื่อนไขการจอง</label>
           <!-- ช่องลับกันบอท: คนจริงมองไม่เห็น ห้ามลบ -->
           <label class="hp" aria-hidden="true">เว็บไซต์<input type="text" name="website" tabindex="-1" autocomplete="off"></label>
           <p class="form-error" id="form-error" role="alert"></p>
@@ -121,18 +131,43 @@
         </form>
       </section>
 
-      <!-- ===== ขั้นที่ 3: ส่งเข้า LINE ===== -->
+      <!-- ===== ขั้นที่ 3: ชำระมัดจำ ===== -->
       <section id="step-done" aria-labelledby="done-h" hidden>
         <div class="step-head">
-          <span class="eyebrow">เกือบเสร็จแล้ว</span>
-          <h1 id="done-h">ส่งรายละเอียดการจองเข้า LINE</h1>
-          <p>กดปุ่มด้านล่าง แล้วกดส่งข้อความในแชต แอดมินจะตอบยืนยันการจองและแจ้งวิธีชำระเงินกลับไป</p>
+          <span class="eyebrow">ขั้นตอนสุดท้าย</span>
+          <h1 id="done-h">ชำระมัดจำเพื่อยืนยันการจอง</h1>
+          <p>ล็อกบ้านไว้ให้คุณแล้ว กรุณาชำระมัดจำภายในเวลาที่กำหนด ไม่เช่นนั้นการจองจะถูกยกเลิกอัตโนมัติ</p>
         </div>
-        <p class="done-text" id="done-text"></p>
+
+        <div class="pay">
+          <figure class="pay-qr">
+            <div id="pay-qr" role="img" aria-label="QR พร้อมเพย์สำหรับชำระมัดจำ"></div>
+            <figcaption>สแกนด้วยแอปธนาคาร ยอดเงินขึ้นให้อัตโนมัติ</figcaption>
+          </figure>
+          <dl class="pay-info">
+            <dt>รหัสการจอง</dt><dd id="pay-id"></dd>
+            <dt>ยอดมัดจำ 50%</dt><dd class="pay-amount" id="pay-deposit"></dd>
+            <dt>ยอดคงเหลือ</dt><dd id="pay-rest"></dd>
+            <dt>ชำระภายใน</dt><dd class="pay-deadline" id="pay-deadline"></dd>
+            <dt>พร้อมเพย์</dt><dd><span>090-936-5562</span> <button class="copy" data-copy="0909365562" type="button">คัดลอก</button></dd>
+          </dl>
+        </div>
+
+        <ol class="pay-steps">
+          <li>สแกน QR หรือโอนเข้าพร้อมเพย์ 090-936-5562 ตามยอดมัดจำ</li>
+          <li>กดปุ่ม <b>"ส่งสลิปทาง LINE"</b> แล้วแนบรูปสลิปโอนเงินในแชต</li>
+          <li>แอดมินตรวจสอบยอดแล้วจะตอบยืนยันการจองในแชต</li>
+        </ol>
+
         <div class="btns">
-          <a class="btn btn-primary" id="line-link" href="#" target="_blank" rel="noopener">ส่งเข้า LINE</a>
+          <a class="btn btn-primary" id="line-link" href="#" target="_blank" rel="noopener">ส่งสลิปทาง LINE</a>
           <a class="btn btn-ghost" href="index.html">กลับหน้าแรก</a>
         </div>
+
+        <details class="pay-summary">
+          <summary>ดูรายละเอียดการจอง</summary>
+          <p class="done-text" id="done-text"></p>
+        </details>
       </section>
     </div>
 
@@ -189,6 +224,9 @@
     </div>
   </footer>
 
+  <!-- สร้างรูป QR พร้อมเพย์ -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcode-generator/1.4.4/qrcode.min.js"></script>
+  <script src="js/main.js"></script>
   <script src="js/booking.js"></script>
   <script src="js/lightbox.js"></script>
   <script src="js/nav.js" defer></script>

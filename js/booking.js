@@ -10,6 +10,29 @@ const API_URL = 'https://script.google.com/macros/s/AKfycbyCUEb3YTKm6_LoUal5cvBm
 const LINE_ID = '@477nvamb';
 const PHONE = '081-930-4969';
 
+// เงื่อนไขมัดจำ (ต้องตรงกับ google-apps-script/Code.gs — ยอดจริงคำนวณที่ Google)
+const PROMPTPAY = '0909365562';
+const DEPOSIT_RATE = 0.5;
+const HOLD_HOURS = 6;
+
+// ---------- QR พร้อมเพย์ (มาตรฐาน EMVCo ที่ธนาคารไทยใช้) ----------
+const tlv = (id, value) => id + String(value.length).padStart(2, '0') + value;
+function crc16(str) {
+  let crc = 0xffff;
+  for (let i = 0; i < str.length; i++) {
+    crc ^= str.charCodeAt(i) << 8;
+    for (let j = 0; j < 8; j++) crc = (crc & 0x8000 ? (crc << 1) ^ 0x1021 : crc << 1) & 0xffff;
+  }
+  return crc.toString(16).toUpperCase().padStart(4, '0');
+}
+function promptPayPayload(phone, amount) {
+  const target = '0066' + phone.replace(/\D/g, '').slice(1); // 0909365562 → 0066909365562
+  const body = tlv('00', '01') + tlv('01', '12')
+    + tlv('29', tlv('00', 'A000000677010111') + tlv('01', target))
+    + tlv('53', '764') + tlv('54', amount.toFixed(2)) + tlv('58', 'TH') + '6304';
+  return body + crc16(body);
+}
+
 // ---------- ข้อมูลบ้าน (แก้ชื่อ ราคา รูป ได้ตรงนี้) ----------
 // TODO: เช็กกับเจ้าของ — Lagoon Studio มีกี่หลัง (ตอนนี้ใส่ 1)
 // TODO: เปลี่ยนรูปตัวอย่างเป็นรูปจริงของแต่ละหลัง
@@ -231,7 +254,12 @@ $('#details-form').addEventListener('submit', async (e) => {
   const houses = selectedHouses();
   if (!houses.length) { go('pick'); return; }
 
+  // ยอดและเวลาชำระ: ถ้าต่อ Google Sheets จะใช้ตัวเลขที่ Google คำนวณ (ด้านล่าง)
   let id = '';
+  let bookingTotal = total();
+  let deposit = Math.ceil(bookingTotal * DEPOSIT_RATE);
+  const due = new Date(Date.now() + HOLD_HOURS * 3600000);
+  let deadline = `${toISO(due)} ${pad(due.getHours())}:${pad(due.getMinutes())}`;
   if (API_URL) {
     const btn = form.querySelector('[type=submit]');
     btn.disabled = true;
@@ -263,6 +291,7 @@ $('#details-form').addEventListener('submit', async (e) => {
       }
       if (!out.ok) throw new Error(out.error);
       id = out.id;
+      if (out.deposit) ({ total: bookingTotal, deposit, deadline } = out);
     } catch (err) {
       errorEl.textContent = `ส่งการจองไม่สำเร็จ กรุณาลองใหม่อีกครั้ง หรือโทรจอง ${PHONE}`;
       return;
@@ -272,24 +301,46 @@ $('#details-form').addEventListener('submit', async (e) => {
     }
   }
 
-  const message = [
-    'ขอจองที่พัก The Lagoon 🏕️',
-    id ? `รหัสการจอง: ${id}` : '',
+  const [dueDate, dueTime] = deadline.split(' ');
+  const deadlineText = `${thaiDate(dueDate)} เวลา ${dueTime} น.`;
+  const summary = [
     `บ้าน: ${houses.map((h) => h.name).join(', ')}`,
     `เช็กอิน: ${thaiDate(state.checkin)}`,
     `เช็กเอาต์: ${thaiDate(state.checkout)}`,
     `${nights()} คืน · ${data.guests} ท่าน`,
-    `ยอดรวม: ${baht(total())} บาท`,
+    `ยอดรวม: ${baht(bookingTotal)} บาท`,
     `ชื่อ: ${data.name.trim()}`,
     `เบอร์: ${data.phone.trim()}`,
     data.note.trim() ? `หมายเหตุ: ${data.note.trim()}` : '',
   ].filter(Boolean).join('\n');
+  // ข้อความที่ลูกค้าส่งเข้าแชต LINE พร้อมแนบสลิป
+  const message = [
+    'ส่งสลิปมัดจำ The Lagoon 🏕️',
+    id ? `รหัสการจอง: ${id}` : null,
+    `ยอดมัดจำ 50%: ${baht(deposit)} บาท`,
+    '(แนบรูปสลิปโอนเงินในแชตนี้)',
+    '',
+    summary,
+  ].filter((line) => line !== null).join('\n');
 
   // จำไว้ในหน้านี้ด้วย เพื่อให้บ้านขึ้นว่า "ถูกจองแล้ว" ทันที
   houses.forEach((h) => BOOKINGS.push({ house: h.id, from: state.checkin, to: state.checkout }));
 
-  $('#done-h').textContent = id ? 'ได้รับคำขอจองแล้ว' : 'ส่งรายละเอียดการจองเข้า LINE';
-  $('#done-text').textContent = message;
+  // หน้าชำระมัดจำ
+  $('#pay-id').textContent = id || '(โหมดทดลอง)';
+  $('#pay-deposit').textContent = `${baht(deposit)} บาท`;
+  $('#pay-rest').textContent = `${baht(bookingTotal - deposit)} บาท`;
+  $('#pay-deadline').textContent = deadlineText;
+  const qrBox = $('#pay-qr');
+  if (window.qrcode) {
+    const qr = qrcode(0, 'M');
+    qr.addData(promptPayPayload(PROMPTPAY, deposit));
+    qr.make();
+    qrBox.innerHTML = qr.createSvgTag({ cellSize: 6, margin: 2, scalable: true });
+  } else {
+    qrBox.textContent = `โหลด QR ไม่สำเร็จ — โอนเข้าพร้อมเพย์ 090-936-5562 ยอด ${baht(deposit)} บาท`;
+  }
+  $('#done-text').textContent = (id ? `รหัสการจอง: ${id}\n` : '') + summary;
   $('#line-link').href = `https://line.me/R/oaMessage/${encodeURIComponent(LINE_ID)}/?${encodeURIComponent(message)}`;
 
   state.selected.clear();
