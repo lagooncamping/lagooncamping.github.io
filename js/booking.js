@@ -204,6 +204,9 @@ function render() {
 // ---------- เลือกวัน ----------
 checkinEl.min = today;
 checkoutEl.min = addDays(today, 1);
+// ค่าเริ่มต้น: เข้าพักวันนี้ ออกพรุ่งนี้ (ลูกค้าเปลี่ยนเองได้)
+state.checkin = checkinEl.value = today;
+state.checkout = checkoutEl.value = addDays(today, 1);
 checkinEl.addEventListener('change', () => {
   state.checkin = checkinEl.value;
   if (state.checkin) {
