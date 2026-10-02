@@ -24,7 +24,7 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Anuphan:wght@300;400;500;600&family=Chonburi&display=swap">
   <link rel="stylesheet" href="css/style.css">
-  <link rel="stylesheet" href="css/booking.css?v=20261002g">
+  <link rel="stylesheet" href="css/booking.css?v=20261002h">
 </head>
 <body>
 
@@ -145,10 +145,34 @@
             <li><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 20h14l-1.5-9h-11zM9 11V8a3 3 0 0 1 6 0v3M17.5 13l3-2"/></svg>กาต้มน้ำร้อน</li>
           </ul>
           <p class="house-all-note">ต้องการเพิ่มคนหรือเสริมเตียง สอบถามได้ที่ LINE หรือโทร 081-930-4969</p>
-          <p class="house-all-note">⛺ มากันหลายคน? จองบ้านแล้วติ๊ก "มีกางเต็นท์ด้วย" ได้ตอนกรอกข้อมูล (นำเต็นท์มาเอง 200 บาท/ท่าน/คืน) · ต้องการเช่าเต็นท์ของรีสอร์ท ทัก <a href="https://line.me/R/ti/p/@477nvamb" target="_blank" rel="noopener">LINE @477nvamb</a></p>
+          <p class="house-all-note">⛺ มากันหลายคน? เลือกบ้านได้หลายหลัง และเพิ่มเต็นท์ได้ที่การ์ด "ลานกางเต็นท์" ใต้รายการบ้าน (จองเฉพาะเต็นท์ก็ได้)</p>
         </div>
 
         <div class="houses" id="houses"></div>
+
+        <!-- ===== ลานกางเต็นท์: จองคู่กับบ้าน หรือจองเฉพาะเต็นท์ก็ได้ (ราคาอยู่ใน js/booking.js และ Code.gs) ===== -->
+        <section class="tent-card" id="tents" aria-labelledby="tent-h">
+          <h3 id="tent-h">⛺ ลานกางเต็นท์ริมน้ำ</h3>
+          <p class="house-type">เพิ่มคู่กับบ้านพัก หรือจองเฉพาะเต็นท์ก็ได้ · มีจุดพ่วงปลั๊กไฟ และห้องน้ำแยกชาย–หญิง</p>
+          <div class="qty-row">
+            <div><b>นำเต็นท์มาเอง</b><small>200 บาท/ท่าน/คืน</small></div>
+            <div class="qty">
+              <button type="button" data-qty="#tent-guests" data-d="-1" aria-label="ลดจำนวนคนนำเต็นท์มาเอง">−</button>
+              <input type="number" id="tent-guests" min="0" max="30" value="0" inputmode="numeric" aria-label="จำนวนคนนำเต็นท์มาเอง">
+              <button type="button" data-qty="#tent-guests" data-d="1" aria-label="เพิ่มจำนวนคนนำเต็นท์มาเอง">+</button>
+              <span>ท่าน</span>
+            </div>
+          </div>
+          <div class="qty-row">
+            <div><b>เช่าเต็นท์ของรีสอร์ท</b><small>1,200 บาท/หลัง/คืน · นอนได้ 2 ท่าน พร้อมเครื่องนอน 2 ชุดและพัดลม</small></div>
+            <div class="qty">
+              <button type="button" data-qty="#tent-rent" data-d="-1" aria-label="ลดจำนวนเต็นท์เช่า">−</button>
+              <input type="number" id="tent-rent" min="0" max="10" value="0" inputmode="numeric" aria-label="จำนวนเต็นท์เช่า">
+              <button type="button" data-qty="#tent-rent" data-d="1" aria-label="เพิ่มจำนวนเต็นท์เช่า">+</button>
+              <span>หลัง</span>
+            </div>
+          </div>
+        </section>
       </section>
 
       <!-- ===== ขั้นที่ 2: กรอกข้อมูล ===== -->
@@ -167,15 +191,10 @@
           <label class="field">เบอร์โทร
             <input type="tel" name="phone" autocomplete="tel" inputmode="tel" pattern="0[0-9\- ]{8,11}" placeholder="08X-XXX-XXXX" required>
           </label>
-          <label class="field">จำนวนคนพักในบ้าน (ท่าน)
+          <label class="field" id="guests-field">จำนวนคนพักในบ้าน (ท่าน)
             <input type="number" name="guests" min="1" max="30" value="2" required>
           </label>
           <p class="hint" id="capacity"></p>
-          <!-- ตัวเลือกเสริม: กางเต็นท์เอง (ราคาอยู่ใน js/booking.js และ Code.gs) -->
-          <label class="agree"><input type="checkbox" id="tent-on"> มีกางเต็นท์ด้วย (นำเต็นท์มาเอง 200 บาท/ท่าน/คืน)</label>
-          <label class="field" id="tent-count" hidden>จำนวนคนที่นอนเต็นท์ (ท่าน)
-            <input type="number" id="tent-guests" min="1" max="30" value="2">
-          </label>
           <label class="field">หมายเหตุ (ถ้ามี)
             <textarea name="note" rows="3" placeholder="เช่น พาน้องหมามาด้วย, มาถึงประมาณ 15:00"></textarea>
           </label>
@@ -257,7 +276,7 @@
     <div class="book-bar" id="bar" hidden>
       <div class="wrap">
         <p id="bar-text"></p>
-        <button class="btn btn-primary" type="button" id="to-details">จอง</button>
+        <button class="btn btn-primary" type="button" id="to-details">ถัดไป</button>
       </div>
     </div>
   </main>
@@ -309,7 +328,7 @@
   <!-- สร้างรูป QR พร้อมเพย์ -->
   <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcode-generator/1.4.4/qrcode.min.js"></script>
   <script src="js/main.js"></script>
-  <script src="js/booking.js?v=20261002g"></script>
+  <script src="js/booking.js?v=20261002h"></script>
   <script src="js/lightbox.js"></script>
   <script src="js/nav.js" defer></script>
 </body>
