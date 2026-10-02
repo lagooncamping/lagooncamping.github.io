@@ -85,19 +85,6 @@ body:has(.book-bar:not([hidden])) { padding-bottom: 90px; }
 .status { font-size: .8rem; color: var(--muted); white-space: nowrap; }
 .house.is-booked .status { color: var(--ink); background: var(--line); padding: 0 10px; border-radius: 4px; }
 .house-type { color: var(--muted); font-size: .92rem; margin: 2px 0 6px; }
-/* ภาพดาวเทียม: กดเปิด-ปิด */
-.sat { margin: 0 0 24px; border: 1px solid var(--line); border-radius: var(--radius); overflow: hidden; }
-.sat summary {
-  list-style: none; cursor: pointer; display: flex; align-items: center; gap: 10px;
-  padding: 14px 18px; font-weight: 500; transition: color .2s;
-}
-.sat summary::-webkit-details-marker { display: none; }
-.sat summary::after { content: "+"; margin-left: auto; font-size: 1.4rem; line-height: 1; color: var(--clay); transition: transform .2s; }
-.sat[open] summary::after { transform: rotate(45deg); }
-.sat summary:hover { color: var(--forest); }
-.sat summary svg { width: 20px; height: 20px; fill: none; stroke: currentColor; stroke-width: 1.8; flex: none; }
-.sat iframe { display: block; width: 100%; aspect-ratio: 4 / 3; max-height: 70vh; border: 0; background: var(--line); }
-.sat p { margin: 0; padding: 10px 18px 14px; font-size: .88rem; color: var(--muted); }
 .house-all { margin: 0 0 24px; padding: 18px 20px; border-radius: var(--radius); background: color-mix(in srgb, var(--forest) 6%, transparent); }
 .house-all-title { margin: 0 0 10px; font-weight: 600; }
 .house-all .house-feats { margin: 0; }
