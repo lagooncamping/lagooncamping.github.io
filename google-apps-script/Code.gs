@@ -20,7 +20,8 @@ const STATUS = { PENDING: 'รอชำระเงิน', CONFIRMED: 'ยื�
 const NOTIFY_EMAIL = 'lagooncampingresort@gmail.com';
 
 // เงื่อนไขการชำระ (ตามที่เจ้าของกำหนด 2 ต.ค. 2026)
-// ลูกค้าเลือกเอง: มัดจำ 50% (ยกเลิกไม่คืนเงิน) หรือ เต็มจำนวน (ยกเลิกคืน 50% ของยอดจอง)
+// ลูกค้าเลือกเอง: มัดจำ 50% (ยกเลิก/ไม่มา ไม่คืนเงิน · ที่เหลือจ่ายวันเช็กอิน เงินสดหรือโอนหน้าเคาน์เตอร์)
+// หรือ เต็มจำนวน (ยกเลิก/ไม่มา คืน 50% ของยอดจอง — แอดมินโอนคืนเอง)
 const DEPOSIT_RATE = 0.5; // มัดจำ 50%
 const HOLD_HOURS = 6;     // ต้องชำระภายใน 6 ชั่วโมง ไม่งั้นบ้านหลุด
 const PAY_TYPES = { deposit: 'มัดจำ 50%', full: 'เต็มจำนวน' };
@@ -36,8 +37,15 @@ const HOUSES = {
 };
 
 const HEADERS = ['เวลาที่จอง', 'รหัสการจอง', 'รหัสบ้าน', 'บ้าน', 'เช็กอิน', 'เช็กเอาต์', 'คืน', 'ผู้เข้าพัก',
-  'ชื่อ', 'เบอร์โทร', 'หมายเหตุ', 'ยอดรวม (บาท)', 'สถานะ', 'ยอดที่ต้องชำระ (บาท)', 'ชำระภายใน', 'แบบชำระ'];
-const COL = { house: 3, checkin: 5, checkout: 6, status: 13, deadline: 15 }; // ลำดับคอลัมน์ (เริ่มที่ 1)
+  'ชื่อ', 'เบอร์โทร', 'หมายเหตุ', 'ยอดรวม (บาท)', 'สถานะ', 'ยอดที่ต้องชำระ (บาท)', 'ชำระภายใน', 'แบบชำระ',
+  'ชำระส่วนที่เหลือ', 'คืนเงิน'];
+const COL = { house: 3, checkin: 5, checkout: 6, status: 13, deadline: 15, balance: 17, refund: 18 }; // ลำดับคอลัมน์ (เริ่มที่ 1)
+
+// ช่องให้แอดมินเลือก
+// - ชำระส่วนที่เหลือ: แบบมัดจำ 50% จ่ายที่เหลือวันเช็กอิน (เงินสด หรือ โอนหน้าเคาน์เตอร์)
+// - คืนเงิน: แบบเต็มจำนวนที่ยกเลิกหรือไม่มาพัก แอดมินโอนคืน 50% แล้วเลือก "คืนเงินแล้ว"
+const BALANCE = { UNPAID: 'ยังไม่ชำระ', CASH: 'เงินสด', TRANSFER: 'โอนหน้าเคาน์เตอร์' };
+const REFUND = { DONE: 'คืนเงินแล้ว' };
 
 /** กด Run ตอนติดตั้ง (รันซ้ำได้): สร้างหัวตาราง ช่องเลือกสถานะ และสีตามสถานะ */
 function setup() {
@@ -54,6 +62,9 @@ function setup() {
 
   const statusRule = SpreadsheetApp.newDataValidation().requireValueInList(Object.values(STATUS), true).build();
   sh.getRange(2, COL.status, rows, 1).setDataValidation(statusRule);
+  const list = (values) => SpreadsheetApp.newDataValidation().requireValueInList(values, true).build();
+  sh.getRange(2, COL.balance, rows, 1).setDataValidation(list(Object.values(BALANCE)));
+  sh.getRange(2, COL.refund, rows, 1).setDataValidation(list(Object.values(REFUND)));
 
   const all = sh.getRange(2, 1, rows, HEADERS.length);
   const color = (text, bg) => SpreadsheetApp.newConditionalFormatRule()
@@ -139,7 +150,7 @@ function doPost(e) {
     const rows = d.houses.map((h) => [
       Utilities.formatDate(now, TZ, 'yyyy-MM-dd HH:mm'), id, h, HOUSES[h].name, d.checkin, d.checkout, nights,
       Number(d.guests), safe_(d.name), safe_(d.phone), safe_(d.note), total, STATUS.PENDING, due, deadline,
-      PAY_TYPES[payType],
+      PAY_TYPES[payType], payType === 'deposit' ? BALANCE.UNPAID : '', '',
     ]);
     sh.getRange(sh.getLastRow() + 1, 1, rows.length, HEADERS.length).setValues(rows);
   } finally {

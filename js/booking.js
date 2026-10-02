@@ -335,11 +335,11 @@ $('#details-form').addEventListener('submit', async (e) => {
   $('#pay-id').textContent = id || '(โหมดทดลอง)';
   $('#pay-due-label').textContent = payLabel;
   $('#pay-due').textContent = `${baht(amountDue)} บาท`;
-  $('#pay-rest').textContent = `${baht(bookingTotal - amountDue)} บาท`;
+  $('#pay-rest').textContent = `${baht(bookingTotal - amountDue)} บาท — ชำระวันเช็กอิน (เงินสดหรือโอนหน้าเคาน์เตอร์)`;
   document.querySelectorAll('.pay-rest-row').forEach((el) => { el.hidden = payType === 'full'; });
   $('#pay-deadline').textContent = deadlineText;
   $('#pay-refund').textContent = payType === 'full'
-    ? `ชำระเต็มจำนวน: หากยกเลิกการจอง รับเงินคืน 50% ของยอดจอง (${baht(Math.floor(bookingTotal / 2))} บาท)`
+    ? `ชำระเต็มจำนวน: หากยกเลิกหรือไม่มาเข้าพัก รับเงินคืน 50% ของยอดจอง (${baht(Math.floor(bookingTotal / 2))} บาท) แอดมินจะโอนคืนให้`
     : 'มัดจำ 50%: หากยกเลิกหรือไม่มาเข้าพัก ไม่คืนเงินมัดจำ';
   const qrBox = $('#pay-qr');
   if (window.qrcode) {

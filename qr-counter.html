@@ -1,0 +1,64 @@
+<!doctype html>
+<html lang="th">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>QR พร้อมเพย์ เคาน์เตอร์ | The Lagoon Camping Resort</title>
+  <!-- หน้าสำหรับพิมพ์ตั้งที่เคาน์เตอร์ (ไม่มีลิงก์จากหน้าอื่น) — กด Ctrl+P เพื่อพิมพ์ -->
+  <meta name="robots" content="noindex">
+  <link rel="icon" type="image/png" sizes="32x32" href="img/favicon-32.png">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Anuphan:wght@400;500;600&display=swap">
+  <style>
+    @page { size: A5; margin: 12mm; }
+    * { box-sizing: border-box; }
+    body { margin: 0; background: #f5f1e8; color: #1f231f; font-family: "Anuphan", system-ui, sans-serif; }
+    .card {
+      max-width: 420px; margin: 24px auto; padding: 32px 28px; background: #fff;
+      border-radius: 16px; text-align: center; border: 1px solid #e0d9ca;
+    }
+    .logo { width: 88px; height: 88px; }
+    h1 { font-size: 1.5rem; font-weight: 500; margin: 12px 0 4px; }
+    .sub { color: #6b6a5f; margin: 0 0 20px; }
+    #qr { width: 260px; margin: 0 auto; }
+    #qr svg { display: block; width: 100%; height: auto; }
+    .pp { margin: 16px 0 4px; font-size: 1.4rem; font-weight: 600; letter-spacing: .04em; }
+    .hint { color: #6b6a5f; font-size: .95rem; margin: 16px 0 0; line-height: 1.6; }
+    .print { margin: 0 auto 24px; display: block; font: inherit; padding: 10px 22px; border: 0; border-radius: 6px; background: #2f4a36; color: #f5f1e8; cursor: pointer; }
+    @media print { body { background: #fff; } .card { border: 0; margin: 0 auto; } .print { display: none; } }
+  </style>
+</head>
+<body>
+  <div class="card">
+    <img class="logo" src="img/favicon-192.png" alt="โลโก้ The Lagoon Camping Resort">
+    <h1>สแกนชำระเงิน</h1>
+    <p class="sub">The Lagoon Camping Resort</p>
+    <div id="qr" role="img" aria-label="QR พร้อมเพย์ 090-936-5562"></div>
+    <p class="pp">พร้อมเพย์ 090-936-5562</p>
+    <p class="hint">สแกนด้วยแอปธนาคาร แล้วใส่ยอดตามที่แอดมินแจ้ง<br>โอนเสร็จ กรุณาแสดงสลิปให้แอดมินดู</p>
+  </div>
+  <button class="print" type="button" onclick="window.print()">พิมพ์หน้านี้</button>
+
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcode-generator/1.4.4/qrcode.min.js"></script>
+  <script>
+    // QR พร้อมเพย์แบบไม่ใส่ยอด (ลูกค้าพิมพ์ยอดเอง) — มาตรฐานเดียวกับ js/booking.js
+    const tlv = (id, v) => id + String(v.length).padStart(2, '0') + v;
+    function crc16(s) {
+      let c = 0xffff;
+      for (let i = 0; i < s.length; i++) {
+        c ^= s.charCodeAt(i) << 8;
+        for (let j = 0; j < 8; j++) c = (c & 0x8000 ? (c << 1) ^ 0x1021 : c << 1) & 0xffff;
+      }
+      return c.toString(16).toUpperCase().padStart(4, '0');
+    }
+    const body = tlv('00', '01') + tlv('01', '11')
+      + tlv('29', tlv('00', 'A000000677010111') + tlv('01', '0066909365562'))
+      + tlv('53', '764') + tlv('58', 'TH') + '6304';
+    const qr = qrcode(0, 'M');
+    qr.addData(body + crc16(body));
+    qr.make();
+    document.getElementById('qr').innerHTML = qr.createSvgTag({ cellSize: 6, margin: 2, scalable: true });
+  </script>
+</body>
+</html>
