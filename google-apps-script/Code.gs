@@ -30,7 +30,10 @@ const NOTIFY_EMAIL = 'lagooncampingresort@gmail.com';
 const DEPOSIT_RATE = 0.5; // มัดจำ 50%
 const HOLD_HOURS = 6;     // ต้องชำระภายใน 6 ชั่วโมง ไม่งั้นบ้านหลุด
 const PAY_TYPES = { deposit: 'มัดจำ 50%', full: 'เต็มจำนวน' };
-const TENT_PRICE = 200; // ตัวเลือกเสริม: กางเต็นท์เอง (นำเต็นท์มาเอง) บาท/ท่าน/คืน — ต้องตรงกับ js/booking.js
+const TENT_PRICE = 200;  // นำเต็นท์มาเอง บาท/ท่าน/คืน — ต้องตรงกับ js/booking.js
+const TENT_RENT = 1200;  // เช่าเต็นท์ของรีสอร์ท บาท/หลัง/คืน (นอน 2 ท่าน พร้อมเครื่องนอน+พัดลม) — ต้องตรงกับ js/booking.js
+// จองเฉพาะเต็นท์ (ไม่มีบ้าน) บันทึกเป็น 1 แถว รหัสบ้าน 'tent' (ไม่ล็อกบ้านหลังไหน)
+const TENT_ROW = { id: 'tent', name: 'ลานกางเต็นท์' };
 
 // ราคาต่อคืน — ต้องตรงกับ js/booking.js (ระบบคำนวณยอดจากราคานี้ ไม่เชื่อยอดที่ส่งมาจากหน้าเว็บ)
 const HOUSES = {
@@ -44,7 +47,7 @@ const HOUSES = {
 
 const HEADERS = ['เวลาที่จอง', 'รหัสการจอง', 'รหัสบ้าน', 'บ้าน', 'เช็กอิน', 'เช็กเอาต์', 'คืน', 'ผู้เข้าพัก',
   'ชื่อ', 'เบอร์โทร', 'หมายเหตุ', 'ยอดรวม (บาท)', 'สถานะ', 'ยอดที่ต้องชำระ (บาท)', 'ชำระภายใน', 'แบบชำระ',
-  'ชำระส่วนที่เหลือ', 'คืนเงิน', 'กางเต็นท์เอง (ท่าน)'];
+  'ชำระส่วนที่เหลือ', 'คืนเงิน', 'กางเต็นท์เอง (ท่าน)', 'เช่าเต็นท์ (หลัง)'];
 const COL = { house: 3, checkin: 5, checkout: 6, status: 13, deadline: 15, balance: 17, refund: 18 }; // ลำดับคอลัมน์ (เริ่มที่ 1)
 
 // ช่องให้แอดมินเลือก
@@ -142,7 +145,8 @@ function doPost(e) {
 
   const nights = nights_(d.checkin, d.checkout);
   const tent = Math.floor(Number(d.tentGuests) || 0);
-  const total = (d.houses.reduce((sum, h) => sum + HOUSES[h].price, 0) + tent * TENT_PRICE) * nights;
+  const rent = Math.floor(Number(d.tentRentals) || 0);
+  const total = (d.houses.reduce((sum, h) => sum + HOUSES[h].price, 0) + tent * TENT_PRICE + rent * TENT_RENT) * nights;
   const payType = d.payType === 'full' ? 'full' : 'deposit';
   const due = payType === 'full' ? total : Math.ceil(total * DEPOSIT_RATE);
 
@@ -160,10 +164,12 @@ function doPost(e) {
     const now = new Date();
     id = 'LG' + Utilities.formatDate(now, TZ, 'yyMMdd') + '-' + Math.floor(1000 + Math.random() * 9000);
     deadline = Utilities.formatDate(new Date(now.getTime() + HOLD_HOURS * 3600000), TZ, 'yyyy-MM-dd HH:mm');
-    const rows = d.houses.map((h) => [
-      Utilities.formatDate(now, TZ, 'yyyy-MM-dd HH:mm'), id, h, HOUSES[h].name, d.checkin, d.checkout, nights,
+    // 1 แถวต่อบ้าน · จองแค่เต็นท์ = 1 แถวรหัส 'tent'
+    const items = d.houses.length ? d.houses.map((h) => ({ id: h, name: HOUSES[h].name })) : [TENT_ROW];
+    const rows = items.map((h) => [
+      Utilities.formatDate(now, TZ, 'yyyy-MM-dd HH:mm'), id, h.id, h.name, d.checkin, d.checkout, nights,
       Number(d.guests), safe_(d.name), safe_(d.phone), safe_(d.note), total, STATUS.PENDING, due, deadline,
-      PAY_TYPES[payType], payType === 'deposit' ? BALANCE.UNPAID : '', '', tent || '',
+      PAY_TYPES[payType], payType === 'deposit' ? BALANCE.UNPAID : '', '', tent || '', rent || '',
     ]);
     sh.getRange(sh.getLastRow() + 1, 1, rows.length, HEADERS.length).setValues(rows);
   } finally {
@@ -247,17 +253,37 @@ function activeBookings_(sh) {
 
 function validate_(d) {
   const isDate = (s) => typeof s === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(s);
-  if (!d.houses.length || d.houses.some((h) => !HOUSES[h])) return 'bad_house';
+  if (d.houses.some((h) => !HOUSES[h])) return 'bad_house';
+  const tent = Number(d.tentGuests || 0);
+  const rent = Number(d.tentRentals || 0);
+  if (!(Number.isInteger(tent) && tent >= 0 && tent <= 30)) return 'bad_tent';
+  if (!(Number.isInteger(rent) && rent >= 0 && rent <= 10)) return 'bad_tent';
+  if (!d.houses.length && !tent && !rent) return 'bad_house'; // ต้องมีบ้านหรือเต็นท์อย่างน้อย 1 อย่าง
   if (!isDate(d.checkin) || !isDate(d.checkout) || d.checkout <= d.checkin || d.checkin < todayISO_()) return 'bad_dates';
   if (nights_(d.checkin, d.checkout) > 30) return 'too_long';
   if (!d.name || String(d.name).trim().length > 100) return 'bad_name';
   if (!/^0[0-9]{8,9}$/.test(String(d.phone || '').replace(/[\s-]/g, ''))) return 'bad_phone';
   const guests = Number(d.guests);
-  if (!(guests >= 1 && guests <= 30)) return 'bad_guests';
+  if (!(guests >= (d.houses.length ? 1 : 0) && guests <= 30)) return 'bad_guests'; // จองแค่เต็นท์ = 0 คนในบ้าน
   if (d.note && String(d.note).length > 500) return 'bad_note';
-  const tent = Number(d.tentGuests || 0);
-  if (!(Number.isInteger(tent) && tent >= 0 && tent <= 30)) return 'bad_tent';
   return '';
+}
+
+// สิ่งที่จอง เช่น "Lagoon 1, Lagoon 2 + เต็นท์มาเอง 3 ท่าน + เช่าเต็นท์ 1 หลัง"
+function itemsText_(d) {
+  const parts = d.houses.map((h) => HOUSES[h].name);
+  if (Number(d.tentGuests)) parts.push('นำเต็นท์มาเอง ' + Number(d.tentGuests) + ' ท่าน');
+  if (Number(d.tentRentals)) parts.push('เช่าเต็นท์ ' + Number(d.tentRentals) + ' หลัง');
+  return parts.join(' + ');
+}
+
+// จำนวนคน เช่น "4 ท่านในบ้าน · เต็นท์มาเอง 3 ท่าน · เช่าเต็นท์ 1 หลัง"
+function guestsText_(d) {
+  return [
+    Number(d.guests) ? Number(d.guests) + ' ท่านในบ้าน' : '',
+    Number(d.tentGuests) ? 'เต็นท์มาเอง ' + Number(d.tentGuests) + ' ท่าน' : '',
+    Number(d.tentRentals) ? 'เช่าเต็นท์ ' + Number(d.tentRentals) + ' หลัง (2 ท่าน/หลัง)' : '',
+  ].filter(Boolean).join(' · ');
 }
 
 // กันข้อความที่ขึ้นต้นด้วย = + - @ ไม่ให้ชีตตีความเป็นสูตร
@@ -270,7 +296,7 @@ function safe_(v) {
 function notify_(id, d, total, due, payType, deadline) {
   if (!NOTIFY_EMAIL) return;
   try {
-    const names = d.houses.map((h) => HOUSES[h].name).join(', ');
+    const names = itemsText_(d);
     const subject = 'จองใหม่ ' + id + ' · ' + names + ' · ' + d.checkin + ' ถึง ' + d.checkout;
     const body = [
       'มีคำขอจองใหม่จากหน้าเว็บ (สถานะ: ' + STATUS.PENDING + ')',
@@ -279,7 +305,7 @@ function notify_(id, d, total, due, payType, deadline) {
       'บ้าน: ' + names,
       'เช็กอิน: ' + d.checkin,
       'เช็กเอาต์: ' + d.checkout + ' (' + nights_(d.checkin, d.checkout) + ' คืน)',
-      'ผู้เข้าพัก: ' + Number(d.guests) + ' ท่าน' + (Number(d.tentGuests) ? ' + กางเต็นท์เอง ' + Number(d.tentGuests) + ' ท่าน' : ''),
+      'ผู้เข้าพัก: ' + guestsText_(d),
       'ชื่อ: ' + String(d.name).trim(),
       'เบอร์โทร: ' + String(d.phone).trim(),
       'หมายเหตุ: ' + (String(d.note || '').trim() || '-'),
@@ -358,9 +384,9 @@ function lineNotify_(id, d, due, payType) {
   if (!admins.length || !props_().getProperty('LINE_TOKEN')) return;
   const text = [
     '🔔 มีคนจองใหม่',
-    '🏠 ' + d.houses.map((h) => HOUSES[h].name).join(', '),
+    '🏠 ' + itemsText_(d),
     '📅 ' + thaiRange_(d.checkin, d.checkout),
-    '👤 ' + String(d.name).trim() + ' · ' + Number(d.guests) + ' ท่าน' + (Number(d.tentGuests) ? ' + ⛺ ' + Number(d.tentGuests) + ' ท่าน' : ''),
+    '👤 ' + String(d.name).trim() + ' · ' + guestsText_(d),
     '📞 ' + String(d.phone).trim(),
     '💰 ' + PAY_TYPES[payType] + ' ' + due.toLocaleString('en-US') + ' บาท (รอชำระเงิน)',
     'รหัส ' + id,
@@ -400,7 +426,7 @@ function bookingGroups_() {
     const key = String(r[1]).trim() || 'row' + i; // แถวที่แอดมินพิมพ์เองอาจไม่มีรหัส
     const g = groups[key] || (groups[key] = {
       houses: [], from: iso_(r[COL.checkin - 1]), to: iso_(r[COL.checkout - 1]),
-      guests: r[7], tent: Number(r[18]) || 0, name: String(r[8]), phone: String(r[9]), note: String(r[10] || ''), status,
+      guests: r[7], tent: Number(r[18]) || 0, rent: Number(r[19]) || 0, name: String(r[8]), phone: String(r[9]), note: String(r[10] || ''), status,
     });
     const hid = houseId_(r[COL.house - 1]) || houseId_(r[3]);
     g.houses.push(HOUSES[hid] ? HOUSES[hid].name : String(r[3] || r[COL.house - 1]));
@@ -411,7 +437,7 @@ function bookingGroups_() {
 function bookingText_(g) {
   return [
     '🏠 ' + g.houses.join(', '),
-    '👤 ' + g.name + ' · ' + g.guests + ' ท่าน' + (g.tent ? ' + ⛺ ' + g.tent + ' ท่าน' : ''),
+    '👤 ' + g.name + ' · ' + (Number(g.guests) ? g.guests + ' ท่านในบ้าน' : 'ไม่มีบ้าน') + (g.tent ? ' · ⛺ มาเอง ' + g.tent + ' ท่าน' : '') + (g.rent ? ' · ⛺ เช่า ' + g.rent + ' หลัง' : ''),
     '📞 ' + g.phone,
     '📅 ' + thaiRange_(g.from, g.to),
     (g.status === STATUS.CONFIRMED ? '✅ ' : '⏳ ') + g.status + (g.note ? '\n📝 ' + g.note : ''),
