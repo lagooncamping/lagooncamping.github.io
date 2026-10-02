@@ -17,13 +17,14 @@
   <link rel="apple-touch-icon" href="img/apple-touch-icon.png">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Anuphan:wght@300;400;500;600&display=swap">
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Anuphan:wght@300;400;500;600&family=Chonburi&family=Charm:wght@700&display=swap">
   <link rel="stylesheet" href="css/style.css">
 </head>
 <body>
 
   <!-- ===== เมนูด้านบน (เหมือนกันทุกหน้า แก้ต้องแก้ทุกไฟล์ .html) ===== -->
-  <nav class="nav" aria-label="เมนูหลัก">
+  <!-- หน้าแรก: เมนูโปร่งใสลอยบนรูปปก เลื่อนลงแล้วเปลี่ยนเป็นสีเขียว (คลาส nav-over) -->
+  <nav class="nav nav-over" aria-label="เมนูหลัก">
     <div class="wrap">
       <a class="brand" href="index.html" aria-current="page">The Lagoon</a>
       <ul>
@@ -38,8 +39,9 @@
 
   <!-- ===== ภาพปก ===== -->
   <header class="hero" id="top">
+    <!-- รูปพื้นหลัง (sunset.jpg) ตั้งค่าอยู่ใน css/style.css ที่ .hero -->
     <div class="wrap hero-text">
-      <p class="hero-name" lang="en">The Lagoon Camping Resort</p>
+      <p class="hero-name">The Lagoon Camping Resort</p>
       <h1>ตื่นมาเจอ<span class="nw">ทะเลสาบ</span><br><span class="nw">หน้าเต็นท์</span></h1>
       <p class="lead">ลานกางเต็นท์และบ้านพักริมทะเลสาบ ที่<span class="nw">นายายอาม</span> <span class="nw">จันทบุรี</span> บรรยากาศดี วิวสวย พาเพื่อน พาครอบครัว และพาน้องหมาน้องแมวมาพักได้</p>
       <div class="btns">
@@ -54,12 +56,58 @@
     <!-- ===== ของฟรี ===== -->
     <section class="free" aria-labelledby="free-h">
       <div class="wrap">
+        <span class="eyebrow">มาพักกับเรา</span>
         <h2 id="free-h">ฟรี ทุกการเข้าพัก</h2>
+        <!-- ไอคอนวาดด้วย SVG (เส้นสีเขียวตามธีม) -->
         <div class="free-items">
-          <div class="item"><strong>ตกปลา</strong><span>ริมทะเลสาบหน้าที่พัก</span></div>
-          <div class="item"><strong>พายเรือแคนู 1 ชม.</strong><span>ต่อ 1 ท่าน (ปกติชั่วโมงละ 100 บาท)</span></div>
-          <div class="item"><strong>ชูชีพ</strong><span>สำหรับลงเล่นน้ำ</span></div>
-          <div class="item"><strong>สัตว์เลี้ยงพักฟรี</strong><span>ไม่มีค่าใช้จ่ายเพิ่ม</span></div>
+          <div class="item">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 12c3-5 9-6 13-2l4-3v10l-4-3c-4 4-10 3-13-2z"/><circle cx="8" cy="11" r=".8"/></svg>
+            <strong>ตกปลา</strong><span>ริมทะเลสาบหน้าที่พัก</span>
+          </div>
+          <div class="item">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M2 15c4 4 16 4 20 0z"/><path d="M7 3l9 14M15 15l2 3"/></svg>
+            <strong>พายเรือแคนู 1 ชม.</strong><span>ต่อ 1 ท่าน (ปกติชั่วโมงละ 100 บาท)</span>
+          </div>
+          <div class="item">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M8 3L4 6v14h6v-6h4v6h6V6l-4-3-2 4h-4z"/></svg>
+            <strong>ชูชีพ</strong><span>สำหรับลงเล่นน้ำ</span>
+          </div>
+          <div class="item">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="6.5" cy="10" r="1.8"/><circle cx="10" cy="6" r="1.8"/><circle cx="14" cy="6" r="1.8"/><circle cx="17.5" cy="10" r="1.8"/><path d="M8 17c0-3 2-5 4-5s4 2 4 5-2 3-4 3-4 0-4-3z"/></svg>
+            <strong>สัตว์เลี้ยงพักฟรี</strong><span>ไม่มีค่าใช้จ่ายเพิ่ม</span>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ===== ราคาแบบย่อ (ตัวเลขต้องตรงกับหน้า prices.html) ===== -->
+    <section class="rates" aria-labelledby="rates-h">
+      <div class="wrap">
+        <div class="head">
+          <span class="eyebrow">ราคาเป็นกันเอง</span>
+          <h2 id="rates-h">เลือกแบบที่ใช่</h2>
+        </div>
+        <div class="rate-cards">
+          <a class="rate-card" href="prices.html">
+            <img src="img/tent-field.jpg" alt="ลานกางเต็นท์ริมทะเลสาบ" loading="lazy">
+            <div>
+              <h3>ลานกางเต็นท์</h3>
+              <p class="baht">200 <small>บาท / ท่าน</small></p>
+              <p>นำเต็นท์มาเอง · มีเต็นท์ให้เช่าด้วย</p>
+            </div>
+          </a>
+          <a class="rate-card" href="prices.html">
+            <img src="img/houses.jpg" alt="บ้านพักไม้ริมสนามหญ้า" loading="lazy">
+            <div>
+              <h3>บ้านพัก</h3>
+              <p class="baht"><small>เริ่ม</small> 1,300 <small>บาท / หลัง</small></p>
+              <p>มีหลายแบบ ทั้งสำหรับ 2 ท่าน และครอบครัว 4 ท่าน</p>
+            </div>
+          </a>
+        </div>
+        <div class="btns">
+          <a class="btn btn-primary" href="booking.html">เช็กวันว่าง &amp; จองออนไลน์</a>
+          <a class="btn btn-ghost" href="prices.html">ดูราคาทั้งหมด</a>
         </div>
       </div>
     </section>

@@ -10,11 +10,15 @@
     const y = window.scrollY;
     const goingDown = y > lastY + 4;
     const goingUp = y < lastY - 4;
+    // หน้าแรก: เลื่อนพ้นด้านบนแล้ว เมนูเปลี่ยนจากโปร่งใสเป็นสีเขียว
+    nav.classList.toggle('is-solid', y > 40);
     if (!mobile.matches || y < 120 || goingUp) nav.classList.remove('is-hidden');
     else if (goingDown) nav.classList.add('is-hidden');
     if (goingDown || goingUp) lastY = y;
     ticking = false;
   }
+
+  update(); // ตั้งค่าเริ่มต้น (เผื่อเปิดหน้ามาแล้วเลื่อนลงไว้แล้ว)
 
   window.addEventListener('scroll', () => {
     if (!ticking) { requestAnimationFrame(update); ticking = true; }

@@ -2,3 +2,6 @@
 .claude/
 Thumbs.db
 desktop.ini
+
+# ภาพเปรียบเทียบจาก Claude Design (ไม่ใช่ไฟล์เว็บ)
+Claude outputs/
