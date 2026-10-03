@@ -574,6 +574,7 @@ html:has(.lightbox[open]) { overflow: hidden; }
 }
 .pending-bar p { margin: 0; }
 .pending-bar a { font-weight: 600; white-space: nowrap; display: inline-flex; align-items: center; min-height: 44px; }
+.pending-bar a.pb-sub { font-weight: 400; font-size: .85rem; color: var(--muted); text-decoration: underline; text-underline-offset: 3px; }
 .pending-bar button {
   min-width: 44px; min-height: 44px; margin-left: auto; border: 0; background: transparent; cursor: pointer;
   color: var(--muted); font-size: 1.4rem; line-height: 1; border-radius: 999px;

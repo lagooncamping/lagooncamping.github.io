@@ -55,7 +55,14 @@ document.querySelectorAll('.copy').forEach((button) => {
     try { localStorage.setItem(HIDDEN_KEY, String(p.id)); } catch (err) { /* ซ่อนแค่หน้านี้ */ }
     bar.remove();
   });
-  bar.append(text, go, hide);
+  // ลิงก์รอง: เช็กสถานะการจองด้วยเบอร์โทร (my-booking.html อยู่โฟลเดอร์เดียวกับหน้าจอง)
+  const check = document.createElement('a');
+  check.className = 'pb-sub';
+  check.href = go.href.replace(/booking\.html#pay$/,'my-booking.html');
+  check.textContent = 'เช็กการจองของฉัน';
+  bar.append(text, go);
+  if (!document.getElementById('mb-form')) bar.append(check); // อยู่หน้าเช็กการจองแล้ว ไม่ต้องโชว์
+  bar.append(hide);
   document.body.append(bar);
   // ถึงเวลาหมดเขตระหว่างเปิดหน้าอยู่ → เอาแถบออก
   if (left < 2147483647) setTimeout(() => bar.remove(), left);

@@ -107,6 +107,7 @@ body.admin { font-size: 18px; line-height: 1.6; padding-bottom: 96px; }
 .bk p { margin: 4px 0; }
 .bk h3 { font-size: 1.2rem; font-weight: 600; margin: 6px 0 2px; }
 .bk-top { display: flex; justify-content: space-between; align-items: center; gap: 8px; flex-wrap: wrap; }
+.line-badge { margin-right: auto; padding: 1px 8px; border-radius: 999px; font-size: .8rem; font-weight: 600; color: var(--ok-ink); background: var(--ok-bg); white-space: nowrap; } /* ลูกค้าทัก LINE แล้ว */
 .bk-id { color: var(--muted); font-size: .85rem; font-variant-numeric: tabular-nums; }
 .pill { display: inline-block; border-radius: 999px; padding: 2px 12px; font-weight: 600; font-size: .95rem; }
 .st-confirmed .pill { background: var(--ok-bg); color: var(--ok-ink); }

@@ -18,6 +18,10 @@
  *   ตั้งรหัสเข้าหลังบ้านที่ Project Settings > Script properties > Add script property
  *     ADMIN_PIN  = ตัวเลข 6 หลักขึ้นไป (ตั้งเอง ห้ามใช้ 123456 หรือวันเกิด) ยังไม่ตั้ง = หลังบ้านเข้าไม่ได้
  *   เปลี่ยน ADMIN_PIN = ทุกเครื่องที่เคยเข้าไว้ถูกออกจากระบบทันที · ใส่ผิดรวมกัน 10 ครั้ง/ชั่วโมง = ล็อก 1 ชั่วโมง
+ * - เช็กการจองของฉัน (หน้า my-booking.html): ลูกค้าใส่เบอร์โทร ดูการจองของตัวเอง (ดู lookupByPhone_ ท้ายไฟล์)
+ * - LINE ลูกค้า: ส่งข้อความที่มีเลขการจอง (เช่น ข้อความส่งสลิป) → บอทตอบใบยืนยันการจอง และจำ LINE ของลูกค้าไว้
+ *   ในคอลัมน์ 'LINE ลูกค้า' · แอดมินกดยืนยันการจองในหลังบ้าน → ส่งใบยืนยันเข้า LINE ลูกค้าให้เอง (1 ข้อความ)
+ *   ชีตเก่าที่ยังไม่มีคอลัมน์ 'LINE ลูกค้า' ใช้ได้เลย (ระบบเพิ่มให้) หรือกด Run setup() อีกครั้งก็ได้
  *   แก้ไฟล์นี้แล้วต้อง Deploy > Manage deployments > แก้ (ดินสอ) > Version: New version > Deploy ทุกครั้ง
  */
 
@@ -59,8 +63,10 @@ function isHouse_(id) {
 
 const HEADERS = ['เวลาที่จอง', 'รหัสการจอง', 'รหัสบ้าน', 'บ้าน', 'เช็กอิน', 'เช็กเอาต์', 'คืน', 'ผู้เข้าพัก',
   'ชื่อ', 'เบอร์โทร', 'หมายเหตุ', 'ยอดรวม (บาท)', 'สถานะ', 'ยอดที่ต้องชำระ (บาท)', 'ชำระภายใน', 'แบบชำระ',
-  'ชำระส่วนที่เหลือ', 'คืนเงิน', 'กางเต็นท์เอง (ท่าน)', 'เช่าเต็นท์ (หลัง)'];
-const COL = { house: 3, checkin: 5, checkout: 6, status: 13, deadline: 15, balance: 17, refund: 18 }; // ลำดับคอลัมน์ (เริ่มที่ 1)
+  'ชำระส่วนที่เหลือ', 'คืนเงิน', 'กางเต็นท์เอง (ท่าน)', 'เช่าเต็นท์ (หลัง)', 'LINE ลูกค้า'];
+const COL = { house: 3, checkin: 5, checkout: 6, status: 13, deadline: 15, balance: 17, refund: 18, line: 21 }; // ลำดับคอลัมน์ (เริ่มที่ 1)
+// คอลัมน์ 'LINE ลูกค้า' (ช่องที่ 21) = LINE userId ของลูกค้าที่ทักมาพร้อมเลขการจอง (ระบบเติมเอง ห้ามแก้/ห้ามแชร์)
+// ใช้ส่งใบยืนยันเข้า LINE ลูกค้าตอนแอดมินกดยืนยัน · ชีตเก่าที่ยังไม่มีคอลัมน์นี้ใช้ได้ (ระบบเพิ่มหัวคอลัมน์ให้ตอนต้องใช้)
 
 // ช่องให้แอดมินเลือก
 // - ชำระส่วนที่เหลือ: แบบมัดจำ 50% จ่ายที่เหลือวันเช็กอิน (เงินสด หรือ โอนหน้าเคาน์เตอร์)
@@ -73,6 +79,7 @@ function setup() {
   const ss = spreadsheet_();
   const sh = ss.getSheetByName(SHEET_NAME) || ss.insertSheet(SHEET_NAME, 0);
   const rows = sh.getMaxRows() - 1;
+  ensureCols_(sh);
 
   sh.getRange(1, 1, 1, HEADERS.length).setValues([HEADERS]).setFontWeight('bold');
   sh.setFrozenRows(1);
@@ -166,6 +173,18 @@ function doPost(e) {
     return json_(out);
   }
 
+  // ลูกค้าเช็กการจองของตัวเองด้วยเบอร์โทร (หน้า my-booking.html) — ไม่บันทึกอะไรลงชีต
+  if (d && d.lookup === 'phone') {
+    let out;
+    try {
+      out = lookupByPhone_(d.phone);
+    } catch (err) {
+      console.error('เช็กการจอง: ' + err);
+      out = { ok: false, error: 'server' };
+    }
+    return json_(out);
+  }
+
   // ช่องลับกันบอท: คนจริงมองไม่เห็นช่องนี้ ถ้ามีค่ามาแปลว่าเป็นบอท ทำเหมือนสำเร็จแต่ไม่บันทึก
   if (d.website) return json_({ ok: true, id: 'LG000000-0000', total: 0, due: 0, payType: 'deposit', deadline: '' });
 
@@ -201,7 +220,7 @@ function doPost(e) {
       Number(d.guests), safe_(d.name), safe_(d.phone), safe_(d.note), total, STATUS.PENDING, due, deadline,
       PAY_TYPES[payType], payType === 'deposit' ? BALANCE.UNPAID : '', '', tent || '', rent || '',
     ]);
-    sh.getRange(sh.getLastRow() + 1, 1, rows.length, HEADERS.length).setValues(rows);
+    sh.getRange(sh.getLastRow() + 1, 1, rows.length, rows[0].length).setValues(rows);
   } finally {
     try {
       SpreadsheetApp.flush(); // เขียนลงชีตให้เสร็จก่อนปลดล็อก คนถัดไปจะเห็นแถวใหม่แน่นอน
@@ -223,6 +242,20 @@ function spreadsheet_() {
 
 function sheet_() {
   return spreadsheet_().getSheetByName(SHEET_NAME);
+}
+
+// จำนวนคอลัมน์ที่อ่านได้ (ชีตเก่าอาจมีคอลัมน์น้อยกว่า HEADERS — ช่องที่ไม่มีจะเป็น undefined)
+function readCols_(sh) {
+  const max = typeof sh.getMaxColumns === 'function' ? sh.getMaxColumns() : HEADERS.length;
+  return Math.max(1, Math.min(HEADERS.length, max));
+}
+
+// ชีตมีคอลัมน์ไม่ครบ HEADERS → เพิ่มคอลัมน์ท้ายตาราง · หัวคอลัมน์ 'LINE ลูกค้า' ยังว่าง → เขียนให้
+function ensureCols_(sh) {
+  const max = typeof sh.getMaxColumns === 'function' ? sh.getMaxColumns() : HEADERS.length;
+  if (max < HEADERS.length) sh.insertColumnsAfter(max, HEADERS.length - max);
+  const head = sh.getRange(1, COL.line);
+  if (String(head.getValue() || '').trim() === '') head.setValue(HEADERS[COL.line - 1]);
 }
 
 function json_(obj) {
@@ -282,7 +315,7 @@ function activeBookings_(sh) {
   if (last < 2) return [];
   const today = todayISO_();
   const now = nowText_();
-  return sh.getRange(2, 1, last - 1, HEADERS.length).getValues()
+  return sh.getRange(2, 1, last - 1, readCols_(sh)).getValues()
     .map((r) => ({
       house: houseId_(r[COL.house - 1]) || houseId_(r[3]), // ช่องรหัสบ้านว่าง ลองดูช่องชื่อบ้าน
       from: iso_(r[COL.checkin - 1]),
@@ -397,6 +430,11 @@ function adminIds_() {
 }
 
 function lineEvent_(ev) {
+  // ลูกค้าส่งรูป (มักเป็นสลิป) → ตอบรับ (ดู lineImageAck_) · แอดมินส่งรูป = เงียบ
+  if (ev.type === 'message' && ev.message && ev.message.type === 'image' && ev.source && ev.source.userId) {
+    if (!adminIds_().includes(ev.source.userId)) lineImageAck_(ev, ev.source.userId);
+    return;
+  }
   if (ev.type !== 'message' || !ev.message || ev.message.type !== 'text' || !ev.source || !ev.source.userId) return;
   const user = ev.source.userId;
   const text = String(ev.message.text).trim();
@@ -426,7 +464,16 @@ function lineEvent_(ev) {
     lineReply_(ev.replyToken, 'ลงทะเบียนแอดมินแล้วครับ ✅\nมีคนจองใหม่จะแจ้งเตือนที่แชทนี้\n\n' + LINE_HELP);
     return;
   }
-  if (!admins.includes(user)) return;
+  // ข้อความที่มีเลขการจอง (ลูกค้าส่งสลิป / พิมพ์ "เช็กการจอง LG...") → ตอบใบยืนยันการจอง (ดู lineVoucherReply_)
+  const bookingId = bookingIdIn_(text);
+  if (!admins.includes(user)) {
+    if (bookingId) lineVoucherReply_(ev, user, text, bookingId, false);
+    return; // ลูกค้าพิมพ์อย่างอื่น = เงียบ
+  }
+  if (bookingId) {
+    lineVoucherReply_(ev, user, text, bookingId, true);
+    return;
+  }
 
   if (text === 'หยุดแจ้งเตือน') {
     props_().setProperty('ADMIN_IDS', admins.filter((id) => id !== user).join(','));
@@ -502,7 +549,7 @@ function bookingGroups_() {
   if (last < 2) return [];
   const now = nowText_();
   const groups = {};
-  sh.getRange(2, 1, last - 1, HEADERS.length).getValues().forEach((r, i) => {
+  sh.getRange(2, 1, last - 1, readCols_(sh)).getValues().forEach((r, i) => {
     const status = r[COL.status - 1];
     if (status === STATUS.CANCELLED || status === STATUS.EXPIRED || isExpired_(status, r[COL.deadline - 1], now)) return;
     const key = String(r[1]).trim() || 'row' + i; // แถวที่แอดมินพิมพ์เองอาจไม่มีรหัส
@@ -690,7 +737,7 @@ function rowKey_(r, i) {
 
 function adminValues_(sh) {
   const last = sh.getLastRow();
-  return last < 2 ? [] : sh.getRange(2, 1, last - 1, HEADERS.length).getValues();
+  return last < 2 ? [] : sh.getRange(2, 1, last - 1, readCols_(sh)).getValues();
 }
 
 // เขียนลงชีตแบบล็อก (กันชนกับลูกค้าที่กำลังจองจากหน้าเว็บ) แล้ว flush ก่อนปลดล็อก
@@ -752,6 +799,7 @@ function adminList_() {
         total: Number(r[11]) || 0, status, due: Number(r[13]) || 0, deadline: stamp_(r[COL.deadline - 1]),
         payType: String(r[15] || ''), balance: String(r[COL.balance - 1] || ''), refund: String(r[COL.refund - 1] || ''),
         tent: Number(r[18]) || 0, rent: Number(r[19]) || 0, createdAt: stamp_(r[0]), blocked: /^BLK/.test(id),
+        lineLinked: String(r[COL.line - 1] || '').trim() !== '', // ลูกค้าทัก LINE พร้อมเลขการจองแล้ว (ไม่ส่ง userId)
         show: !isISO || checkout >= since,
       };
       order.push(id);
@@ -779,20 +827,44 @@ function adminSetStatus_(d) {
   const status = pick_(STATUS, ['CONFIRMED', 'CANCELLED', 'PENDING'], d.status);
   if (!status) return { ok: false, error: 'bad_status' };
   const id = String(d.id || '');
-  return adminLocked_((sh) => {
+  let lineUser = ''; // ยืนยันจาก รอชำระ/หมดเวลา + ลูกค้าเคยทัก LINE พร้อมเลขการจอง → ส่งใบยืนยันให้หลังปลดล็อก
+  const out = adminLocked_((sh) => {
     const values = adminValues_(sh);
     const rows = adminRows_(values, id);
     if (!rows.length) return { ok: false, error: 'not_found' };
+    const r = values[rows[0] - 2];
     if (status !== STATUS.CANCELLED) {
       // เปิดการจองกลับมา (เช่น เคยยกเลิก/หมดเวลา) แต่มีคนอื่นจองบ้านนั้นไปแล้ว → ไม่ให้ทำ
-      const r = values[rows[0] - 2];
       const houses = rows.map((n) => houseId_(values[n - 2][COL.house - 1]) || houseId_(values[n - 2][3])).filter(isHouse_);
       const taken = adminTaken_(values, houses, iso_(r[COL.checkin - 1]), iso_(r[COL.checkout - 1]), id);
       if (taken.length) return { ok: false, error: 'booked', houses: taken };
     }
+    const before = String(r[COL.status - 1] || '').trim();
+    if (status === STATUS.CONFIRMED && (before === STATUS.PENDING || before === STATUS.EXPIRED) && !/^BLK/.test(id)) {
+      lineUser = rows.map((n) => String(values[n - 2][COL.line - 1] || '').trim()).find(Boolean) || '';
+    }
     rows.forEach((n) => sh.getRange(n, COL.status).setValue(status));
     return { ok: true, id, status };
   });
+  if (!out.ok) return out;
+  out.pushed = lineUser ? pushVoucher_(id, lineUser) : false;
+  return out;
+}
+
+// ส่งใบยืนยันการจองเข้า LINE ลูกค้า 1 ข้อความ (push นับโควตา) · ส่งไม่ได้ = false ไม่กระทบการยืนยัน
+function pushVoucher_(id, userId) {
+  try {
+    if (!/^U[0-9a-f]{32}$/i.test(userId) || !props_().getProperty('LINE_TOKEN')) return false;
+    const rows = adminValues_(sheet_()).filter((r, i) => rowKey_(r, i) === id);
+    const b = rows.length ? voucherOf_(rows, nowText_()) : null;
+    if (!b) return false;
+    const text = 'ยืนยันการจองแล้ว ✅\n\n' + voucherText_(b, false);
+    lineApi_('/v2/bot/message/push', { to: userId, messages: [{ type: 'text', text: text.slice(0, 4900) }] });
+    return true;
+  } catch (err) {
+    console.error('ส่งใบยืนยันเข้า LINE ลูกค้าไม่สำเร็จ (' + id + ')'); // ไม่ log ข้อความ/รหัสผู้ใช้
+    return false;
+  }
 }
 
 /** setBalance { id, value: ยังไม่ชำระ | เงินสด | โอนหน้าเคาน์เตอร์ } (หรือ UNPAID | CASH | TRANSFER) */
@@ -887,7 +959,287 @@ function adminAdd_(d, block) {
       guests, safe_(name), safe_(phone), safe_(note), total, STATUS.CONFIRMED, due, '',
       block ? '' : ADMIN_PAID[paid], !block && paid !== 'full' ? BALANCE.UNPAID : '', '', tent || '', rent || '',
     ]);
-    sh.getRange(sh.getLastRow() + 1, 1, rows.length, HEADERS.length).setValues(rows);
+    sh.getRange(sh.getLastRow() + 1, 1, rows.length, rows[0].length).setValues(rows);
     return { ok: true, id, total, due };
   });
+}
+
+// ---------- ลูกค้าเช็กการจองของตัวเอง (หน้า my-booking.html) ----------
+// ส่งมาทาง doPost เป็น { lookup: 'phone', phone: '081-234-5678' }
+// → { ok:true, bookings:[...] } (ไม่พบ = รายการว่าง) · { ok:false, error: 'bad_phone' | 'busy' | 'server' }
+// ส่งกลับเฉพาะข้อมูลที่ใช้โชว์ใบยืนยันการจอง: ไม่ส่งเบอร์โทร ชื่อเต็ม หมายเหตุ เลขแถว หรือเวลาที่จอง
+// กันคนสุ่มเบอร์มาดู: ต่อเบอร์ไม่เกิน 10 ครั้ง/10 นาที · รวมทุกคนไม่เกิน 200 ครั้ง/10 นาที (นับรวมเบอร์ผิดรูปแบบด้วย)
+
+const LOOKUP_MAX_PHONE = 10;   // ค้นหาเบอร์เดียวกันได้กี่ครั้ง ต่อ 10 นาที
+const LOOKUP_MAX_ALL = 200;    // ค้นหารวมทุกเบอร์ได้กี่ครั้ง ต่อ 10 นาที
+const LOOKUP_WINDOW = 600;     // 10 นาที (วินาที)
+const LOOKUP_PAST_DAYS = 30;   // โชว์การจองที่เช็กเอาต์ไปแล้วไม่เกิน 30 วัน
+const LOOKUP_MAX_RESULTS = 10;
+
+// เบอร์ที่ลูกค้าพิมพ์ → 0XXXXXXXX (9 หลัก บ้าน) หรือ 0XXXXXXXXX (10 หลัก มือถือ) · ไม่ใช่เบอร์ไทย = ''
+// ต้องตรงกับ normPhone ใน js/my-booking.js
+function normPhone_(v) {
+  if (v == null || typeof v === 'object') return '';
+  let s = String(v).replace(/\D/g, '');
+  if (/^660\d{8,9}$/.test(s)) s = s.slice(2);            // +66 081... (ใส่ 0 ซ้ำ)
+  else if (/^66\d{8,9}$/.test(s)) s = '0' + s.slice(2);   // +66812345678 / 66 81 234 5678
+  return /^0\d{8,9}$/.test(s) ? s : '';
+}
+
+// เลขสำหรับเทียบเบอร์ในชีต: ตัดทุกอย่างที่ไม่ใช่ตัวเลข แปลง 66 นำหน้าเป็น 0 ตัด 0 นำหน้า แล้วเอา 9 หลักท้าย
+// (ชีตอาจเก็บเป็นตัวเลขจน 0 หาย เช่น 812345678 · มีขีด/เว้นวรรค · มี ' นำหน้าจาก safe_)
+function phoneKey_(v) {
+  let s = String(v == null ? '' : v).replace(/\D/g, '');
+  if (/^66\d{8,9}$/.test(s)) s = s.slice(2);
+  s = s.replace(/^0+/, '');
+  return s.length >= 8 ? s.slice(-9) : '';
+}
+
+// ช่องเบอร์ในชีตอาจมีหลายเบอร์ เช่น "081-111-2222, 089-333-4444" → เทียบทีละเบอร์
+function phoneMatches_(cell, key) {
+  if (cell === '' || cell == null) return false;
+  if (typeof cell === 'number') return phoneKey_(cell) === key;
+  return String(cell).split(/[,/;\n]|และ|หรือ/).some((part) => phoneKey_(part) === key);
+}
+
+// ชื่อลูกค้าแบบปิดบัง: 2 ตัวแรก + *** (สระบน/ล่าง/วรรณยุกต์ติดไปกับตัวอักษรหน้า ไม่ตัดกลางตัว)
+function maskName_(v) {
+  let s = String(v == null ? '' : v).trim().replace(/^'+/, '').trim();
+  const noTitle = s.replace(/^(คุณ|คุน|k\.|khun)\s*/i, '');
+  if (noTitle) s = noTitle;
+  if (!s) return '';
+  const mark = /[ัิ-ฺ็-๎̀-ͯ️‍]/;
+  const out = [];
+  for (const ch of Array.from(s)) {
+    if (mark.test(ch) && out.length) out[out.length - 1] += ch;
+    else if (out.length < 2) out.push(ch);
+    else break;
+  }
+  return out.join('') + '***';
+}
+
+// นับครั้งใน CacheService (หมดอายุ 10 นาทีหลังครั้งล่าสุด) · เกินแล้ว = true
+function overLimit_(cache, key, max) {
+  const n = Number(cache.get(key)) || 0;
+  if (n >= max) return true;
+  cache.put(key, String(n + 1), LOOKUP_WINDOW);
+  return false;
+}
+
+function lookupByPhone_(input) {
+  const cache = CacheService.getScriptCache();
+  if (overLimit_(cache, 'lookup_all', LOOKUP_MAX_ALL)) return { ok: false, error: 'busy' };
+  const phone = normPhone_(input);
+  if (!phone) return { ok: false, error: 'bad_phone' };
+  if (overLimit_(cache, 'lookup_' + phone, LOOKUP_MAX_PHONE)) return { ok: false, error: 'busy' };
+
+  const key = phoneKey_(phone);
+  const today = todayISO_();
+  const now = nowText_();
+  const since = addDaysISO_(today, -LOOKUP_PAST_DAYS);
+  const groups = {};
+  const order = [];
+  adminValues_(sheet_()).forEach((r, i) => {
+    const id = rowKey_(r, i);
+    let g = groups[id];
+    if (!g) {
+      g = groups[id] = { id, rows: [], match: false };
+      order.push(id);
+    }
+    g.rows.push(r);
+    if (phoneMatches_(r[9], key)) g.match = true;
+  });
+
+  const list = [];
+  order.forEach((id) => {
+    const g = groups[id];
+    if (!g.match || /^BLK/.test(id)) return; // ปิดบ้าน (ซ่อม/ไม่รับจอง) ไม่ใช่การจองของลูกค้า
+    const b = voucherOf_(g.rows, now);
+    if (!b || b.checkout < since) return;
+    // ลำดับ: กำลังจะมาถึง/กำลังพัก (ใกล้สุดก่อน) → ที่ยกเลิก/หมดเวลา → ที่ผ่านไปแล้ว (ล่าสุดก่อน)
+    const closed = b.status === STATUS.CANCELLED || b.status === STATUS.EXPIRED;
+    list.push({ b, rank: b.checkout < today ? 2 : closed ? 1 : 0 });
+  });
+  const cmp = (x, y) => (x < y ? -1 : x > y ? 1 : 0);
+  list.sort((x, y) => x.rank - y.rank || (x.rank === 2 ? cmp(y.b.checkin, x.b.checkin) : cmp(x.b.checkin, y.b.checkin)));
+  return { ok: true, bookings: list.slice(0, LOOKUP_MAX_RESULTS).map((x) => x.b) };
+}
+
+// ข้อมูลใบยืนยันการจองจากแถวทั้งหมดของรหัสเดียวกัน (ใช้ทั้งหน้าเว็บและ LINE)
+// ส่งเฉพาะช่องที่ลูกค้าเห็นได้ · วันที่อ่านไม่ออก = null
+function voucherOf_(rows, now) {
+  const r = rows[0];
+  const checkin = iso_(r[COL.checkin - 1]);
+  const checkout = iso_(r[COL.checkout - 1]);
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(checkin) || !/^\d{4}-\d{2}-\d{2}$/.test(checkout)) return null;
+
+  const rawStatus = String(r[COL.status - 1] || '').trim();
+  const status = isExpired_(rawStatus, r[COL.deadline - 1], now) ? STATUS.EXPIRED : rawStatus;
+  const total = Number(r[11]) || 0;
+  const due = Number(r[13]) || 0;
+  const payTypeText = String(r[15] || '').trim();
+  const payType = payTypeText === PAY_TYPES.full ? 'full' : payTypeText === PAY_TYPES.deposit ? 'deposit' : 'none';
+  const balance = String(r[COL.balance - 1] || '').trim();
+  const confirmed = status === STATUS.CONFIRMED;
+  const pending = status === STATUS.PENDING;
+  const closed = status === STATUS.CANCELLED || status === STATUS.EXPIRED;
+  const paid = confirmed && payType !== 'none' ? due : 0;
+  let balanceDue = 0;
+  if (!closed && balance !== BALANCE.CASH && balance !== BALANCE.TRANSFER && !(confirmed && payType === 'full')) {
+    balanceDue = Math.max(0, total - (pending ? due : paid)); // รอชำระ: ส่วนที่เหลือหลังโอนยอดที่ต้องชำระตอนนี้
+  }
+
+  const houses = [];
+  rows.forEach((row) => {
+    const hid = houseId_(row[COL.house - 1]) || houseId_(row[3]);
+    if (hid === TENT_ROW.id) return;
+    const name = isHouse_(hid) ? HOUSES[hid].name : String(row[3] || row[COL.house - 1] || '').trim();
+    if (name && !houses.includes(name)) houses.push(name);
+  });
+  const tent = Number(r[18]) || 0;
+  const rent = Number(r[19]) || 0;
+  const items = houses.slice();
+  if (tent) items.push('นำเต็นท์มาเอง ' + tent + ' ท่าน');
+  if (rent) items.push('เช่าเต็นท์ ' + rent + ' หลัง');
+  if (!items.length) items.push(TENT_ROW.name);
+
+  const b = {
+    id: String(r[1] == null ? '' : r[1]).trim(), // แถวที่พิมพ์เองในชีตไม่มีรหัส = '' (ไม่ส่งเลขแถว)
+    items, checkin, checkout, nights: nights_(checkin, checkout),
+    people: { guests: Number(r[7]) || 0, tentGuests: tent, tentRentals: rent },
+    total, payType, paid, balanceDue, status,
+    nameMasked: maskName_(r[8]),
+  };
+  if (pending) {
+    b.deadline = stamp_(r[COL.deadline - 1]);
+    b.payNow = due;
+  }
+  if (status === STATUS.CANCELLED && payType === 'full') {
+    b.refund = String(r[COL.refund - 1] || '').trim() === REFUND.DONE ? 'done' : 'pending';
+    b.refundAmount = Math.floor(total / 2);
+  }
+  return b;
+}
+
+// ---------- LINE: ลูกค้าส่งเลขการจองมา → ตอบใบยืนยันการจอง ----------
+// ลูกค้า (ไม่ใช่แอดมิน) ส่งข้อความที่มีเลขการจอง เช่น ข้อความ "ส่งสลิปการจอง..." จากปุ่ม "ส่งสลิปทาง LINE"
+// หรือ "เช็กการจอง LG261003-1234" → ตอบกลับ (reply ฟรี ไม่ใช้ push) ด้วยใบยืนยันการจองแบบปิดชื่อ
+// ข้อความที่ไม่มีเลขการจอง = เงียบ (ให้ข้อความตอบกลับอัตโนมัติของ LINE OA ทำงานตามปกติ)
+// กันสุ่มเลข: ต่อคนไม่เกิน 10 ครั้ง/10 นาที · รวมทุกคน 100 ครั้ง/10 นาที เกินแล้วเงียบ · ไม่บันทึกข้อความลูกค้าลง log
+const LINE_LOOKUP_MAX_USER = 10;
+const LINE_LOOKUP_MAX_ALL = 100;
+const SITE_URL = 'https://lagooncamping.github.io';
+const MAP_URL = 'https://goo.gl/maps/8mGhpGAEaRzAJNGq6';
+const PROMPTPAY_TEXT = '090-936-5562'; // ต้องตรงกับ PROMPTPAY ใน js/booking.js
+const CHECK_TIMES = 'เช็กอินได้ตั้งแต่ 11:00 น. และเช็กเอาต์ก่อน 12:00 น.'; // ต้องตรงกับ stay.html
+
+// เลขการจองในข้อความ (LG + ปีเดือนวัน 6 หลัก + ขีด + 4 หลัก) ไม่มี = ''
+function bookingIdIn_(text) {
+  const m = String(text || '').match(/LG\d{6}-\d{4}/i);
+  return m ? m[0].toUpperCase() : '';
+}
+
+// ตอบเลขการจองทาง LINE · แอดมินไม่จำกัดจำนวนครั้ง
+function lineVoucherReply_(ev, user, text, id, isAdmin) {
+  if (!isAdmin) {
+    const cache = CacheService.getScriptCache();
+    if (overLimit_(cache, 'line_lookup_all', LINE_LOOKUP_MAX_ALL)) return;
+    if (overLimit_(cache, 'line_lookup_' + user, LINE_LOOKUP_MAX_USER)) return;
+  }
+  const rows = adminValues_(sheet_()).filter((r) => String(r[1] == null ? '' : r[1]).trim().toUpperCase() === id);
+  const b = rows.length ? voucherOf_(rows, nowText_()) : null;
+  if (!b) {
+    lineReply_(ev.replyToken, 'ไม่พบเลขการจองนี้ กรุณาตรวจเลขอีกครั้ง หรือรอแอดมินตอบกลับ');
+    return;
+  }
+  if (!isAdmin && (b.status === STATUS.PENDING || b.status === STATUS.CONFIRMED)) {
+    try {
+      linkLine_(id, user);
+    } catch (err) {
+      console.error('จำ LINE ลูกค้าไม่สำเร็จ'); // ไม่ log ข้อความ/รหัสผู้ใช้ · ยังตอบใบยืนยันตามปกติ
+    }
+  }
+  lineReply_(ev.replyToken, voucherText_(b, /สลิป/.test(text)));
+}
+
+// ลูกค้าส่งรูปมา (มักเป็นสลิป): ผูก LINE ไว้กับการจองที่รอชำระ → "ได้รับสลิปแล้ว (รหัส ...)"
+// ไม่ได้ผูก → ขอให้พิมพ์รหัสการจองมาด้วย · ตอบได้ 1 ครั้ง/คน/10 นาที (ลูกค้ามักส่งหลายรูป)
+// ไม่ดาวน์โหลด/ไม่เก็บรูป · ใช้ reply (ฟรี) ไม่ใช้ push · ไม่แจ้งแอดมิน (แอดมินเห็นในแชตอยู่แล้ว)
+const LINE_IMAGE_ACK_ALL = 300; // ตอบรูปรวมทุกคนไม่เกินนี้ ต่อ 10 นาที (กันอ่านชีตถี่เกิน)
+function lineImageAck_(ev, user) {
+  const cache = CacheService.getScriptCache();
+  const key = 'line_img_' + user;
+  if (cache.get(key)) return;
+  if (overLimit_(cache, 'line_img_all', LINE_IMAGE_ACK_ALL)) return;
+  cache.put(key, '1', LOOKUP_WINDOW);
+  const now = nowText_();
+  const ids = [];
+  adminValues_(sheet_()).forEach((r) => {
+    const id = String(r[1] == null ? '' : r[1]).trim();
+    if (!id || /^BLK/.test(id) || ids.includes(id) || String(r[COL.line - 1] || '').trim() !== user) return;
+    const status = String(r[COL.status - 1] || '').trim();
+    if (status === STATUS.PENDING && !isExpired_(status, r[COL.deadline - 1], now)) ids.push(id);
+  });
+  lineReply_(ev.replyToken, ids.length
+    ? 'ได้รับสลิปแล้ว ✅ (รหัสการจอง ' + ids.join(', ') + ')\nแอดมินจะตรวจยอดและยืนยันให้เร็วที่สุด เมื่อยืนยันแล้วจะส่งใบยืนยันการจองมาที่แชตนี้'
+    : 'ได้รับรูปแล้ว 🙏 ถ้าเป็นสลิปโอนเงิน กรุณาพิมพ์รหัสการจอง (เช่น LG261003-1234) มาด้วย แอดมินจะตรวจให้');
+}
+
+// จำ LINE userId ของลูกค้าไว้ในคอลัมน์ 'LINE ลูกค้า' ทุกแถวของการจองนี้ (ใช้ส่งใบยืนยันตอนแอดมินกดยืนยัน)
+// คนแรกที่ส่งเลขการจองมาเป็นเจ้าของ — มีคนอื่นจำไว้แล้วไม่เขียนทับ · ไม่จำการปิดบ้าน (BLK)
+function linkLine_(id, user) {
+  if (/^BLK/.test(id) || !/^U[0-9a-f]{32}$/i.test(user)) return false;
+  return adminLocked_((sh) => {
+    ensureCols_(sh);
+    const values = adminValues_(sh);
+    const rows = [];
+    values.forEach((r, i) => { if (String(r[1] == null ? '' : r[1]).trim().toUpperCase() === id) rows.push(i + 2); });
+    if (!rows.length) return false;
+    const current = rows.map((n) => String(values[n - 2][COL.line - 1] || '').trim()).find(Boolean);
+    if (current) return current === user;
+    rows.forEach((n) => sh.getRange(n, COL.line).setValue(user));
+    return true;
+  });
+}
+
+// ใบยืนยันการจองแบบข้อความ (LINE รับได้ 5000 ตัวอักษร — lineReply_ ตัดที่ 4900 อยู่แล้ว)
+function voucherText_(b, slipSent) {
+  const baht = (n) => Number(n).toLocaleString('en-US') + ' บาท';
+  const active = b.status === STATUS.CONFIRMED || b.status === STATUS.PENDING;
+  const labels = {};
+  labels[STATUS.CONFIRMED] = '✅ ยืนยันแล้ว';
+  labels[STATUS.PENDING] = '⏳ รอชำระเงิน';
+  labels[STATUS.CANCELLED] = '❌ ยกเลิก';
+  labels[STATUS.EXPIRED] = '⌛ หมดเวลาชำระ (การจองถูกยกเลิกอัตโนมัติ)';
+  const p = b.people;
+  const people = [
+    p.guests ? p.guests + ' ท่านในบ้าน' : '',
+    p.tentGuests ? 'เต็นท์มาเอง ' + p.tentGuests + ' ท่าน' : '',
+    p.tentRentals ? 'เช่าเต็นท์ ' + p.tentRentals + ' หลัง (2 ท่าน/หลัง)' : '',
+  ].filter(Boolean).join(' · ');
+  const lines = ['📋 ใบยืนยันการจอง The Lagoon', 'รหัส ' + b.id, labels[b.status] || 'ℹ️ ' + (b.status || 'รอแอดมินตรวจสอบ')];
+  if (b.status === STATUS.PENDING) {
+    if (slipSent) lines.push('ได้รับข้อความแล้ว แอดมินจะตรวจสลิปและยืนยันให้เร็วที่สุด');
+    if (b.payNow) lines.push('💳 ' + (b.payType === 'full' ? 'ยอดชำระเต็มจำนวน ' : 'ยอดมัดจำ ') + baht(b.payNow) + ' · พร้อมเพย์ ' + PROMPTPAY_TEXT);
+    if (/^\d{4}-\d{2}-\d{2} \d{2}:\d{2}$/.test(b.deadline || '')) {
+      lines.push('⏰ ชำระภายใน ' + thaiDate_(b.deadline.slice(0, 10), true) + ' เวลา ' + b.deadline.slice(11) + ' น.');
+    }
+  }
+  lines.push('');
+  if (b.nameMasked) lines.push('👤 ' + b.nameMasked);
+  lines.push('🏠 ' + b.items.join(', '));
+  lines.push('📅 ' + thaiRange_(b.checkin, b.checkout));
+  if (people) lines.push('👥 ' + people);
+  if (b.total) lines.push('💰 ยอดรวม ' + baht(b.total) + (b.paid ? ' · ชำระแล้ว ' + baht(b.paid) : ''));
+  if (b.balanceDue) lines.push('💵 ชำระวันเช็กอิน ' + baht(b.balanceDue) + ' (เงินสดหรือโอนหน้าเคาน์เตอร์)');
+  if (b.refund === 'done') lines.push('↩️ คืนเงิน 50% แล้ว (' + baht(b.refundAmount) + ')');
+  else if (b.refund) lines.push('↩️ ถ้าชำระเต็มจำนวนแล้ว จะได้รับเงินคืน 50% (' + baht(b.refundAmount) + ') แอดมินจะโอนคืนให้');
+  if (active) {
+    lines.push('🕚 ' + CHECK_TIMES);
+    lines.push('📍 แผนที่ ' + MAP_URL);
+    lines.push('');
+    lines.push('แสดงข้อความนี้กับเจ้าหน้าที่ตอนเช็กอิน');
+  }
+  lines.push('ดูใบยืนยันการจอง: ' + SITE_URL + '/my-booking.html');
+  return lines.join('\n');
 }

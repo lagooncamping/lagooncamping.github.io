@@ -1,0 +1,104 @@
+/* =========================================================
+   หน้า "เช็กการจองของฉัน" (my-booking.html) — ใช้สีจาก :root ใน css/style.css
+   ========================================================= */
+:root {
+  --mb-ok-bg: #e3f1e0;   --mb-ok-ink: #245c2e;    /* ยืนยันแล้ว */
+  --mb-wait-bg: #fff1d6; --mb-wait-ink: #8a5300;  /* รอชำระเงิน */
+  --mb-off-bg: #ececec;  --mb-off-ink: #555;      /* ยกเลิก / หมดเวลา */
+  --mb-err: #b4462f;
+}
+@media (prefers-color-scheme: dark) {
+  :root {
+    --mb-ok-bg: #1f3a24;   --mb-ok-ink: #a8d8ad;
+    --mb-wait-bg: #3d2f12; --mb-wait-ink: #f2c47a;
+    --mb-off-bg: #2b2d2a;  --mb-off-ink: #b9b8ad;
+    --mb-err: #f0957d;
+  }
+}
+
+.mb .head { margin-bottom: 24px; }
+
+/* ---------- ฟอร์มค้นหา ---------- */
+.mb-form { max-width: 560px; }
+.mb-label { display: block; font-weight: 600; margin-bottom: 8px; }
+.mb-row { display: flex; gap: 10px; flex-wrap: wrap; }
+.mb-input {
+  flex: 1 1 220px; min-width: 0; min-height: 56px; padding: 10px 16px;
+  font: inherit; font-size: 1.35rem; letter-spacing: .03em; font-variant-numeric: tabular-nums;
+  color: var(--ink); background: var(--surface); border: 1.5px solid var(--line); border-radius: var(--radius-sm);
+}
+.mb-input:focus { outline: 2px solid var(--forest); outline-offset: 1px; border-color: var(--forest); }
+.mb-input[aria-invalid="true"] { border-color: var(--mb-err); }
+.mb-btn { flex: 0 0 auto; min-height: 56px; border: 0; cursor: pointer; font: inherit; font-weight: 600; font-size: 1.05rem; }
+.mb-btn:disabled { opacity: .6; cursor: progress; transform: none; }
+@media (max-width: 480px) { .mb-btn { flex: 1 1 100%; } }
+.mb-error { margin: 8px 0 0; color: var(--mb-err); font-weight: 500; min-height: 0; }
+.mb-error:empty { display: none; }
+.mb-help { margin: 6px 0 0; font-size: .9rem; color: var(--muted); }
+.mb-clear {
+  border: 0; background: none; padding: 0 4px; min-height: 44px; font: inherit; color: var(--forest);
+  text-decoration: underline; text-underline-offset: 3px; cursor: pointer;
+}
+.mb-status { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
+
+/* ---------- ผลการค้นหา ---------- */
+.mb-results { margin-top: 28px; display: grid; gap: 20px; max-width: 560px; }
+.mb-count { margin: 0; color: var(--muted); }
+.mb-empty { padding: 20px; background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius); overflow-wrap: anywhere; }
+.mb-empty p { margin: 0; }
+.mb-small { margin-top: 8px !important; font-size: .88rem; color: var(--muted); }
+
+/* ---------- ใบยืนยันการจอง ---------- */
+.voucher {
+  min-width: 0; background: var(--surface); border: 1px solid var(--line); border-top: 6px solid var(--forest);
+  border-radius: var(--radius); overflow: hidden; scroll-margin-top: 80px;
+}
+.v-off { border-top-color: var(--mb-off-ink); }
+.v-wait { border-top-color: var(--sun); }
+.v-head { display: flex; justify-content: space-between; align-items: baseline; gap: 8px; flex-wrap: wrap; padding: 16px 20px 0; }
+.v-brand { font-family: var(--font-display); color: var(--forest); font-size: 1.2rem; }
+.v-title { color: var(--muted); font-size: .9rem; font-weight: 600; }
+.v-main { padding: 8px 20px 4px; }
+.v-id-label { margin: 8px 0 0; text-align: center; color: var(--muted); font-size: .85rem; border-top: 2px dashed var(--line); padding-top: 12px; }
+.v-id {
+  margin: 0; text-align: center; font-weight: 600; font-size: clamp(1.6rem, 8vw, 2.2rem); line-height: 1.3;
+  letter-spacing: .02em; font-variant-numeric: tabular-nums; overflow-wrap: anywhere;
+}
+.v-tags { margin: 8px 0 0; display: flex; justify-content: center; flex-wrap: wrap; gap: 6px; }
+.v-pill { display: inline-block; padding: 3px 16px; border-radius: 999px; font-weight: 600; }
+.v-ok .v-pill { background: var(--mb-ok-bg); color: var(--mb-ok-ink); }
+.v-wait .v-pill { background: var(--mb-wait-bg); color: var(--mb-wait-ink); }
+.v-off .v-pill { background: var(--mb-off-bg); color: var(--mb-off-ink); }
+.v-past { display: inline-block; padding: 3px 12px; border-radius: 999px; font-size: .9rem; color: var(--muted); border: 1px solid var(--line); }
+.v-alert { margin: 14px 0 0; padding: 12px 14px; border-radius: var(--radius-sm); background: var(--mb-wait-bg); color: var(--mb-wait-ink); overflow-wrap: anywhere; }
+.v-alert p { margin: 0; font-weight: 500; }
+.v-alert-link { display: inline-flex; align-items: center; min-height: 44px; font-weight: 600; color: inherit; }
+.v-rows { margin: 14px 0 0; }
+.v-row { display: grid; grid-template-columns: 6.5em minmax(0, 1fr); gap: 4px 12px; padding: 8px 0; border-bottom: 1px solid var(--line); }
+.v-row:last-child { border-bottom: 0; }
+.v-row dt { color: var(--muted); font-size: .92rem; }
+.v-row dd { margin: 0; min-width: 0; overflow-wrap: anywhere; }
+.v-strong dd { color: var(--clay); font-weight: 600; }
+@media (max-width: 340px) { .v-row { grid-template-columns: 1fr; gap: 0; } }
+.v-note { margin: 10px 0 0; font-size: .92rem; color: var(--muted); overflow-wrap: anywhere; }
+.v-times { margin: 12px 0 0; padding: 10px 12px; border-radius: var(--radius-sm); background: color-mix(in srgb, var(--forest) 10%, transparent); font-weight: 500; }
+.v-links { margin: 6px 0 0; display: flex; flex-wrap: wrap; gap: 0 20px; }
+.v-links a { display: inline-flex; align-items: center; min-height: 44px; font-weight: 500; }
+.v-tools { display: flex; gap: 10px; flex-wrap: wrap; padding: 8px 20px 0; }
+.v-tool {
+  flex: 1 1 120px; min-height: 48px; padding: 8px 14px; font: inherit; font-weight: 600; cursor: pointer;
+  color: var(--forest); background: transparent; border: 1.5px solid var(--forest); border-radius: var(--radius-sm);
+}
+.v-tool:hover { background: color-mix(in srgb, var(--forest) 8%, transparent); }
+.v-tool:disabled { opacity: .6; cursor: progress; }
+.v-msg { margin: 6px 20px 0; font-size: .9rem; color: var(--forest); }
+.v-msg:empty { display: none; }
+.v-copy-text { display: block; width: calc(100% - 40px); margin: 8px 20px 0; font: inherit; font-size: .9rem; color: var(--ink); background: var(--bg); border: 1px solid var(--line); border-radius: var(--radius-sm); padding: 8px; }
+.v-copy-text[hidden] { display: none; }
+.v-hint { margin: 12px 0 0; padding: 12px 20px 16px; text-align: center; font-weight: 600; color: var(--forest); background: color-mix(in srgb, var(--forest) 8%, transparent); }
+.voucher:not(:has(.v-hint)) { padding-bottom: 18px; }
+
+@media print {
+  .mb-form, .v-tools, .v-msg, .site-footer, .dock, .line-float, .nav { display: none !important; }
+  .voucher { break-inside: avoid; }
+}

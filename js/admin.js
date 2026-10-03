@@ -361,7 +361,7 @@ function card(b) {
   const who = b.blocked ? '' : `<p class="who"><b>${esc(b.name || '-')}</b>${people(b) ? ` · ${people(b)} ท่าน` : ''}${b.guests && (b.tent || b.rent) ? ` (ในบ้าน ${b.guests})` : ''}</p>`;
   return `
   <article class="bk st-${cls}" id="b-${esc(b.id)}" data-id="${esc(b.id)}">
-    <div class="bk-top"><span class="pill">${esc(pill)}</span><span class="bk-id">${esc(b.id)}</span></div>
+    <div class="bk-top"><span class="pill">${esc(pill)}</span>${b.lineLinked && !b.blocked ? '<span class="line-badge" title="ลูกค้าทัก LINE พร้อมเลขการจองแล้ว กดยืนยันแล้วระบบส่งใบยืนยันเข้า LINE ให้">LINE ✓</span>' : ''}<span class="bk-id">${esc(b.id)}</span></div>
     <h3>${b.blocked ? 'ปิดบ้าน: ' : ''}${esc(b.blocked ? b.houseNames.join(', ') : itemsText(b))}</h3>
     <p class="dates">${dateRange(b)}</p>
     ${who}
@@ -425,7 +425,10 @@ document.addEventListener('click', async (e) => {
       : errText(out.error);
     return;
   }
-  toast(done);
+  // ยืนยันแล้ว: Code.gs ส่งใบยืนยันเข้า LINE ลูกค้าให้เอง ถ้าลูกค้าเคยทัก LINE พร้อมเลขการจอง (out.pushed)
+  if (out.pushed === true) toast('ยืนยันแล้ว · ส่งใบยืนยันเข้า LINE ลูกค้าแล้ว');
+  else if (out.pushed === false && c.dataset.pending === 'confirm') toast('ยืนยันแล้ว · ลูกค้าไม่ได้ทัก LINE ใช้ปุ่มคัดลอกข้อความส่งเองได้');
+  else toast(done);
   await load();
   if (c.isConnected) renderView(); // โหลดใหม่ไม่สำเร็จ: วาดการ์ดใหม่ ให้ปุ่มกดได้อีก
 });
