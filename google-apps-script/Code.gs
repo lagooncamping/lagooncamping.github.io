@@ -13,6 +13,12 @@
  *     LINE_TOKEN = Channel access token ของ LINE OA
  *     ADMIN_CODE = รหัสลับสำหรับลงทะเบียนแอดมิน (ตั้งเอง ยาว ๆ เดายาก)
  *     ADMIN_IDS  = ระบบเติมเองเมื่อแอดมินพิมพ์ "ลงทะเบียน <รหัสลับ>" ในแชท LINE OA
+ * - หลังบ้าน (หน้า admin.html): ดู/ยืนยัน/ยกเลิกการจอง เพิ่มการจองทางโทรศัพท์ รับเงินส่วนที่เหลือ คืนเงิน
+ *   ปฏิทินบ้านว่าง และปิดบ้าน (ซ่อม/ไม่รับจอง) — ไม่ต้องเข้าไปแก้ในชีตเอง
+ *   ตั้งรหัสเข้าหลังบ้านที่ Project Settings > Script properties > Add script property
+ *     ADMIN_PIN  = ตัวเลข 6 หลักขึ้นไป (ตั้งเอง ห้ามใช้ 123456 หรือวันเกิด) ยังไม่ตั้ง = หลังบ้านเข้าไม่ได้
+ *   เปลี่ยน ADMIN_PIN = ทุกเครื่องที่เคยเข้าไว้ถูกออกจากระบบทันที · ใส่ผิดรวมกัน 10 ครั้ง/ชั่วโมง = ล็อก 1 ชั่วโมง
+ *   แก้ไฟล์นี้แล้วต้อง Deploy > Manage deployments > แก้ (ดินสอ) > Version: New version > Deploy ทุกครั้ง
  */
 
 // ID ของไฟล์ชีต (ตัวอักษรยาว ๆ ในลิงก์ชีต ระหว่าง /d/ กับ /edit)
@@ -146,6 +152,18 @@ function doPost(e) {
   if (Array.isArray(d.events)) {
     d.events.forEach((ev) => { try { lineEvent_(ev); } catch (err) { console.error('LINE: ' + err); } });
     return json_({ ok: true });
+  }
+
+  // หน้าหลังบ้าน (admin.html) — ต้องเข้าสู่ระบบด้วย PIN ก่อน
+  if (d && typeof d.admin === 'string') {
+    let out;
+    try {
+      out = adminApi_(d);
+    } catch (err) {
+      console.error('หลังบ้าน: ' + err);
+      out = { ok: false, error: 'server' };
+    }
+    return json_(out);
   }
 
   // ช่องลับกันบอท: คนจริงมองไม่เห็นช่องนี้ ถ้ามีค่ามาแปลว่าเป็นบอท ทำเหมือนสำเร็จแต่ไม่บันทึก
@@ -439,6 +457,7 @@ function lineNotify_(id, d, due, payType) {
     '📞 ' + String(d.phone).trim(),
     '💰 ' + PAY_TYPES[payType] + ' ' + due.toLocaleString('en-US') + ' บาท (รอชำระเงิน)',
     'รหัส ' + id,
+    'เปิดในหลังบ้าน: ' + ADMIN_URL + '#' + id,
   ].join('\n');
   linePush_(admins, text);
 }
@@ -490,6 +509,7 @@ function bookingGroups_() {
     const g = groups[key] || (groups[key] = {
       houses: [], from: iso_(r[COL.checkin - 1]), to: iso_(r[COL.checkout - 1]),
       guests: r[7], tent: Number(r[18]) || 0, rent: Number(r[19]) || 0, name: String(r[8]), phone: String(r[9]), note: String(r[10] || ''), status,
+      blocked: /^BLK/.test(key), // ปิดบ้านจากหลังบ้าน (ซ่อม/ไม่รับจอง) ไม่ใช่แขก
     });
     const hid = houseId_(r[COL.house - 1]) || houseId_(r[3]);
     if (hid === TENT_ROW.id) return; // แถวจองเฉพาะเต็นท์ ไม่นับเป็นบ้าน
@@ -508,6 +528,7 @@ function groupPeople_(g) {
 }
 
 function bookingText_(g) {
+  if (g.blocked) return '🔧 ปิดบ้าน ' + g.houses.join(', ') + '\n📅 ' + thaiRange_(g.from, g.to) + (g.note ? '\n📝 ' + g.note : '');
   const people = [
     g.houses.length ? (Number(g.guests) || 0) + ' ท่านในบ้าน' : 'ไม่มีบ้าน',
     g.tent ? '⛺ มาเอง ' + g.tent + ' ท่าน' : '',
@@ -535,8 +556,9 @@ function nightText_(day) {
   const list = bookingGroups_().filter((g) => g.from <= day && g.to > day);
   const head = '🌙 คืนวัน' + thaiDate_(day, true);
   if (!list.length) return head + '\nยังไม่มีคนจองครับ บ้านว่างทุกหลัง';
-  const people = list.reduce((sum, g) => sum + groupPeople_(g), 0);
-  const houses = list.reduce((sum, g) => sum + g.houses.length, 0);
+  const guests = list.filter((g) => !g.blocked); // บ้านที่ปิดซ่อมไม่นับเป็นแขก
+  const people = guests.reduce((sum, g) => sum + groupPeople_(g), 0);
+  const houses = guests.reduce((sum, g) => sum + g.houses.length, 0);
   const tent = list.reduce((sum, g) => sum + g.tent, 0);
   const rent = list.reduce((sum, g) => sum + g.rent, 0);
   const summary = [
@@ -596,4 +618,276 @@ function parseDate_(text, today) {
 /** กด Run ครั้งเดียวหลังเพิ่มส่วน LINE เพื่อให้ Google ขออนุญาตเชื่อมต่อ LINE (UrlFetchApp) */
 function authorizeLine() {
   UrlFetchApp.fetch('https://api.line.me/v2/bot/info', { muteHttpExceptions: true });
+}
+
+// ---------- หลังบ้าน (admin.html): API สำหรับแอดมิน ----------
+// ทุกคำขอส่งมาทาง doPost เป็น { admin: '<คำสั่ง>', token, ... }
+// login → { ok, token, exp } · คำสั่งอื่นต้องมี token ที่ยังไม่หมดอายุ ไม่งั้นได้ { ok:false, error:'auth' }
+//   list · setStatus · setBalance · setRefund · addBooking · block (ดูรายละเอียดที่แต่ละฟังก์ชัน)
+
+const ADMIN_URL = 'https://lagooncamping.github.io/admin.html';
+const ADMIN_TOKEN_DAYS = 30;  // เข้าสู่ระบบครั้งเดียว ใช้ได้ 30 วัน
+const ADMIN_MAX_FAILS = 10;   // ใส่ PIN ผิดรวมกันเกินนี้ใน 1 ชั่วโมง = ล็อกการเข้าสู่ระบบ
+const ADMIN_MAX_NIGHTS = 90;  // แอดมินจอง/ปิดบ้านได้ยาวสุดกี่คืน
+const ADMIN_PAID = { none: 'ยังไม่ชำระ', deposit: PAY_TYPES.deposit, full: PAY_TYPES.full };
+
+function adminApi_(d) {
+  const pin = String(props_().getProperty('ADMIN_PIN') || '').trim();
+  if (pin.length < 6) return { ok: false, error: 'not_configured' };
+  if (d.admin === 'login') return adminLogin_(d, pin);
+  if (!adminTokenOk_(d.token, pin)) return { ok: false, error: 'auth' };
+  switch (d.admin) {
+    case 'list': return adminList_();
+    case 'setStatus': return adminSetStatus_(d);
+    case 'setBalance': return adminSetBalance_(d);
+    case 'setRefund': return adminSetRefund_(d);
+    case 'addBooking': return adminAdd_(d, false);
+    case 'block': return adminAdd_(d, true);
+    default: return { ok: false, error: 'bad_request' };
+  }
+}
+
+// เทียบข้อความแบบใช้เวลาเท่ากันเสมอ (ไม่หยุดตั้งแต่ตัวแรกที่ต่าง)
+function sameText_(a, b) {
+  a = String(a);
+  b = String(b);
+  let diff = a.length ^ b.length;
+  for (let i = 0; i < Math.max(a.length, b.length); i++) diff |= (a.charCodeAt(i) || 0) ^ (b.charCodeAt(i) || 0);
+  return diff === 0;
+}
+
+// token = เวลาหมดอายุ + ลายเซ็น (คำนวณจาก PIN) ไม่ต้องเก็บไว้ที่ไหน · เปลี่ยน PIN = token เก่าใช้ไม่ได้ทั้งหมด
+function adminSign_(exp, pin) {
+  const sig = Utilities.computeHmacSha256Signature(String(exp), pin + ':lagoon-admin');
+  return Utilities.base64EncodeWebSafe(sig).replace(/=+$/, '');
+}
+
+function adminTokenOk_(token, pin) {
+  const m = String(token || '').match(/^(\d{10,16})\.([A-Za-z0-9_-]+)$/);
+  if (!m) return false;
+  const exp = Number(m[1]);
+  const now = Date.now();
+  if (exp <= now || exp > now + (ADMIN_TOKEN_DAYS + 1) * 86400000) return false;
+  return sameText_(m[2], adminSign_(m[1], pin));
+}
+
+function adminLogin_(d, pin) {
+  const cache = CacheService.getScriptCache();
+  const fails = Number(cache.get('admin_fail')) || 0;
+  if (fails >= ADMIN_MAX_FAILS) return { ok: false, error: 'locked' };
+  if (!sameText_(String(d.pin == null ? '' : d.pin).trim(), pin)) {
+    cache.put('admin_fail', String(fails + 1), 3600); // นับรวมทุกคน (Apps Script ไม่รู้ IP คนส่ง)
+    return { ok: false, error: fails + 1 >= ADMIN_MAX_FAILS ? 'locked' : 'bad_pin' };
+  }
+  const exp = Date.now() + ADMIN_TOKEN_DAYS * 86400000;
+  return { ok: true, token: exp + '.' + adminSign_(exp, pin), exp };
+}
+
+// รหัสการจองของแถว (แถวที่แอดมินพิมพ์เองในชีตไม่มีรหัส → ROW<เลขแถว>)
+function rowKey_(r, i) {
+  return String(r[1] == null ? '' : r[1]).trim() || 'ROW' + (i + 2);
+}
+
+function adminValues_(sh) {
+  const last = sh.getLastRow();
+  return last < 2 ? [] : sh.getRange(2, 1, last - 1, HEADERS.length).getValues();
+}
+
+// เขียนลงชีตแบบล็อก (กันชนกับลูกค้าที่กำลังจองจากหน้าเว็บ) แล้ว flush ก่อนปลดล็อก
+function adminLocked_(fn) {
+  const lock = LockService.getScriptLock();
+  lock.waitLock(10000);
+  try {
+    return fn(sheet_());
+  } finally {
+    try {
+      SpreadsheetApp.flush();
+    } finally {
+      lock.releaseLock();
+    }
+  }
+}
+
+// บ้านไหนในรายการ houses ถูกจอง (ที่ยังมีผล) ซ้อนช่วง from–to อยู่ (ไม่นับแถวของรหัส exceptId)
+function adminTaken_(values, houses, from, to, exceptId) {
+  const today = todayISO_();
+  const now = nowText_();
+  return houses.filter((h) => values.some((r, i) => {
+    if (exceptId && rowKey_(r, i) === exceptId) return false;
+    const status = r[COL.status - 1];
+    const end = iso_(r[COL.checkout - 1]);
+    return (houseId_(r[COL.house - 1]) || houseId_(r[3])) === h
+      && iso_(r[COL.checkin - 1]) < to && end > from && end > today
+      && status !== STATUS.CANCELLED && status !== STATUS.EXPIRED && !isExpired_(status, r[COL.deadline - 1], now);
+  }));
+}
+
+// แถวทั้งหมดของรหัสการจองนี้ (เลขแถวในชีต)
+function adminRows_(values, id) {
+  const rows = [];
+  values.forEach((r, i) => { if (rowKey_(r, i) === id) rows.push(i + 2); });
+  return rows;
+}
+
+/** list: การจองทั้งหมดที่เช็กเอาต์ไม่เกิน 60 วันที่แล้ว + ที่จะมาถึง รวมแถวของรหัสเดียวกัน */
+function adminList_() {
+  const today = todayISO_();
+  const now = nowText_();
+  const since = addDaysISO_(today, -60);
+  const groups = {};
+  const order = [];
+  adminValues_(sheet_()).forEach((r, i) => {
+    const id = rowKey_(r, i);
+    const hid = houseId_(r[COL.house - 1]) || houseId_(r[3]);
+    let g = groups[id];
+    if (!g) {
+      const checkin = iso_(r[COL.checkin - 1]);
+      const checkout = iso_(r[COL.checkout - 1]);
+      const status = isExpired_(r[COL.status - 1], r[COL.deadline - 1], now) ? STATUS.EXPIRED : String(r[COL.status - 1] || '');
+      const isISO = /^\d{4}-\d{2}-\d{2}$/.test(checkin) && /^\d{4}-\d{2}-\d{2}$/.test(checkout);
+      g = groups[id] = {
+        id, rows: [], houses: [], houseNames: [], checkin, checkout,
+        nights: isISO ? nights_(checkin, checkout) : Number(r[6]) || 0,
+        guests: Number(r[7]) || 0, name: String(r[8] || ''), phone: String(r[9] || ''), note: String(r[10] || ''),
+        total: Number(r[11]) || 0, status, due: Number(r[13]) || 0, deadline: stamp_(r[COL.deadline - 1]),
+        payType: String(r[15] || ''), balance: String(r[COL.balance - 1] || ''), refund: String(r[COL.refund - 1] || ''),
+        tent: Number(r[18]) || 0, rent: Number(r[19]) || 0, createdAt: stamp_(r[0]), blocked: /^BLK/.test(id),
+        show: !isISO || checkout >= since,
+      };
+      order.push(id);
+    }
+    g.rows.push(i + 2);
+    if (hid === TENT_ROW.id) return; // แถวจองเฉพาะเต็นท์
+    g.houses.push(isHouse_(hid) ? hid : String(r[3] || r[COL.house - 1] || ''));
+    g.houseNames.push(isHouse_(hid) ? HOUSES[hid].name : String(r[3] || r[COL.house - 1] || ''));
+  });
+  const bookings = order.map((id) => groups[id]).filter((g) => g.show)
+    .sort((a, b) => (a.checkin < b.checkin ? -1 : a.checkin > b.checkin ? 1 : 0));
+  bookings.forEach((g) => delete g.show);
+  return { ok: true, today, now, houses: HOUSES, tentPrice: TENT_PRICE, tentRent: TENT_RENT, depositRate: DEPOSIT_RATE, bookings };
+}
+
+// รับได้ทั้งชื่อย่อ (CONFIRMED) และคำไทย (ยืนยันแล้ว)
+function pick_(map, keys, v) {
+  const s = String(v == null ? '' : v);
+  const key = keys.find((k) => k === s || map[k] === s);
+  return key ? map[key] : '';
+}
+
+/** setStatus { id, status: CONFIRMED | CANCELLED | PENDING } → ทุกแถวของการจองนี้ */
+function adminSetStatus_(d) {
+  const status = pick_(STATUS, ['CONFIRMED', 'CANCELLED', 'PENDING'], d.status);
+  if (!status) return { ok: false, error: 'bad_status' };
+  const id = String(d.id || '');
+  return adminLocked_((sh) => {
+    const values = adminValues_(sh);
+    const rows = adminRows_(values, id);
+    if (!rows.length) return { ok: false, error: 'not_found' };
+    if (status !== STATUS.CANCELLED) {
+      // เปิดการจองกลับมา (เช่น เคยยกเลิก/หมดเวลา) แต่มีคนอื่นจองบ้านนั้นไปแล้ว → ไม่ให้ทำ
+      const r = values[rows[0] - 2];
+      const houses = rows.map((n) => houseId_(values[n - 2][COL.house - 1]) || houseId_(values[n - 2][3])).filter(isHouse_);
+      const taken = adminTaken_(values, houses, iso_(r[COL.checkin - 1]), iso_(r[COL.checkout - 1]), id);
+      if (taken.length) return { ok: false, error: 'booked', houses: taken };
+    }
+    rows.forEach((n) => sh.getRange(n, COL.status).setValue(status));
+    return { ok: true, id, status };
+  });
+}
+
+/** setBalance { id, value: ยังไม่ชำระ | เงินสด | โอนหน้าเคาน์เตอร์ } (หรือ UNPAID | CASH | TRANSFER) */
+function adminSetBalance_(d) {
+  const value = pick_(BALANCE, Object.keys(BALANCE), d.value);
+  if (!value) return { ok: false, error: 'bad_value' };
+  return adminSetCol_(d.id, COL.balance, value);
+}
+
+/** setRefund { id, done: true/false } */
+function adminSetRefund_(d) {
+  return adminSetCol_(d.id, COL.refund, d.done === true ? REFUND.DONE : '');
+}
+
+function adminSetCol_(id, col, value) {
+  id = String(id || '');
+  return adminLocked_((sh) => {
+    const rows = adminRows_(adminValues_(sh), id);
+    if (!rows.length) return { ok: false, error: 'not_found' };
+    rows.forEach((n) => sh.getRange(n, col).setValue(value));
+    return { ok: true, id, value };
+  });
+}
+
+/** addBooking (block=false): จองทางโทรศัพท์/LINE/walk-in → ยืนยันแล้วทันที ไม่ส่ง LINE (ประหยัดโควตา 200 ข้อความ/เดือน)
+ *    { houses[], checkin, checkout, guests, name, phone, note, tentGuests, tentRentals, total?, paid: none|deposit|full }
+ *  block (block=true): ปิดบ้าน (ซ่อม/ไม่รับจอง) { houses[], from, to, reason } — เปิดคืน = setStatus CANCELLED */
+function adminAdd_(d, block) {
+  const isDate = (s) => typeof s === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(s);
+  const houses = Array.isArray(d.houses) ? [...new Set(d.houses.map(String))] : [];
+  if (houses.some((h) => !isHouse_(h))) return { ok: false, error: 'bad_house' };
+  const checkin = block ? d.from : d.checkin;
+  const checkout = block ? d.to : d.checkout;
+  // วันนี้/ย้อนหลังได้ (แขก walk-in) แต่วันออกต้องหลังวันนี้
+  if (!isDate(checkin) || !isDate(checkout) || checkout <= checkin || checkout <= todayISO_()) return { ok: false, error: 'bad_dates' };
+  const nights = nights_(checkin, checkout);
+  if (!(nights > 0)) return { ok: false, error: 'bad_dates' };
+  if (nights > ADMIN_MAX_NIGHTS) return { ok: false, error: 'too_long' };
+
+  let tent = 0;
+  let rent = 0;
+  let guests = 0;
+  let name = 'ปิดบ้าน';
+  let phone = '';
+  let note;
+  let total = 0;
+  let paid = 'none';
+  if (block) {
+    if (!houses.length) return { ok: false, error: 'bad_house' };
+    note = String(d.reason == null ? '' : d.reason).trim();
+    if (note.length > 200) return { ok: false, error: 'bad_note' };
+  } else {
+    tent = Number(d.tentGuests || 0);
+    rent = Number(d.tentRentals || 0);
+    if (!(Number.isInteger(tent) && tent >= 0 && tent <= 30)) return { ok: false, error: 'bad_tent' };
+    if (!(Number.isInteger(rent) && rent >= 0 && rent <= 10)) return { ok: false, error: 'bad_tent' };
+    if (!houses.length && !tent && !rent) return { ok: false, error: 'bad_house' };
+    guests = Number(d.guests || 0);
+    if (!(Number.isInteger(guests) && guests >= 0 && guests <= 30)) return { ok: false, error: 'bad_guests' };
+    name = String(d.name == null ? '' : d.name).trim();
+    if (!name || name.length > 100) return { ok: false, error: 'bad_name' };
+    phone = String(d.phone == null ? '' : d.phone).trim();
+    if (phone.length > 30) return { ok: false, error: 'bad_phone' };
+    note = String(d.note == null ? '' : d.note).trim();
+    if (note.length > 500) return { ok: false, error: 'bad_note' };
+    note = note ? '[แอดมิน] ' + note : '[แอดมิน]';
+    paid = Object.prototype.hasOwnProperty.call(ADMIN_PAID, d.paid) ? d.paid : 'none';
+    if (d.total !== undefined && d.total !== null && d.total !== '') {
+      total = Number(d.total);
+      if (!(Number.isInteger(total) && total >= 0 && total <= 10000000)) return { ok: false, error: 'bad_total' };
+    } else {
+      total = (houses.reduce((sum, h) => sum + HOUSES[h].price, 0) + tent * TENT_PRICE + rent * TENT_RENT) * nights;
+    }
+  }
+  // ยอดที่จ่ายมาแล้ว: ยังไม่จ่าย = 0 · มัดจำ = 50% · จ่ายครบ = ยอดรวม
+  const due = block || paid === 'none' ? 0 : paid === 'full' ? total : Math.ceil(total * DEPOSIT_RATE);
+
+  return adminLocked_((sh) => {
+    const values = adminValues_(sh);
+    const taken = adminTaken_(values, houses, checkin, checkout, '');
+    if (taken.length) return { ok: false, error: 'booked', houses: taken };
+
+    const now = new Date();
+    const ids = new Set(values.map((r, i) => rowKey_(r, i)));
+    let id;
+    do {
+      id = (block ? 'BLK' : 'LG') + Utilities.formatDate(now, TZ, 'yyMMdd') + '-' + Math.floor(1000 + Math.random() * 9000);
+    } while (ids.has(id));
+    const items = houses.length ? houses.map((h) => ({ id: h, name: HOUSES[h].name })) : [TENT_ROW];
+    const rows = items.map((h) => [
+      Utilities.formatDate(now, TZ, 'yyyy-MM-dd HH:mm'), id, h.id, h.name, checkin, checkout, nights,
+      guests, safe_(name), safe_(phone), safe_(note), total, STATUS.CONFIRMED, due, '',
+      block ? '' : ADMIN_PAID[paid], !block && paid !== 'full' ? BALANCE.UNPAID : '', '', tent || '', rent || '',
+    ]);
+    sh.getRange(sh.getLastRow() + 1, 1, rows.length, HEADERS.length).setValues(rows);
+    return { ok: true, id, total, due };
+  });
 }

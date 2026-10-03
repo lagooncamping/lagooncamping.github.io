@@ -1,0 +1,177 @@
+<!doctype html>
+<html lang="th">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <!-- หน้าหลังบ้านสำหรับแอดมิน: ไม่ให้ Google เก็บ และไม่มีลิงก์จากหน้าอื่น -->
+  <meta name="robots" content="noindex,nofollow">
+  <title>หลังบ้าน | The Lagoon</title>
+  <meta name="theme-color" content="#1f3b2c">
+  <link rel="icon" type="image/png" sizes="32x32" href="img/favicon-32.png">
+  <link rel="icon" type="image/png" sizes="192x192" href="img/favicon-192.png">
+  <link rel="apple-touch-icon" href="img/apple-touch-icon.png">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Anuphan:wght@400;500;600&family=Chonburi&display=swap">
+  <link rel="stylesheet" href="css/style.css?v=20261003e">
+  <link rel="stylesheet" href="css/admin.css?v=20261003a">
+</head>
+<body class="admin">
+
+  <!-- ===== เข้าสู่ระบบ ===== -->
+  <main id="login" class="login" hidden>
+    <span class="brand">The Lagoon</span>
+    <h1>หลังบ้าน</h1>
+    <form id="login-form" novalidate>
+      <label for="pin">ใส่รหัส PIN</label>
+      <input id="pin" name="pin" type="password" inputmode="numeric" pattern="[0-9]*" autocomplete="off"
+        maxlength="20" required aria-describedby="login-error">
+      <label class="show-pin"><input type="checkbox" id="show-pin"> แสดงตัวเลข</label>
+      <p id="login-error" class="error" role="alert"></p>
+      <button class="big primary" type="submit">เข้าสู่ระบบ</button>
+    </form>
+  </main>
+
+  <!-- ===== หน้าหลัก ===== -->
+  <div id="app" hidden>
+    <header class="top">
+      <div class="top-row">
+        <strong class="top-title">หลังบ้าน The Lagoon</strong>
+        <button type="button" class="ghost" id="logout">ออกจากระบบ</button>
+      </div>
+      <div class="top-row">
+        <span id="updated" class="muted" aria-live="polite">กำลังโหลด…</span>
+        <button type="button" class="small" id="refresh">↻ โหลดใหม่</button>
+      </div>
+    </header>
+
+    <nav class="tabs" aria-label="เมนูหลังบ้าน">
+      <button type="button" data-tab="today" aria-pressed="true">วันนี้</button>
+      <button type="button" data-tab="pending">รอชำระ <span class="count" id="pending-count" hidden></span></button>
+      <button type="button" data-tab="upcoming">กำลังจะมา</button>
+      <button type="button" data-tab="calendar">ปฏิทิน</button>
+      <button type="button" data-tab="all">ค้นหา</button>
+      <button type="button" data-tab="add" class="add">+ เพิ่มการจอง</button>
+    </nav>
+
+    <main class="views">
+      <p id="load-error" class="error banner" role="alert" hidden></p>
+
+      <section id="v-today" class="view" aria-labelledby="h-today">
+        <h1 id="h-today">วันนี้</h1>
+        <div id="today-body"></div>
+      </section>
+
+      <section id="v-pending" class="view" hidden aria-labelledby="h-pending">
+        <h1 id="h-pending">รอชำระเงิน</h1>
+        <p class="hint">ลูกค้าจองจากหน้าเว็บแล้ว ยังไม่ได้รับเงิน — เช็กสลิปใน LINE ก่อนกด “ได้รับเงินแล้ว”</p>
+        <div id="pending-body"></div>
+      </section>
+
+      <section id="v-upcoming" class="view" hidden aria-labelledby="h-upcoming">
+        <h1 id="h-upcoming">การจองที่กำลังจะมา</h1>
+        <div id="upcoming-body"></div>
+      </section>
+
+      <section id="v-calendar" class="view" hidden aria-labelledby="h-calendar">
+        <h1 id="h-calendar">ปฏิทิน 30 วัน</h1>
+        <p class="hint">กดช่องว่างเพื่อเพิ่มการจอง · กดช่องที่มีสีเพื่อดูการจอง · เลื่อนซ้ายขวาเพื่อดูวันอื่น</p>
+        <ul class="legend">
+          <li><i class="c-free"></i>ว่าง</li>
+          <li><i class="c-booked"></i>จองแล้ว</li>
+          <li><i class="c-pending"></i>รอชำระ</li>
+          <li><i class="c-blocked"></i>ปิดบ้าน</li>
+        </ul>
+        <div class="cal-scroll" id="cal-scroll" tabindex="0" aria-label="ตารางบ้านว่าง เลื่อนซ้ายขวาได้"></div>
+        <div id="cal-detail"></div>
+
+        <details class="block-box" id="block-box">
+          <summary>ปิดบ้าน (ซ่อม/ไม่รับจอง)</summary>
+          <form id="block-form" class="form" novalidate>
+            <fieldset>
+              <legend>บ้านที่จะปิด</legend>
+              <div class="house-picks" id="block-houses"></div>
+            </fieldset>
+            <div class="two">
+              <label>ตั้งแต่วันที่<input type="date" name="from" required></label>
+              <label>ถึงวันที่ (เปิดรับวันนี้)<input type="date" name="to" required></label>
+            </div>
+            <label>เหตุผล<input type="text" name="reason" maxlength="200" placeholder="เช่น ซ่อมหลังคา"></label>
+            <p class="error" id="block-error" role="alert"></p>
+            <button class="big primary" type="submit">ปิดบ้าน</button>
+          </form>
+        </details>
+        <h2 class="sub">ช่วงที่ปิดบ้านอยู่</h2>
+        <div id="blocks-body"></div>
+      </section>
+
+      <section id="v-all" class="view" hidden aria-labelledby="h-all">
+        <h1 id="h-all">ค้นหา / ย้อนหลัง</h1>
+        <label class="search">ค้นหาชื่อ เบอร์ หรือรหัส
+          <input type="search" id="search" autocomplete="off" placeholder="เช่น สมชาย หรือ 0812">
+        </label>
+        <p class="hint">แสดงการจองตั้งแต่ 60 วันที่แล้ว ล่าสุดอยู่บน</p>
+        <div id="all-body"></div>
+      </section>
+
+      <section id="v-add" class="view" hidden aria-labelledby="h-add">
+        <h1 id="h-add">เพิ่มการจอง</h1>
+        <p class="hint">สำหรับลูกค้าที่โทร/ทัก LINE หรือมาถึงหน้ารีสอร์ท · บันทึกแล้วเป็น “ยืนยันแล้ว” ทันที</p>
+        <form id="add-form" class="form" novalidate>
+          <div class="two">
+            <label>วันเข้าพัก<input type="date" name="checkin" required></label>
+            <label>วันออก<input type="date" name="checkout" required></label>
+          </div>
+          <p class="muted" id="add-nights"></p>
+          <fieldset>
+            <legend>เลือกบ้าน (กดได้หลายหลัง)</legend>
+            <div class="house-picks" id="add-houses"></div>
+          </fieldset>
+          <fieldset>
+            <legend>ลานกางเต็นท์</legend>
+            <div class="counter">
+              <span>นำเต็นท์มาเอง (ท่าน)</span>
+              <button type="button" data-step="tentGuests" data-d="-1" aria-label="ลดคนนำเต็นท์มาเอง">−</button>
+              <input type="number" name="tentGuests" min="0" max="30" value="0" inputmode="numeric" aria-label="นำเต็นท์มาเอง (ท่าน)">
+              <button type="button" data-step="tentGuests" data-d="1" aria-label="เพิ่มคนนำเต็นท์มาเอง">+</button>
+            </div>
+            <div class="counter">
+              <span>เช่าเต็นท์ (หลัง)</span>
+              <button type="button" data-step="tentRentals" data-d="-1" aria-label="ลดเต็นท์เช่า">−</button>
+              <input type="number" name="tentRentals" min="0" max="10" value="0" inputmode="numeric" aria-label="เช่าเต็นท์ (หลัง)">
+              <button type="button" data-step="tentRentals" data-d="1" aria-label="เพิ่มเต็นท์เช่า">+</button>
+            </div>
+          </fieldset>
+          <div class="counter">
+            <span>คนพักในบ้าน (ท่าน)</span>
+            <button type="button" data-step="guests" data-d="-1" aria-label="ลดจำนวนคน">−</button>
+            <input type="number" name="guests" min="0" max="30" value="2" inputmode="numeric" aria-label="คนพักในบ้าน (ท่าน)">
+            <button type="button" data-step="guests" data-d="1" aria-label="เพิ่มจำนวนคน">+</button>
+          </div>
+          <label>ชื่อลูกค้า<input type="text" name="name" maxlength="100" required autocomplete="off"></label>
+          <label>เบอร์โทร<input type="tel" name="phone" maxlength="30" inputmode="tel" autocomplete="off"></label>
+          <label>หมายเหตุ<textarea name="note" rows="2" maxlength="500"></textarea></label>
+          <fieldset>
+            <legend>จ่ายเงินแล้วหรือยัง</legend>
+            <div class="radios">
+              <label><input type="radio" name="paid" value="none" checked><span>ยังไม่จ่าย</span></label>
+              <label><input type="radio" name="paid" value="deposit"><span>มัดจำแล้ว</span></label>
+              <label><input type="radio" name="paid" value="full"><span>จ่ายครบ</span></label>
+            </div>
+          </fieldset>
+          <p class="estimate" id="add-estimate"></p>
+          <label>ยอดรวม (บาท) — เว้นว่าง = ใช้ราคาตามระบบ
+            <input type="number" name="total" min="0" step="1" inputmode="numeric" placeholder="">
+          </label>
+          <p class="error" id="add-error" role="alert"></p>
+          <button class="big primary" type="submit">บันทึกการจอง</button>
+        </form>
+      </section>
+    </main>
+  </div>
+
+  <div class="toast" id="toast" role="status" aria-live="polite" hidden></div>
+
+  <script src="js/admin.js?v=20261003a"></script>
+</body>
+</html>

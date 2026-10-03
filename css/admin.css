@@ -1,0 +1,197 @@
+/* =========================================================
+   หน้าหลังบ้าน (admin.html) — ตัวใหญ่ ปุ่มใหญ่ อ่านง่ายบนมือถือ
+   สีหลักใช้จาก :root ใน css/style.css · สีสถานะการจองอยู่ด้านล่างนี้
+   ========================================================= */
+:root {
+  --ok-bg: #e3f1e0;   --ok-ink: #1d5a2a;    /* ยืนยันแล้ว / ว่าง */
+  --warn-bg: #fff1cc; --warn-ink: #7a4f00;  /* รอชำระ / ต้องเก็บเงิน */
+  --bad-bg: #fbe1d8;  --bad-ink: #9c2f17;   /* ยกเลิก (ปุ่มอันตราย) */
+  --off-bg: #ebe9e4;  --off-ink: #57564f;   /* ยกเลิกแล้ว / หมดเวลา */
+  --blk-bg: #dde3ee;  --blk-ink: #2f3d58;   /* ปิดบ้าน */
+  --booked: #2f6b3c;  --pending: #e0a106;  --blocked: #6a7894; --free: var(--surface);
+}
+@media (prefers-color-scheme: dark) {
+  :root {
+    --ok-bg: #1f3424;   --ok-ink: #b5dcb5;
+    --warn-bg: #3a2f12; --warn-ink: #f5d27a;
+    --bad-bg: #3d211a;  --bad-ink: #f3a58e;
+    --off-bg: #262824;  --off-ink: #b3b1a6;
+    --blk-bg: #252c3a;  --blk-ink: #c3cde3;
+    --booked: #5f9e6c;  --pending: #d4a531; --blocked: #7e8cab;
+  }
+}
+
+body.admin { font-size: 18px; line-height: 1.6; padding-bottom: 96px; }
+.admin button, .admin input, .admin textarea, .admin select { font: inherit; color: inherit; }
+.admin h1 { font-size: 1.5rem; margin: 8px 0 12px; }
+.admin h2.sub { font-family: var(--font); font-weight: 600; font-size: 1.15rem; margin: 28px 0 10px; display: flex; gap: 12px; align-items: center; justify-content: space-between; }
+.muted, .hint { color: var(--muted); }
+.hint { margin: 0 0 14px; font-size: .95rem; }
+.error { color: var(--bad-ink); font-weight: 500; margin: 8px 0; }
+.error:empty { display: none; }
+.banner { background: var(--bad-bg); padding: 12px 16px; border-radius: var(--radius-sm); }
+.ok { color: var(--ok-ink); }
+.warn { color: var(--warn-ink); }
+
+/* ---------- ปุ่ม (สูงอย่างน้อย 48px) ---------- */
+.admin button { cursor: pointer; border-radius: var(--radius-sm); min-height: 48px; padding: 8px 16px; border: 2px solid var(--line); background: var(--surface); font-weight: 500; }
+.admin button:disabled { opacity: .55; cursor: default; }
+.admin button.primary { background: var(--forest); border-color: var(--forest); color: var(--bg); }
+.admin button.danger { background: var(--bad-bg); border-color: var(--bad-ink); color: var(--bad-ink); }
+.admin button.ghost { background: transparent; }
+.admin button.link { background: none; border: 0; padding-inline: 4px; color: var(--forest); text-decoration: underline; text-underline-offset: 4px; }
+.admin button.small { min-height: 44px; padding: 4px 14px; }
+.admin button.big { width: 100%; min-height: 56px; font-size: 1.1rem; }
+
+/* ---------- เข้าสู่ระบบ ---------- */
+.login { max-width: 420px; margin: 0 auto; padding: 48px 16px; display: flex; flex-direction: column; align-items: center; text-align: center; gap: 4px; }
+.login .brand { margin-bottom: 8px; display: inline-flex; align-items: center; gap: 10px; }
+.login form { width: 100%; display: flex; flex-direction: column; gap: 12px; margin-top: 12px; }
+.login label[for=pin] { font-weight: 600; }
+#pin { width: 100%; min-height: 64px; font-size: 2rem; letter-spacing: .3em; text-align: center; border: 2px solid var(--ink); border-radius: var(--radius-sm); background: var(--surface); }
+.show-pin { display: inline-flex; gap: 10px; align-items: center; justify-content: center; min-height: 48px; }
+.show-pin input { width: 24px; height: 24px; }
+
+/* ---------- หัวหน้า + แท็บ ---------- */
+.top { background: var(--nav-bg); color: var(--nav-ink); padding: 8px 16px; }
+.top-row { display: flex; align-items: center; justify-content: space-between; gap: 8px; max-width: 760px; margin: 0 auto; flex-wrap: wrap; }
+.top .muted { color: color-mix(in srgb, var(--nav-ink) 80%, transparent); font-size: .95rem; }
+.top-title { font-size: 1.1rem; }
+.top button { background: transparent; color: var(--nav-ink); border-color: color-mix(in srgb, var(--nav-ink) 40%, transparent); }
+.top button.ghost { border: 0; text-decoration: underline; text-underline-offset: 4px; padding-inline: 4px; }
+.top :focus-visible { outline-color: var(--nav-ink); }
+
+.tabs {
+  position: sticky; top: 0; z-index: 5;
+  display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px;
+  padding: 8px 16px; background: var(--bg); border-bottom: 1px solid var(--line);
+  max-width: 792px; margin: 0 auto;
+}
+.tabs button { padding: 4px 6px; font-size: 1rem; line-height: 1.25; display: flex; align-items: center; justify-content: center; gap: 6px; }
+.tabs button[aria-pressed=true] { background: var(--ink); border-color: var(--ink); color: var(--bg); }
+.tabs button.add { background: var(--sun); border-color: var(--sun); color: #1f231f; font-weight: 600; white-space: nowrap; font-size: .92rem; padding-inline: 2px; }
+.tabs button.add[aria-pressed=true] { outline: 3px solid var(--ink); outline-offset: -3px; }
+.count { background: var(--pending); color: #1f231f; border-radius: 999px; min-width: 26px; padding: 0 7px; font-size: .9rem; font-weight: 700; }
+@media (min-width: 700px) { .tabs { grid-template-columns: repeat(6, 1fr); } }
+
+.views { max-width: 760px; margin: 0 auto; padding: 8px 16px 32px; }
+.views .view { padding-block: 8px 0; border-top: 0; }   /* ไม่ใช้ระยะห่าง section ของหน้าเว็บหลัก */
+
+/* ---------- สรุปวันนี้ ---------- */
+.summary { background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius-sm); padding: 12px 16px; }
+.summary p { margin: 4px 0; }
+.empty { color: var(--muted); background: var(--surface); border: 1px dashed var(--line); border-radius: var(--radius-sm); padding: 14px 16px; margin: 0 0 12px; }
+
+/* ---------- การ์ดการจอง ---------- */
+.bk {
+  background: var(--surface); border: 2px solid var(--line); border-left-width: 8px;
+  border-radius: var(--radius-sm); padding: 14px 16px; margin: 0 0 14px;
+  scroll-margin-top: 140px; transition: box-shadow .3s;
+}
+.bk.st-confirmed { border-left-color: var(--booked); }
+.bk.st-pending { border-left-color: var(--pending); }
+.bk.st-blocked { border-left-color: var(--blocked); }
+.bk.st-cancelled, .bk.st-expired { border-left-color: var(--off-ink); opacity: .92; }
+.bk.flash { box-shadow: 0 0 0 4px var(--sun); }
+.bk p { margin: 4px 0; }
+.bk h3 { font-size: 1.2rem; font-weight: 600; margin: 6px 0 2px; }
+.bk-top { display: flex; justify-content: space-between; align-items: center; gap: 8px; flex-wrap: wrap; }
+.bk-id { color: var(--muted); font-size: .85rem; font-variant-numeric: tabular-nums; }
+.pill { display: inline-block; border-radius: 999px; padding: 2px 12px; font-weight: 600; font-size: .95rem; }
+.st-confirmed .pill { background: var(--ok-bg); color: var(--ok-ink); }
+.st-pending .pill { background: var(--warn-bg); color: var(--warn-ink); }
+.st-blocked .pill { background: var(--blk-bg); color: var(--blk-ink); }
+.st-cancelled .pill, .st-expired .pill, .st-other .pill { background: var(--off-bg); color: var(--off-ink); }
+.dates { font-weight: 600; font-size: 1.05rem; }
+.bk-note { white-space: pre-wrap; overflow-wrap: anywhere; }
+.money { border-top: 1px solid var(--line); margin-top: 8px; padding-top: 6px; }
+.btn-call {
+  display: flex; align-items: center; justify-content: center; min-height: 48px; margin: 10px 0 0;
+  border-radius: var(--radius-sm); border: 2px solid var(--forest); color: var(--forest);
+  font-weight: 600; text-decoration: none;
+}
+.acts { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 10px; }
+.acts button { flex: 1 1 140px; }
+.acts button.link { flex: 0 1 auto; }
+.ask { background: var(--warn-bg); color: var(--warn-ink); border-radius: var(--radius-sm); padding: 12px; margin-top: 10px; }
+.ask-q { font-weight: 600; margin: 0; }
+.ask .ghost { color: var(--ink); background: var(--surface); }
+
+/* ---------- ปฏิทิน ---------- */
+.legend { display: flex; flex-wrap: wrap; gap: 6px 16px; list-style: none; padding: 0; margin: 0 0 10px; font-size: .95rem; }
+.legend li { display: inline-flex; align-items: center; gap: 6px; }
+.legend i { width: 22px; height: 22px; border-radius: 6px; border: 2px solid var(--line); display: inline-block; }
+.cal-scroll { overflow-x: auto; border: 1px solid var(--line); border-radius: var(--radius-sm); background: var(--surface); -webkit-overflow-scrolling: touch; overscroll-behavior-x: contain; }
+.cal { border-collapse: separate; border-spacing: 2px; font-size: .85rem; }
+.cal th { font-weight: 500; text-align: center; padding: 2px; line-height: 1.2; min-width: 44px; }
+.cal thead th b { display: block; font-size: 1.05rem; }
+.cal thead th.wkend { color: var(--clay); }
+.cal th[scope=row], .cal .corner {
+  position: sticky; left: 0; z-index: 1; background: var(--surface);
+  text-align: left; min-width: 92px; max-width: 92px; padding-right: 6px; font-weight: 600; font-size: .85rem;
+}
+.cal td { padding: 0; }
+.cal td button {
+  display: block; width: 44px; height: 48px; min-height: 48px; padding: 2px; border-radius: 6px;
+  font-size: .72rem; line-height: 1.15; overflow: hidden; word-break: break-all; font-weight: 600;
+}
+.admin .c-free { background: var(--free) !important; border: 2px solid var(--line) !important; }
+.admin .c-booked { background: var(--booked) !important; border-color: var(--booked) !important; color: #fff; }
+.admin .c-pending { background: var(--warn-bg) !important; border: 2px dashed var(--pending) !important; color: var(--warn-ink); }
+.admin .c-blocked {
+  background: repeating-linear-gradient(45deg, var(--blk-bg) 0 6px, color-mix(in srgb, var(--blocked) 45%, var(--blk-bg)) 6px 12px) !important;
+  border-color: var(--blocked) !important; color: var(--blk-ink);
+}
+@media (prefers-color-scheme: dark) { .admin .c-booked { color: #0f1a12; } }
+#cal-detail:not(:empty) { margin-top: 16px; scroll-margin-top: 140px; }
+
+.block-box { margin-top: 20px; border: 2px solid var(--blocked); border-radius: var(--radius-sm); background: var(--surface); }
+.block-box summary { cursor: pointer; min-height: 52px; display: flex; align-items: center; padding: 8px 16px; font-weight: 600; color: var(--blk-ink); }
+.block-box .form { padding: 0 16px 16px; }
+
+/* ---------- ฟอร์ม ---------- */
+.form { display: flex; flex-direction: column; gap: 14px; }
+.form label { display: flex; flex-direction: column; gap: 4px; font-weight: 500; }
+.form fieldset { border: 0; padding: 0; margin: 0; }
+.form legend { font-weight: 600; margin-bottom: 6px; padding: 0; }
+.form input[type=text], .form input[type=tel], .form input[type=date], .form input[type=number], .form textarea, .search input {
+  width: 100%; min-height: 52px; padding: 8px 12px; border: 2px solid var(--line); border-radius: var(--radius-sm); background: var(--surface);
+}
+.form textarea { min-height: 80px; resize: vertical; }
+.form input:focus, .form textarea:focus, .search input:focus { border-color: var(--forest); outline: none; }
+.two { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+@media (max-width: 380px) { .two { grid-template-columns: 1fr; } }
+.search { display: flex; flex-direction: column; gap: 4px; font-weight: 500; margin-bottom: 8px; }
+
+.house-picks { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+.admin button.pick { display: flex; flex-direction: column; align-items: flex-start; text-align: left; min-height: 64px; padding: 8px 12px; line-height: 1.3; }
+.pick span { font-size: .85rem; color: var(--muted); font-weight: 400; }
+.pick[aria-pressed=true] { background: var(--ok-bg); border-color: var(--booked); color: var(--ok-ink); }
+.pick[aria-pressed=true] b::before { content: "✓ "; }
+.pick[aria-pressed=true] span { color: inherit; }
+.pick.is-taken { background: var(--off-bg); border-style: dashed; text-decoration: none; }
+.pick.is-taken span { color: var(--bad-ink); font-weight: 500; }
+
+.counter { display: grid; grid-template-columns: 1fr 52px 64px 52px; gap: 6px; align-items: center; margin-bottom: 6px; }
+.counter span { font-weight: 500; }
+.admin .counter button { padding: 0; font-size: 1.4rem; }
+.form .counter input { text-align: center; padding: 4px; }
+
+.radios { display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px; }
+.form .radios label { position: relative; }
+.radios input { position: absolute; opacity: 0; inset: 0; }
+.radios span {
+  display: flex; align-items: center; justify-content: center; text-align: center; min-height: 52px; padding: 4px;
+  border: 2px solid var(--line); border-radius: var(--radius-sm); background: var(--surface); line-height: 1.25;
+}
+.radios input:checked + span { background: var(--ok-bg); border-color: var(--booked); color: var(--ok-ink); font-weight: 600; }
+.radios input:focus-visible + span { outline: 2px solid var(--forest); outline-offset: 2px; }
+.estimate { background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius-sm); padding: 10px 14px; margin: 0; }
+
+/* ---------- ข้อความแจ้งด้านล่าง ---------- */
+.toast {
+  position: fixed; left: 16px; right: 16px; bottom: 16px; z-index: 20; max-width: 520px; margin: 0 auto;
+  background: var(--ink); color: var(--bg); padding: 14px 18px; border-radius: var(--radius-sm);
+  font-weight: 600; box-shadow: var(--shadow); text-align: center;
+}
+[hidden] { display: none !important; }
