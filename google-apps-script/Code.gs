@@ -23,6 +23,24 @@
  *   ในคอลัมน์ 'LINE ลูกค้า' · แอดมินกดยืนยันการจองในหลังบ้าน → ส่งใบยืนยันเข้า LINE ลูกค้าให้เอง (1 ข้อความ)
  *   ชีตเก่าที่ยังไม่มีคอลัมน์ 'LINE ลูกค้า' ใช้ได้เลย (ระบบเพิ่มให้) หรือกด Run setup() อีกครั้งก็ได้
  *   แก้ไฟล์นี้แล้วต้อง Deploy > Manage deployments > แก้ (ดินสอ) > Version: New version > Deploy ทุกครั้ง
+ * - ซิงก์ปฏิทินกับ Airbnb / Agoda (iCal) — ยังไม่ทำงานจนกว่าจะตั้งค่า (โค้ดอยู่ส่วน "OTA" ท้ายไฟล์)
+ *   ส่งออก: ลิงก์ปฏิทินของแต่ละบ้าน (มีแค่วันที่ไม่ว่าง ไม่มีชื่อ/เบอร์ลูกค้า) ให้ Airbnb/Agoda ดึงไปปิดวัน
+ *   นำเข้า: ทุก 15 นาที (รันพร้อม expireBookings) ดึงปฏิทินจาก Airbnb/Agoda มาเป็นแถวในชีต ช่อง 'ที่มา' = airbnb/agoda
+ *     → หน้าเว็บจองวันนั้นไม่ได้ · ถ้าชนกับการจองในเว็บ แจ้ง LINE แอดมินทันที (ครั้งเดียวต่อเรื่อง)
+ *
+ *   วิธีเปิดใช้ซิงก์ Agoda/Airbnb (ทำครั้งเดียว)
+ *   1) วางไฟล์นี้ใน Apps Script แล้ว Deploy > Manage deployments > แก้ (ดินสอ) > Version: New version > Deploy
+ *   2) เลือกฟังก์ชัน setupOta แล้วกด Run (Google ขออนุญาต กดอนุญาต) → ดู Execution log จะมีลิงก์ส่งออกของแต่ละบ้าน
+ *        Airbnb: ปฏิทินของที่พัก > Availability > Connect calendars > Import calendar → วางลิงก์ที่มี src=airbnb
+ *        Agoda YCS: Calendar > Calendar connections → วางลิงก์ที่มี src=agoda
+ *          (Agoda ใช้ได้เฉพาะประเภทห้องที่มี 1 ห้อง — ตั้งบ้านแต่ละหลังเป็น 1 ประเภทห้อง)
+ *      ⚠️ ลิงก์ส่งออกมีรหัสลับ ICS_KEY อยู่ข้างใน ห้ามโพสต์ที่สาธารณะ
+ *         (หลุด = ลบ Script property ICS_KEY → Run setupOta ใหม่ → วางลิงก์ใหม่ใน Airbnb/Agoda)
+ *   3) คัดลอกลิงก์ "Export calendar" ของแต่ละ OTA มาใส่ Script property ชื่อ OTA_ICAL (บรรทัดเดียว) เช่น
+ *        {"lagoon-1":{"airbnb":"https://www.airbnb.com/calendar/ical/....ics","agoda":"https://...."},"family-1":{"airbnb":"https://..."}}
+ *      (รหัสบ้าน: lagoon-1 lagoon-2 studio family-1 family-2 · ลานกางเต็นท์ไม่ซิงก์)
+ *   4) เลือกฟังก์ชัน syncOtaCalendars กด Run 1 ครั้ง แล้ว Run otaStatus ดูว่าแต่ละปฏิทินดึงสำเร็จ (ok) กี่รายการ
+ *   หยุดซิงก์ = ลบ Script property OTA_ICAL (แถวที่ดึงมาแล้วยังอยู่ในชีต เปลี่ยนสถานะเป็น "ยกเลิก" ในชีตเองได้)
  */
 
 // ID ของไฟล์ชีต (ตัวอักษรยาว ๆ ในลิงก์ชีต ระหว่าง /d/ กับ /edit)
@@ -63,10 +81,11 @@ function isHouse_(id) {
 
 const HEADERS = ['เวลาที่จอง', 'รหัสการจอง', 'รหัสบ้าน', 'บ้าน', 'เช็กอิน', 'เช็กเอาต์', 'คืน', 'ผู้เข้าพัก',
   'ชื่อ', 'เบอร์โทร', 'หมายเหตุ', 'ยอดรวม (บาท)', 'สถานะ', 'ยอดที่ต้องชำระ (บาท)', 'ชำระภายใน', 'แบบชำระ',
-  'ชำระส่วนที่เหลือ', 'คืนเงิน', 'กางเต็นท์เอง (ท่าน)', 'เช่าเต็นท์ (หลัง)', 'LINE ลูกค้า'];
-const COL = { house: 3, checkin: 5, checkout: 6, status: 13, deadline: 15, balance: 17, refund: 18, line: 21 }; // ลำดับคอลัมน์ (เริ่มที่ 1)
+  'ชำระส่วนที่เหลือ', 'คืนเงิน', 'กางเต็นท์เอง (ท่าน)', 'เช่าเต็นท์ (หลัง)', 'LINE ลูกค้า', 'ที่มา'];
+const COL = { house: 3, checkin: 5, checkout: 6, status: 13, deadline: 15, balance: 17, refund: 18, line: 21, source: 22 }; // ลำดับคอลัมน์ (เริ่มที่ 1)
 // คอลัมน์ 'LINE ลูกค้า' (ช่องที่ 21) = LINE userId ของลูกค้าที่ทักมาพร้อมเลขการจอง (ระบบเติมเอง ห้ามแก้/ห้ามแชร์)
 // ใช้ส่งใบยืนยันเข้า LINE ลูกค้าตอนแอดมินกดยืนยัน · ชีตเก่าที่ยังไม่มีคอลัมน์นี้ใช้ได้ (ระบบเพิ่มหัวคอลัมน์ให้ตอนต้องใช้)
+// คอลัมน์ 'ที่มา' (ช่องที่ 22) = airbnb / agoda เฉพาะแถวที่ซิงก์มาจาก OTA (ระบบเขียนเอง) · ว่าง = จองในเว็บ/หลังบ้าน/พิมพ์เอง
 
 // ช่องให้แอดมินเลือก
 // - ชำระส่วนที่เหลือ: แบบมัดจำ 50% จ่ายที่เหลือวันเช็กอิน (เงินสด หรือ โอนหน้าเคาน์เตอร์)
@@ -138,11 +157,19 @@ function expireBookings() {
     });
   } finally {
     lock.releaseLock();
+    // ซิงก์ปฏิทิน Airbnb/Agoda ไปด้วยในตัวตั้งเวลาเดียวกัน (ยังไม่ตั้ง OTA_ICAL = ไม่ทำอะไร) · พังก็ไม่กระทบส่วนอื่น
+    try {
+      syncOtaCalendars();
+    } catch (err) {
+      console.error('ซิงก์ปฏิทิน OTA: ' + err);
+    }
   }
 }
 
-/** หน้าเว็บขอดูวันว่าง */
-function doGet() {
+/** หน้าเว็บขอดูวันว่าง · ?ics=<รหัสบ้าน>&k=<ICS_KEY> = ปฏิทินส่งออกให้ Airbnb/Agoda (ดู icsFeed_) */
+function doGet(e) {
+  const p = (e && e.parameter) || {};
+  if (p.ics !== undefined) return icsFeed_(p);
   return json_({ ok: true, bookings: activeBookings_(sheet_()) });
 }
 
@@ -250,12 +277,16 @@ function readCols_(sh) {
   return Math.max(1, Math.min(HEADERS.length, max));
 }
 
-// ชีตมีคอลัมน์ไม่ครบ HEADERS → เพิ่มคอลัมน์ท้ายตาราง · หัวคอลัมน์ 'LINE ลูกค้า' ยังว่าง → เขียนให้
-function ensureCols_(sh) {
+// ชีตมีคอลัมน์ไม่ถึงช่องที่ upTo (ไม่ใส่ = ครบ HEADERS) → เพิ่มคอลัมน์ท้ายตาราง
+// หัวคอลัมน์ 'LINE ลูกค้า' / 'ที่มา' ยังว่าง → เขียนให้
+function ensureCols_(sh, upTo) {
+  const need = upTo || HEADERS.length;
   const max = typeof sh.getMaxColumns === 'function' ? sh.getMaxColumns() : HEADERS.length;
-  if (max < HEADERS.length) sh.insertColumnsAfter(max, HEADERS.length - max);
-  const head = sh.getRange(1, COL.line);
-  if (String(head.getValue() || '').trim() === '') head.setValue(HEADERS[COL.line - 1]);
+  if (max < need) sh.insertColumnsAfter(max, need - max);
+  [COL.line, COL.source].filter((c) => c <= need).forEach((c) => {
+    const head = sh.getRange(1, c);
+    if (String(head.getValue() || '').trim() === '') head.setValue(HEADERS[c - 1]);
+  });
 }
 
 function json_(obj) {
@@ -506,7 +537,9 @@ function lineNotify_(id, d, due, payType) {
     'รหัส ' + id,
     'เปิดในหลังบ้าน: ' + ADMIN_URL + '#' + id,
   ].join('\n');
-  linePush_(admins, text);
+  // บ้านนี้ขายใน Airbnb/Agoda ด้วย → ต่อท้ายข้อความเดิม (ไม่ส่งเพิ่มอีกข้อความ ประหยัดโควตา)
+  const ota = otaReminder_(d.houses, d.checkin, d.checkout, 'web');
+  linePush_(admins, ota ? text + '\n\n' + ota : text);
 }
 
 // ส่งข้อความหาแอดมินหลายคน: ลอง multicast ก่อน ถ้าพัง ส่งทีละคน (id ไหนเสีย คนอื่นยังได้รับ)
@@ -557,6 +590,7 @@ function bookingGroups_() {
       houses: [], from: iso_(r[COL.checkin - 1]), to: iso_(r[COL.checkout - 1]),
       guests: r[7], tent: Number(r[18]) || 0, rent: Number(r[19]) || 0, name: String(r[8]), phone: String(r[9]), note: String(r[10] || ''), status,
       blocked: /^BLK/.test(key), // ปิดบ้านจากหลังบ้าน (ซ่อม/ไม่รับจอง) ไม่ใช่แขก
+      ota: otaSourceOf_(r, key), // '' = เว็บ/หลังบ้าน · airbnb / agoda = ซิงก์มาจาก OTA
     });
     const hid = houseId_(r[COL.house - 1]) || houseId_(r[3]);
     if (hid === TENT_ROW.id) return; // แถวจองเฉพาะเต็นท์ ไม่นับเป็นบ้าน
@@ -575,6 +609,12 @@ function groupPeople_(g) {
 }
 
 function bookingText_(g) {
+  if (g.ota) { // ซิงก์มาจาก Airbnb/Agoda: ไม่มีชื่อ/เบอร์/จำนวนคน
+    const label = OTA_SOURCES[g.ota];
+    const closed = OTA_BLOCK_NAME.test(g.name);
+    return '🌐 ' + (closed ? label + ' ปิดวัน' : 'จองผ่าน ' + label) + ' · ' + g.houses.join(', ')
+      + '\n📅 ' + thaiRange_(g.from, g.to) + (closed ? '' : '\nℹ️ ดูชื่อ/จำนวนคนในแอป ' + label);
+  }
   if (g.blocked) return '🔧 ปิดบ้าน ' + g.houses.join(', ') + '\n📅 ' + thaiRange_(g.from, g.to) + (g.note ? '\n📝 ' + g.note : '');
   const people = [
     g.houses.length ? (Number(g.guests) || 0) + ' ท่านในบ้าน' : 'ไม่มีบ้าน',
@@ -603,7 +643,8 @@ function nightText_(day) {
   const list = bookingGroups_().filter((g) => g.from <= day && g.to > day);
   const head = '🌙 คืนวัน' + thaiDate_(day, true);
   if (!list.length) return head + '\nยังไม่มีคนจองครับ บ้านว่างทุกหลัง';
-  const guests = list.filter((g) => !g.blocked); // บ้านที่ปิดซ่อมไม่นับเป็นแขก
+  // บ้านที่ปิดซ่อม / OTA ปิดวัน ไม่นับเป็นแขก · จองผ่าน OTA นับบ้าน แต่ไม่รู้จำนวนคน (นับ 0)
+  const guests = list.filter((g) => !g.blocked && !(g.ota && OTA_BLOCK_NAME.test(g.name)));
   const people = guests.reduce((sum, g) => sum + groupPeople_(g), 0);
   const houses = guests.reduce((sum, g) => sum + g.houses.length, 0);
   const tent = list.reduce((sum, g) => sum + g.tent, 0);
@@ -612,7 +653,7 @@ function nightText_(day) {
     'บ้าน ' + houses + ' หลัง',
     tent ? 'เต็นท์มาเอง ' + tent + ' ท่าน' : '',
     rent ? 'เช่าเต็นท์ ' + rent + ' หลัง' : '',
-    'รวม ' + people + ' ท่าน',
+    'รวม ' + people + ' ท่าน' + (guests.some((g) => g.ota) ? ' (ไม่รวมแขก Airbnb/Agoda)' : ''),
   ].filter(Boolean).join(' · ');
   return head + '\n' + summary + '\n\n' + list.map(bookingText_).join('\n\n');
 }
@@ -800,6 +841,7 @@ function adminList_() {
         payType: String(r[15] || ''), balance: String(r[COL.balance - 1] || ''), refund: String(r[COL.refund - 1] || ''),
         tent: Number(r[18]) || 0, rent: Number(r[19]) || 0, createdAt: stamp_(r[0]), blocked: /^BLK/.test(id),
         lineLinked: String(r[COL.line - 1] || '').trim() !== '', // ลูกค้าทัก LINE พร้อมเลขการจองแล้ว (ไม่ส่ง userId)
+        source: otaSourceOf_(r, id), // '' = เว็บ/หลังบ้าน · airbnb / agoda = ซิงก์มา (หลังบ้านแก้ไม่ได้)
         show: !isISO || checkout >= since,
       };
       order.push(id);
@@ -827,6 +869,7 @@ function adminSetStatus_(d) {
   const status = pick_(STATUS, ['CONFIRMED', 'CANCELLED', 'PENDING'], d.status);
   if (!status) return { ok: false, error: 'bad_status' };
   const id = String(d.id || '');
+  if (OTA_ID.test(id)) return { ok: false, error: 'ota_readonly' }; // แถวจาก Airbnb/Agoda: ปฏิทินของ OTA เป็นตัวกำหนด
   let lineUser = ''; // ยืนยันจาก รอชำระ/หมดเวลา + ลูกค้าเคยทัก LINE พร้อมเลขการจอง → ส่งใบยืนยันให้หลังปลดล็อก
   const out = adminLocked_((sh) => {
     const values = adminValues_(sh);
@@ -881,6 +924,7 @@ function adminSetRefund_(d) {
 
 function adminSetCol_(id, col, value) {
   id = String(id || '');
+  if (OTA_ID.test(id)) return { ok: false, error: 'ota_readonly' };
   return adminLocked_((sh) => {
     const rows = adminRows_(adminValues_(sh), id);
     if (!rows.length) return { ok: false, error: 'not_found' };
@@ -942,7 +986,7 @@ function adminAdd_(d, block) {
   // ยอดที่จ่ายมาแล้ว: ยังไม่จ่าย = 0 · มัดจำ = 50% · จ่ายครบ = ยอดรวม
   const due = block || paid === 'none' ? 0 : paid === 'full' ? total : Math.ceil(total * DEPOSIT_RATE);
 
-  return adminLocked_((sh) => {
+  const out = adminLocked_((sh) => {
     const values = adminValues_(sh);
     const taken = adminTaken_(values, houses, checkin, checkout, '');
     if (taken.length) return { ok: false, error: 'booked', houses: taken };
@@ -962,6 +1006,12 @@ function adminAdd_(d, block) {
     sh.getRange(sh.getLastRow() + 1, 1, rows.length, rows[0].length).setValues(rows);
     return { ok: true, id, total, due };
   });
+  // บ้านนี้ขายใน Airbnb/Agoda ด้วย → เตือนแอดมินให้ปิดวันในแอป 1 ข้อความ (หลังปลดล็อก · บ้านไม่ได้ขาย OTA = ไม่ส่ง)
+  if (out.ok) {
+    const ota = otaReminder_(houses, checkin, checkout, block ? 'block' : 'admin');
+    if (ota) linePush_(adminIds_(), ota + '\nรหัส ' + out.id);
+  }
+  return out;
 }
 
 // ---------- ลูกค้าเช็กการจองของตัวเอง (หน้า my-booking.html) ----------
@@ -1190,7 +1240,7 @@ function lineImageAck_(ev, user) {
 function linkLine_(id, user) {
   if (/^BLK/.test(id) || !/^U[0-9a-f]{32}$/i.test(user)) return false;
   return adminLocked_((sh) => {
-    ensureCols_(sh);
+    ensureCols_(sh, COL.line);
     const values = adminValues_(sh);
     const rows = [];
     values.forEach((r, i) => { if (String(r[1] == null ? '' : r[1]).trim().toUpperCase() === id) rows.push(i + 2); });
@@ -1242,4 +1292,419 @@ function voucherText_(b, slipSent) {
   }
   lines.push('ดูใบยืนยันการจอง: ' + SITE_URL + '/my-booking.html');
   return lines.join('\n');
+}
+
+// ---------- OTA: ซิงก์ปฏิทินกับ Airbnb / Agoda (iCal) ----------
+// ยังไม่ตั้ง Script property OTA_ICAL (นำเข้า) / ICS_KEY (ส่งออก) = ส่วนนี้ไม่ทำอะไรเลย · วิธีเปิดใช้ดูหัวไฟล์
+// Script properties:
+//   OTA_ICAL    = (เจ้าของตั้ง) ลิงก์ปฏิทินของ OTA ต่อบ้าน {"lagoon-1":{"airbnb":"https://...","agoda":"https://..."}}
+//   ICS_KEY     = (setupOta สร้างให้) รหัสลับในลิงก์ส่งออก — ไม่ตรง = ตอบ "not found"
+//   OTA_LAST    = (ระบบเขียนเอง) ผลซิงก์ล่าสุดของแต่ละปฏิทิน ดูด้วย otaStatus()
+//   OTA_ALERTED = (ระบบเขียนเอง) การแจ้งเตือน "จองชนกัน" ที่ส่งไปแล้ว (กันส่งซ้ำ)
+// แถวที่ซิงก์มา: รหัส EXT-AIRBNB-xxxxxxxx / EXT-AGODA-xxxxxxxx · สถานะ ยืนยันแล้ว · ยอด 0 · ช่อง 'ที่มา' = airbnb/agoda
+//   เป็นแถวธรรมดา → หน้าเว็บ/หลังบ้านเห็นว่าบ้านไม่ว่างเอง · ปฏิทินของ OTA เป็นตัวกำหนด (หลังบ้านแก้/ยกเลิกไม่ได้)
+//   OTA ลบการจองออก → แถวเปลี่ยนเป็น "ยกเลิก" เอง (เฉพาะตอนดึงปฏิทินนั้นสำเร็จ ดึงไม่ได้ = ไม่แตะแถวเดิม)
+
+// ลิงก์ Web app (/exec) — ต้องตรงกับ API_URL ใน js/booking.js (ใช้ตอน setupOta หา URL เองไม่ได้)
+const WEB_APP_URL = 'https://script.google.com/macros/s/AKfycbyCUEb3YTKm6_LoUal5cvBmZZR_-fhcYULSRiH2WDNnSgPOlHGDjqgYY8-Y7ID8rUvWVg/exec';
+const OTA_SOURCES = { airbnb: 'Airbnb', agoda: 'Agoda' };
+const OTA_ID = /^EXT-/;                 // รหัสการจองที่ซิงก์มาจาก OTA
+const OTA_BLOCK_NAME = /\(ปิดวัน\)$/;   // ชื่อในชีตของ "ปิดวัน" จาก OTA (ไม่ใช่แขก)
+const OTA_BLOCK_SUMMARY = /not available|unavailable|blocked|closed/i; // SUMMARY แบบปิดวัน เช่น "Airbnb (Not available)"
+const OTA_MAX_DAYS = 730;               // นำเข้าเฉพาะการจองภายใน 2 ปี
+
+/** กด Run ครั้งเดียวตอนเปิดใช้ (รันซ้ำได้): สร้าง ICS_KEY · เพิ่มคอลัมน์ 'ที่มา' · ตั้งเวลาซิงก์ · พิมพ์ลิงก์ส่งออก */
+function setupOta() {
+  const p = props_();
+  let key = p.getProperty('ICS_KEY');
+  if (!key) {
+    key = Utilities.getUuid().replace(/-/g, '');
+    p.setProperty('ICS_KEY', key);
+  }
+  ensureCols_(sheet_());
+  // ซิงก์รันใน expireBookings (ทุก 15 นาที) — ยังไม่มีตัวตั้งเวลานี้ = สร้างให้ (มีแล้วไม่สร้างซ้ำ)
+  if (!ScriptApp.getProjectTriggers().some((t) => t.getHandlerFunction() === 'expireBookings')) {
+    ScriptApp.newTrigger('expireBookings').timeBased().everyMinutes(15).create();
+  }
+  let url = '';
+  try {
+    url = ScriptApp.getService().getUrl() || '';
+  } catch (err) {
+    url = '';
+  }
+  if (!/\/exec$/.test(url)) url = WEB_APP_URL; // รันจาก editor มักได้ลิงก์ /dev (ใช้กับ OTA ไม่ได้)
+  const lines = ['ลิงก์ส่งออกปฏิทิน (ห้ามโพสต์ที่สาธารณะ) — วางลิงก์ src=airbnb ใน Airbnb และ src=agoda ใน Agoda YCS', ''];
+  Object.keys(HOUSES).forEach((h) => {
+    const base = url + '?ics=' + h + '&k=' + key;
+    lines.push(HOUSES[h].name + ' (' + h + ')');
+    Object.keys(OTA_SOURCES).forEach((src) => lines.push('  ' + OTA_SOURCES[src] + ': ' + base + '&src=' + src + '&x=.ics'));
+  });
+  const cfg = otaConfig_();
+  lines.push('', Object.keys(cfg).length
+    ? 'นำเข้าจาก OTA (OTA_ICAL): ' + Object.keys(cfg).map((h) => h + ' ← ' + Object.keys(cfg[h]).map((s) => OTA_SOURCES[s]).join('+')).join(' · ')
+    : 'ยังไม่ได้ตั้ง OTA_ICAL (ยังไม่ดึงปฏิทินจาก Airbnb/Agoda) — ดูขั้นตอนที่ 3 หัวไฟล์');
+  Logger.log(lines.join('\n'));
+}
+
+/** กด Run เพื่อดูผลซิงก์ล่าสุดของแต่ละปฏิทิน (ไม่แสดงลิงก์ เพราะลิงก์ของ OTA มีรหัสลับ) */
+function otaStatus() {
+  const cfg = otaConfig_();
+  const last = readJson_('OTA_LAST');
+  const keys = [];
+  Object.keys(cfg).forEach((h) => Object.keys(cfg[h]).forEach((s) => keys.push(h + ':' + s)));
+  if (!keys.length) {
+    Logger.log('ยังไม่ได้ตั้ง OTA_ICAL — ระบบซิงก์ยังไม่ทำงาน');
+    return;
+  }
+  Logger.log(keys.map((k) => {
+    const r = last[k];
+    if (!r) return k + ': ยังไม่เคยซิงก์ (Run syncOtaCalendars)';
+    return k + ': ' + (r.ok
+      ? 'ok ' + r.at + ' · ' + r.events + ' รายการ (ใหม่ ' + r.added + ' · แก้ ' + r.updated + ' · ยกเลิก ' + r.cancelled + ')'
+      : 'ผิดพลาด ' + r.at + ' · ' + r.error + (r.lastOk ? ' · สำเร็จล่าสุด ' + r.lastOk : ''));
+  }).join('\n'));
+}
+
+function readJson_(name) {
+  try {
+    const v = JSON.parse(props_().getProperty(name) || '{}');
+    return v && typeof v === 'object' && !Array.isArray(v) ? v : {};
+  } catch (err) {
+    return {};
+  }
+}
+
+// OTA_ICAL ที่อ่านได้ (เฉพาะรหัสบ้านจริง + ลิงก์ https) · ไม่ได้ตั้ง/อ่านไม่ออก = {}
+function otaConfig_() {
+  const raw = props_().getProperty('OTA_ICAL');
+  if (!raw) return {};
+  let obj;
+  try {
+    obj = JSON.parse(raw);
+  } catch (err) {
+    console.error('OTA_ICAL ไม่ใช่ JSON ที่ถูกต้อง');
+    return {};
+  }
+  const out = {};
+  if (!obj || typeof obj !== 'object') return out;
+  Object.keys(obj).forEach((h) => {
+    if (!isHouse_(h) || !obj[h] || typeof obj[h] !== 'object') return;
+    Object.keys(OTA_SOURCES).forEach((src) => {
+      const url = String(obj[h][src] || '').trim();
+      if (/^https:\/\/\S+$/i.test(url)) (out[h] = out[h] || {})[src] = url;
+    });
+  });
+  return out;
+}
+
+// แถวนี้มาจาก OTA ไหน ('' = เว็บ/หลังบ้าน/พิมพ์เอง) — ดูช่อง 'ที่มา' ก่อน ไม่มีค่อยดูจากรหัส
+function otaSourceOf_(r, id) {
+  const s = String(r[COL.source - 1] == null ? '' : r[COL.source - 1]).trim().toLowerCase();
+  if (Object.prototype.hasOwnProperty.call(OTA_SOURCES, s)) return s;
+  const m = String(id || '').match(/^EXT-(AIRBNB|AGODA)-/);
+  return m ? m[1].toLowerCase() : '';
+}
+
+// ข้อความเตือนแอดมิน: จอง/ปิดบ้านที่ขายใน OTA ด้วย → ปิดวันในแอป OTA (บ้านไม่ได้ขาย OTA = '')
+// kind: 'web' = ลูกค้าจองในเว็บ · 'admin' = แอดมินเพิ่มการจอง · 'block' = แอดมินปิดบ้าน
+function otaReminder_(houses, from, to, kind) {
+  const cfg = otaConfig_();
+  const linked = (houses || []).filter((h) => cfg[h]);
+  if (!linked.length) return '';
+  const apps = Object.keys(OTA_SOURCES).filter((s) => linked.some((h) => cfg[h][s])).map((s) => OTA_SOURCES[s]).join('/');
+  const names = linked.map((h) => HOUSES[h].name).join(', ');
+  const what = kind === 'block' ? 'มีการปิดบ้าน ' + names + ' ในหลังบ้าน'
+    : 'มีการจองบ้าน ' + names + (kind === 'admin' ? ' ในหลังบ้าน' : ' ในเว็บ');
+  return '🔔 ' + what + ' ' + thaiRange_(from, to) + ' — บ้านนี้ขายใน ' + apps + ' ด้วย กรุณาปิดวันในแอป ' + apps
+    + ' (ระบบจะซิงก์เองภายใน ~3 ชม.)';
+}
+
+// ---- ส่งออก: ปฏิทินของบ้าน 1 หลัง (doGet ?ics=<รหัสบ้าน>&k=<ICS_KEY>[&src=airbnb|agoda]) ----
+// มีแค่ช่วงวันที่ไม่ว่าง (SUMMARY:Reserved) ไม่มีชื่อ เบอร์ หรือข้อมูลลูกค้าเลย
+// รวม: ยืนยันแล้ว + รอชำระที่ยังไม่หมดเวลา + ปิดบ้าน (BLK) + ที่ซิงก์มาจาก OTA อื่น
+// src=airbnb → ไม่ส่งแถวที่มาจาก Airbnb กลับไปให้ Airbnb เอง (กันวนซ้ำ)
+function icsFeed_(p) {
+  const key = String(props_().getProperty('ICS_KEY') || '');
+  const house = String(p.ics == null ? '' : p.ics);
+  if (key.length < 16 || !isHouse_(house) || !sameText_(String(p.k == null ? '' : p.k), key)) {
+    return ContentService.createTextOutput('not found');
+  }
+  const skip = Object.prototype.hasOwnProperty.call(OTA_SOURCES, p.src) ? p.src : '';
+  const today = todayISO_();
+  const now = nowText_();
+  const stamp = new Date().toISOString().replace(/[-:]/g, '').replace(/\.\d+/, ''); // 20261003T101500Z
+  const isISO = (s) => /^\d{4}-\d{2}-\d{2}$/.test(s);
+  const lines = ['BEGIN:VCALENDAR', 'VERSION:2.0', 'PRODID:-//The Lagoon Camping Resort//Booking//TH', 'CALSCALE:GREGORIAN',
+    'METHOD:PUBLISH', 'X-WR-CALNAME:' + icsText_('The Lagoon ' + HOUSES[house].name)];
+  const seen = {};
+  adminValues_(sheet_()).forEach((r, i) => {
+    if ((houseId_(r[COL.house - 1]) || houseId_(r[3])) !== house) return;
+    const status = r[COL.status - 1];
+    if (status === STATUS.CANCELLED || status === STATUS.EXPIRED || isExpired_(status, r[COL.deadline - 1], now)) return;
+    const from = iso_(r[COL.checkin - 1]);
+    const to = iso_(r[COL.checkout - 1]);
+    if (!isISO(from) || !isISO(to) || to <= from || to < today) return;
+    const id = rowKey_(r, i);
+    if (skip && otaSourceOf_(r, id) === skip) return;
+    let uid = (id + '-' + house).replace(/[^\w-]/g, '');
+    if (seen[uid]) uid += '-' + (i + 2);
+    seen[uid] = true;
+    lines.push('BEGIN:VEVENT', 'UID:' + uid + '@lagooncamping', 'DTSTAMP:' + stamp,
+      'DTSTART;VALUE=DATE=' + from.replace(/-/g, ''), 'DTEND;VALUE=DATE=' + to.replace(/-/g, ''),
+      'SUMMARY:Reserved', 'TRANSP:OPAQUE', 'END:VEVENT');
+  });
+  lines.push('END:VCALENDAR');
+  return ContentService.createTextOutput(lines.map(icsFold_).join('\r\n') + '\r\n').setMimeType(ContentService.MimeType.ICAL);
+}
+
+// ข้อความใน iCal: \ ; , ขึ้นบรรทัดใหม่ ต้อง escape
+function icsText_(s) {
+  return String(s).replace(/\\/g, '\\\\').replace(/;/g, '\\;').replace(/,/g, '\\,').replace(/\r?\n/g, '\\n');
+}
+
+// บรรทัดยาวเกิน 75 ไบต์ (UTF-8) → ตัดขึ้นบรรทัดใหม่ขึ้นต้นด้วยเว้นวรรค (RFC 5545) ไม่ตัดกลางตัวอักษร
+function icsFold_(line) {
+  const parts = [];
+  let cur = '';
+  let bytes = 0;
+  Array.from(line).forEach((ch) => {
+    const c = ch.codePointAt(0);
+    const n = c < 0x80 ? 1 : c < 0x800 ? 2 : c < 0x10000 ? 3 : 4;
+    if (bytes + n > (parts.length ? 74 : 75)) {
+      parts.push(cur);
+      cur = '';
+      bytes = 0;
+    }
+    cur += ch;
+    bytes += n;
+  });
+  parts.push(cur);
+  return parts.join('\r\n ');
+}
+
+// ---- นำเข้า: ดึงปฏิทินจาก Airbnb/Agoda มาเป็นแถวในชีต ----
+/** รันเองทุก 15 นาทีใน expireBookings · กด Run เองได้ (ยังไม่ตั้ง OTA_ICAL = ไม่ทำอะไร) */
+function syncOtaCalendars() {
+  const cfg = otaConfig_();
+  const feeds = [];
+  Object.keys(cfg).forEach((h) => Object.keys(cfg[h]).forEach((src) => feeds.push({ house: h, src, url: cfg[h][src], key: h + ':' + src })));
+  if (!feeds.length) return { ok: true, feeds: 0 };
+
+  // ดึงทุกปฏิทินพร้อมกัน นอกล็อก (เน็ตช้าไม่ทำให้ลูกค้าที่กำลังจองต้องรอ)
+  const today = todayISO_();
+  otaFetch_(feeds).forEach((res, i) => {
+    const f = feeds[i];
+    const events = res.error ? null : icsParse_(res.text);
+    if (!events) f.error = res.error || 'ไม่ใช่ไฟล์ปฏิทิน (ไม่มี VCALENDAR)';
+    else f.events = otaEvents_(events, f.src, f.house, today);
+  });
+
+  const conflicts = [];
+  const lock = LockService.getScriptLock();
+  lock.waitLock(20000);
+  try {
+    const sh = sheet_();
+    ensureCols_(sh);
+    const values = adminValues_(sh); // อ่านชีตครั้งเดียว
+    const stamp = nowText_();
+    const index = {};
+    values.forEach((r, i) => {
+      const id = rowKey_(r, i);
+      if (OTA_ID.test(id) && index[id] === undefined) index[id] = i;
+    });
+    const added = [];
+    const touched = []; // การจองจาก OTA ที่ใหม่/เปลี่ยนวัน → เช็กชนกับการจองในเว็บ
+    feeds.forEach((f) => {
+      if (!f.events) return;
+      const st = f.stat = { events: 0, added: 0, updated: 0, cancelled: 0 };
+      Object.keys(f.events).forEach((id) => {
+        const ev = f.events[id];
+        st.events++;
+        const name = OTA_SOURCES[f.src] + (ev.block ? ' (ปิดวัน)' : '');
+        const note = safe_('[sync] ' + ev.summary.slice(0, 60));
+        // ช่อง 3–13: รหัสบ้าน บ้าน เข้า ออก คืน คน ชื่อ เบอร์ หมายเหตุ ยอดรวม สถานะ
+        const fields = [f.house, HOUSES[f.house].name, ev.from, ev.to, nights_(ev.from, ev.to), '', name, '', note, 0, STATUS.CONFIRMED];
+        const i = index[id];
+        if (i === undefined) {
+          const row = [stamp, id].concat(fields, [0, '', '', '', '', '', '', '', f.src]);
+          added.push(row);
+          index[id] = -1; // กัน UID ซ้ำในอีกปฏิทิน
+          st.added++;
+          touched.push({ f, ev, id });
+          return;
+        }
+        if (i < 0) return;
+        const r = values[i];
+        const moved = iso_(r[COL.checkin - 1]) !== ev.from || iso_(r[COL.checkout - 1]) !== ev.to
+          || String(r[COL.status - 1] || '').trim() !== STATUS.CONFIRMED || houseId_(r[COL.house - 1]) !== f.house;
+        if (!moved && String(r[8]) === name && String(r[10]) === note) return; // ไม่มีอะไรเปลี่ยน ไม่เขียน
+        sh.getRange(i + 2, 3, 1, fields.length).setValues([fields]);
+        fields.forEach((v, j) => { r[2 + j] = v; });
+        st.updated++;
+        if (moved) touched.push({ f, ev, id });
+      });
+      // หายไปจากปฏิทินที่ดึงสำเร็จ → ยกเลิก (ไม่แตะการจองที่ผ่านไปแล้ว)
+      values.forEach((r, i) => {
+        const id = rowKey_(r, i);
+        if (!OTA_ID.test(id) || f.events[id] || otaSourceOf_(r, id) !== f.src) return;
+        if ((houseId_(r[COL.house - 1]) || houseId_(r[3])) !== f.house) return;
+        if (String(r[COL.status - 1] || '').trim() === STATUS.CANCELLED || !(iso_(r[COL.checkout - 1]) > today)) return;
+        sh.getRange(i + 2, COL.status).setValue(STATUS.CANCELLED);
+        r[COL.status - 1] = STATUS.CANCELLED;
+        st.cancelled++;
+      });
+    });
+    if (added.length) sh.getRange(sh.getLastRow() + 1, 1, added.length, added[0].length).setValues(added);
+
+    // จองชนกัน: การจองจาก OTA ที่ใหม่/เปลี่ยนวัน ทับการจองที่ยังมีผลของบ้านเดียวกัน (เว็บ/หลังบ้าน หรือ OTA อีกเจ้า)
+    const all = values.concat(added);
+    const now = nowText_();
+    touched.forEach(({ f, ev, id }) => {
+      if (!(ev.to > today)) return;
+      all.forEach((r, i) => {
+        const other = rowKey_(r, i);
+        if (other === id) return;
+        const src = otaSourceOf_(r, other);
+        if (src === f.src) return; // ปฏิทินเดียวกัน OTA จัดการเอง
+        if ((houseId_(r[COL.house - 1]) || houseId_(r[3])) !== f.house) return;
+        const status = r[COL.status - 1];
+        if (status === STATUS.CANCELLED || status === STATUS.EXPIRED || isExpired_(status, r[COL.deadline - 1], now)) return;
+        const from = iso_(r[COL.checkin - 1]);
+        const to = iso_(r[COL.checkout - 1]);
+        if (!(from < ev.to && to > ev.from && to > today)) return;
+        // "ปิดวัน" ที่อยู่ในช่วงการจองของเราพอดี = OTA สะท้อนปฏิทินที่เราส่งออกไป ไม่ใช่การจองชน
+        if (ev.block && from <= ev.from && to >= ev.to) return;
+        conflicts.push({ key: id + '|' + ev.from + '|' + ev.to + '|' + other, until: ev.to, house: f.house, src: f.src, ev, other, otherSrc: src });
+      });
+    });
+  } finally {
+    try {
+      SpreadsheetApp.flush();
+    } finally {
+      lock.releaseLock();
+    }
+  }
+
+  // บันทึกผลซิงก์ (ดูด้วย otaStatus)
+  const prev = readJson_('OTA_LAST');
+  const last = {};
+  const at = nowText_();
+  feeds.forEach((f) => {
+    const old = prev[f.key] || {};
+    last[f.key] = f.stat
+      ? Object.assign({ at, ok: true }, f.stat)
+      : { at, ok: false, error: f.error, lastOk: old.ok ? old.at : old.lastOk || '' };
+    if (!f.stat) console.error('ซิงก์ ' + f.key + ' ไม่สำเร็จ: ' + f.error);
+  });
+  props_().setProperty('OTA_LAST', JSON.stringify(last));
+
+  // แจ้ง LINE แอดมิน (เรื่องละครั้ง · รวมเป็นข้อความเดียว)
+  const alerted = readJson_('OTA_ALERTED');
+  Object.keys(alerted).forEach((k) => { if (!(String(alerted[k]) >= today)) delete alerted[k]; });
+  const fresh = conflicts.filter((c) => !alerted[c.key]);
+  if (fresh.length) {
+    const text = fresh.map((c) => '⚠️ จองชนกัน: ' + HOUSES[c.house].name + ' ' + thaiRange_(c.ev.from, c.ev.to)
+      + ' · มีการจองจาก ' + OTA_SOURCES[c.src] + ' ทับกับการจอง' + (c.otherSrc ? 'จาก ' + OTA_SOURCES[c.otherSrc] : 'ในเว็บ')
+      + ' ' + c.other + ' กรุณาตรวจสอบด่วน').join('\n\n');
+    linePush_(adminIds_(), text + '\n\nเปิดในหลังบ้าน: ' + ADMIN_URL);
+    fresh.forEach((c) => { alerted[c.key] = c.until; });
+  }
+  props_().setProperty('OTA_ALERTED', JSON.stringify(alerted));
+  return { ok: true, feeds: feeds.length, failed: feeds.filter((f) => !f.stat).length, conflicts: fresh.length };
+}
+
+// ดึงทุกลิงก์พร้อมกัน · ลิงก์ไหนเน็ตพัง (fetchAll โยน error ทั้งชุด) → ลองทีละลิงก์
+// ข้อความผิดพลาดตัดลิงก์ออก (ลิงก์ของ OTA มีรหัสลับ)
+function otaFetch_(feeds) {
+  const reqs = feeds.map((f) => ({ url: f.url, muteHttpExceptions: true, followRedirects: true, headers: { Accept: 'text/calendar' } }));
+  const clean = (err) => String(err).replace(/https?:\/\/\S+/g, '<ลิงก์>').slice(0, 120);
+  let res;
+  try {
+    res = UrlFetchApp.fetchAll(reqs);
+  } catch (err) {
+    res = reqs.map((q) => {
+      try {
+        return UrlFetchApp.fetch(q.url, q);
+      } catch (err2) {
+        return { error: 'ดึงไม่สำเร็จ: ' + clean(err2) };
+      }
+    });
+  }
+  return res.map((r) => {
+    if (r.error) return r;
+    try {
+      const code = r.getResponseCode();
+      return code === 200 ? { text: r.getContentText('UTF-8') } : { error: 'HTTP ' + code };
+    } catch (err) {
+      return { error: clean(err) };
+    }
+  });
+}
+
+// อ่านไฟล์ iCal → [{ DTSTART, DTEND, UID, SUMMARY, STATUS }] · ไม่ใช่ VCALENDAR ครบไฟล์ = null
+function icsParse_(text) {
+  const s = String(text || '').replace(/^\uFEFF/, '');
+  if (!/^\s*BEGIN:VCALENDAR/i.test(s) || !/END:VCALENDAR\s*$/i.test(s)) return null;
+  const events = [];
+  let ev = null;
+  s.replace(/\r\n?/g, '\n').replace(/\n[ \t]/g, '').split('\n').forEach((line) => {
+    const up = line.trim().toUpperCase();
+    if (up === 'BEGIN:VEVENT') { ev = {}; return; }
+    if (up === 'END:VEVENT') { if (ev) events.push(ev); ev = null; return; }
+    if (!ev) return;
+    // ชื่อ;พารามิเตอร์:ค่า (โคลอนในเครื่องหมายคำพูดของพารามิเตอร์ไม่นับ)
+    let q = false;
+    let c = -1;
+    for (let k = 0; k < line.length; k++) {
+      if (line[k] === '"') q = !q;
+      else if (line[k] === ':' && !q) { c = k; break; }
+    }
+    if (c < 0) return;
+    const name = line.slice(0, c).split(';')[0].trim().toUpperCase();
+    const value = line.slice(c + 1).trim();
+    if (name === 'DTSTART' || name === 'DTEND') ev[name] = icsDate_(value);
+    else if (name === 'UID' || name === 'SUMMARY' || name === 'STATUS') {
+      ev[name] = value.replace(/\\n/gi, ' ').replace(/\\([\\;,])/g, '$1');
+    }
+  });
+  return events;
+}
+
+// 20261010 / 20261010T140000 / 20261010T070000Z → yyyy-mm-dd (เวลา UTC แปลงเป็นวันที่ไทย · มีเขตเวลาอื่น ใช้วันที่ตามที่เขียน)
+function icsDate_(v) {
+  const m = String(v).match(/^(\d{4})(\d{2})(\d{2})(?:T(\d{2})(\d{2})(\d{2})?(Z)?)?$/i);
+  if (!m) return '';
+  const t = new Date(Date.UTC(Number(m[1]), Number(m[2]) - 1, Number(m[3]), Number(m[4] || 0), Number(m[5] || 0), Number(m[6] || 0)));
+  if (t.getUTCMonth() !== Number(m[2]) - 1 || t.getUTCDate() !== Number(m[3])) return ''; // วันที่ไม่มีจริง
+  return m[7] ? Utilities.formatDate(t, TZ, 'yyyy-MM-dd') : m[1] + '-' + m[2] + '-' + m[3];
+}
+
+// VEVENT → การจองที่จะเขียนลงชีต { รหัส EXT-...: { from, to, block, summary } }
+// ไม่มีวันออก (หรือวันออกไม่หลังวันเข้า) = 1 คืน · เอาเฉพาะที่ยังไม่ออก (วันออก >= วันนี้) และเข้าพักภายใน 2 ปี
+function otaEvents_(events, src, house, today) {
+  const max = addDaysISO_(today, OTA_MAX_DAYS);
+  const out = {};
+  events.forEach((ev) => {
+    if (/^CANCELLED$/i.test(ev.STATUS || '')) return;
+    const from = ev.DTSTART;
+    if (!from) return;
+    const to = ev.DTEND && ev.DTEND > from ? ev.DTEND : addDaysISO_(from, 1);
+    if (to < today || from > max) return;
+    const summary = String(ev.SUMMARY || '').replace(/\s+/g, ' ').trim();
+    const uid = String(ev.UID || '').trim() || from + '|' + to + '|' + summary;
+    const id = 'EXT-' + src.toUpperCase() + '-' + hash8_(house + '|' + uid);
+    if (out[id]) return;
+    out[id] = { from, to, summary, block: OTA_BLOCK_SUMMARY.test(summary) };
+  });
+  return out;
+}
+
+// แฮช 8 ตัวอักษร (FNV-1a 32 บิต) — UID เดิมได้รหัสเดิมเสมอ
+function hash8_(s) {
+  let h = 0x811c9dc5;
+  for (let i = 0; i < s.length; i++) {
+    h ^= s.charCodeAt(i);
+    h = Math.imul(h, 0x01000193) >>> 0;
+  }
+  return ('0000000' + h.toString(16)).slice(-8).toUpperCase();
 }

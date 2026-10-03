@@ -33,6 +33,7 @@ const ERRORS = {
   bad_note: 'หมายเหตุยาวเกินไป',
   bad_total: 'ยอดรวมต้องเป็นตัวเลขเต็ม ไม่ติดลบ',
   not_found: 'ไม่พบการจองนี้ในชีตแล้ว ลองกดโหลดใหม่',
+  ota_readonly: 'การจองนี้มาจาก Airbnb/Agoda แก้หรือยกเลิกได้ในแอปนั้นเท่านั้น',
   server: 'ระบบมีปัญหา ลองใหม่อีกครั้ง',
 };
 const errText = (code) => ERRORS[code] || 'ทำไม่สำเร็จ ลองใหม่อีกครั้ง';
@@ -85,6 +86,10 @@ const houseName = (id) => (state.data && state.data.houses[id] ? state.data.hous
 const isActive = (b) => b.status === ST.CONFIRMED || b.status === ST.PENDING;
 const people = (b) => (Number(b.guests) || 0) + (Number(b.tent) || 0) + (Number(b.rent) || 0) * 2;
 const byId = (id) => bookings().find((b) => b.id === id);
+// การจองที่ซิงก์มาจาก Airbnb/Agoda (b.source จาก Code.gs) — ดูอย่างเดียว ปฏิทินของ OTA เป็นตัวกำหนด
+const OTA_NAME = { airbnb: 'Airbnb', agoda: 'Agoda' };
+const otaOf = (b) => (b && OTA_NAME[b.source]) || '';
+const otaClosed = (b) => Boolean(otaOf(b)) && /\(ปิดวัน\)$/.test(b.name || '');
 
 // ---------- เรียก Google Apps Script ----------
 // ส่งแบบไม่ใส่ Content-Type (เป็น text/plain) เหมือน js/booking.js — ไม่ติด CORS
@@ -248,7 +253,7 @@ function msgDate(iso) {
   return `${TH_DAY_FULL[t.getUTCDay()]} ${t.getUTCDate()} ${TH_M[t.getUTCMonth()]} ${t.getUTCFullYear() + 543}`;
 }
 function messageFor(b) {
-  if (!b || b.blocked) return '';
+  if (!b || b.blocked || otaOf(b)) return '';
   const name = b.name ? `คุณ${b.name}` : 'คุณลูกค้า';
   const stay = [
     `รหัสการจอง: ${b.id}`,
@@ -298,7 +303,7 @@ function messageFor(b) {
 }
 
 function moneyHtml(b) {
-  if (b.blocked) return '';
+  if (b.blocked || otaOf(b)) return '';
   const lines = [];
   if (b.status === ST.PENDING) {
     lines.push(`<b>ต้องโอน ${baht(b.due)} บาท</b> (${esc(b.payType || '-')}) · ยอดรวม ${baht(b.total)} บาท`);
@@ -327,6 +332,7 @@ function moneyHtml(b) {
 // ปุ่มตามสถานะ: [รหัสคำสั่ง, ข้อความปุ่ม, คำถามยืนยัน, แบบปุ่ม]
 function actionsFor(b) {
   const a = [];
+  if (otaOf(b)) return a; // จาก Airbnb/Agoda: ยืนยัน/ยกเลิก/รับเงิน ทำในแอปนั้น
   if (b.blocked) {
     if (b.status === ST.CONFIRMED) a.push(['cancel', 'เปิดให้จองได้', `เปิดบ้านให้รับจองช่วง ${dateRange(b)} ใช่ไหม?`, 'danger']);
     else a.push(['reopen', 'ปิดบ้านอีกครั้ง', 'ปิดบ้านช่วงนี้อีกครั้งใช่ไหม?', 'link']);
@@ -358,14 +364,16 @@ function card(b) {
   const cls = statusClass(b);
   const pill = cls === 'blocked' ? 'ปิดบ้าน' : (b.status || 'ไม่มีสถานะ');
   const phone = String(b.phone || '').replace(/[^\d+]/g, '');
-  const who = b.blocked ? '' : `<p class="who"><b>${esc(b.name || '-')}</b>${people(b) ? ` · ${people(b)} ท่าน` : ''}${b.guests && (b.tent || b.rent) ? ` (ในบ้าน ${b.guests})` : ''}</p>`;
+  const ota = otaOf(b);
+  const who = ota ? `<p class="ota-note">${otaClosed(b) ? `ปิดวันใน ${ota} (ไม่ใช่แขก)` : `จองผ่าน ${ota}`} — ดูรายละเอียดในแอป ${ota}</p>`
+    : b.blocked ? '' : `<p class="who"><b>${esc(b.name || '-')}</b>${people(b) ? ` · ${people(b)} ท่าน` : ''}${b.guests && (b.tent || b.rent) ? ` (ในบ้าน ${b.guests})` : ''}</p>`;
   return `
   <article class="bk st-${cls}" id="b-${esc(b.id)}" data-id="${esc(b.id)}">
-    <div class="bk-top"><span class="pill">${esc(pill)}</span>${b.lineLinked && !b.blocked ? '<span class="line-badge" title="ลูกค้าทัก LINE พร้อมเลขการจองแล้ว กดยืนยันแล้วระบบส่งใบยืนยันเข้า LINE ให้">LINE ✓</span>' : ''}<span class="bk-id">${esc(b.id)}</span></div>
-    <h3>${b.blocked ? 'ปิดบ้าน: ' : ''}${esc(b.blocked ? b.houseNames.join(', ') : itemsText(b))}</h3>
+    <div class="bk-top"><span class="pill">${esc(pill)}</span>${ota ? `<span class="ota-badge">${ota}</span>` : ''}${b.lineLinked && !b.blocked && !ota ? '<span class="line-badge" title="ลูกค้าทัก LINE พร้อมเลขการจองแล้ว กดยืนยันแล้วระบบส่งใบยืนยันเข้า LINE ให้">LINE ✓</span>' : ''}<span class="bk-id">${esc(b.id)}</span></div>
+    <h3>${b.blocked ? 'ปิดบ้าน: ' : ''}${esc(b.blocked || ota ? b.houseNames.join(', ') : itemsText(b))}</h3>
     <p class="dates">${dateRange(b)}</p>
     ${who}
-    ${b.note ? `<p class="bk-note">📝 ${esc(b.note)}</p>` : ''}
+    ${b.note && !ota ? `<p class="bk-note">📝 ${esc(b.note)}</p>` : ''}
     ${moneyHtml(b)}
     ${phone.length >= 9 && !b.blocked ? `<a class="btn-call" href="tel:${esc(phone)}">📞 โทร ${esc(b.phone)}</a>` : (b.phone ? `<p>📞 ${esc(b.phone)}</p>` : '')}
     ${messageFor(b) ? `<div class="msg-acts">
@@ -512,7 +520,7 @@ function renderToday() {
       ${prep.length ? `<ul class="prep">${prep.map((p) => `<li>${p}</li>`).join('')}</ul>` : '<p class="muted">ไม่มีงานต้องเตรียม</p>'}
     </div>
     <div class="summary">
-      <p>คืนนี้มีแขก <b>${tonight.reduce((s, b) => s + people(b), 0)} ท่าน</b> (${tonight.length} การจอง)</p>
+      <p>คืนนี้มีแขก <b>${tonight.reduce((s, b) => s + people(b), 0)} ท่าน</b> (${tonight.length} การจอง)${tonight.some((b) => otaOf(b)) ? ' · ไม่รวมจำนวนแขก Airbnb/Agoda' : ''}</p>
       <p>บ้านว่างคืนนี้: <b>${free.length ? esc(free.join(', ')) : 'เต็มทุกหลัง'}</b></p>
       ${pending ? `<p><button type="button" class="link" data-goto="pending">มีการจองรอชำระเงิน ${pending} รายการ →</button></p>` : ''}
     </div>
@@ -577,10 +585,12 @@ function renderCalendar() {
     const b = cellBooking(h, d);
     const label = `${houseName(h)} ${thDate(d)}`;
     if (!b) return `<td><button type="button" class="c-free" data-free="${h}" data-day="${d}" aria-label="${esc(label)} ว่าง กดเพื่อจอง"></button></td>`;
-    const kind = b.blocked ? 'blocked' : b.status === ST.PENDING ? 'pending' : 'booked';
+    const kind = b.blocked || otaClosed(b) ? 'blocked' : b.status === ST.PENDING ? 'pending' : 'booked';
     const word = { blocked: 'ปิดบ้าน', pending: 'รอชำระ', booked: 'จองแล้ว' }[kind];
     const start = b.checkin === d || d === state.today;
-    return `<td><button type="button" class="c-${kind}" data-open="${esc(b.id)}" aria-label="${esc(label)} ${word}: ${esc(b.name)}">${start ? esc(b.blocked ? 'ปิด' : b.name) : ''}</button></td>`;
+    const ota = otaOf(b);
+    const text = ota || (b.blocked ? 'ปิด' : b.name);
+    return `<td><button type="button" class="c-${kind}${ota ? ' c-ota' : ''}" data-open="${esc(b.id)}" aria-label="${esc(label)} ${word}${ota ? ' ผ่าน ' + ota : ''}: ${esc(b.name)}">${start ? esc(text) : ''}</button></td>`;
   }).join('')}</tr>`).join('');
   $('#cal-scroll').innerHTML = `<table class="cal"><thead><tr><th class="corner">บ้าน</th>${head}</tr></thead><tbody>${rows}</tbody></table>`;
   const blocks = bookings().filter((b) => b.blocked && b.status === ST.CONFIRMED && b.checkout > state.today);
@@ -797,7 +807,7 @@ function openBooking(id) {
 }
 function readHash() {
   const id = decodeURIComponent(location.hash.slice(1));
-  return /^(LG|BLK|ROW)[\w-]{1,30}$/.test(id) ? id : '';
+  return /^(LG|BLK|ROW|EXT)[\w-]{1,30}$/.test(id) ? id : '';
 }
 window.addEventListener('hashchange', () => {
   const id = readHash();
