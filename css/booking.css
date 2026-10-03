@@ -283,8 +283,17 @@ body:has(.book-bar:not([hidden])) { padding-bottom: var(--bar-h, 110px); }
 .tent-card.flash { box-shadow: 0 0 0 3px var(--forest); }
 .tent-card h3 { margin: 0 0 2px; display: flex; align-items: center; gap: 8px; }
 .tent-card h3 svg { width: 24px; height: 24px; flex: none; fill: none; stroke: var(--forest); stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; }
-.qty-row { display: flex; align-items: center; justify-content: space-between; gap: 12px 20px; flex-wrap: wrap; padding: 14px 0 0; margin-top: 14px; border-top: 1px solid var(--line); }
-.qty-row small { display: block; color: var(--muted); font-size: .86rem; }
+/* section.tent-card: ชนะกฎ section ใน style.css ที่ตัด padding บน-ล่างออก */
+section.tent-card { padding: 22px 22px 24px; }
+.tent-card > .house-type { margin-bottom: 14px; }
+/* ตัวเลือก 2 แบบเป็นกล่องคู่ (จอใหญ่วางข้างกัน · มือถือซ้อนกัน) */
+.tent-opts { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 14px; }
+.qty-row { display: flex; flex-direction: column; justify-content: space-between; gap: 14px; padding: 16px 18px; border: 1px solid var(--line); border-radius: var(--radius-sm, 12px); background: var(--bg); }
+.qty-row .opt-info b { display: block; font-size: 1.02rem; }
+.opt-price { margin: 4px 0 6px; font-size: 1.35rem; font-weight: 600; color: var(--forest); line-height: 1.2; }
+.opt-price span { font-size: .85rem; font-weight: 400; color: var(--muted); }
+.qty-row small { display: block; color: var(--muted); font-size: .86rem; line-height: 1.55; }
+.qty-row .qty { align-self: flex-start; }
 .qty { display: inline-flex; align-items: center; gap: 8px; }
 .qty button { width: 44px; height: 44px; border-radius: 50%; border: 1.5px solid var(--forest); background: transparent; color: var(--forest); font-size: 1.4rem; line-height: 1; cursor: pointer; }
 .qty button:hover { background: var(--forest); color: var(--bg); }

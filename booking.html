@@ -24,7 +24,7 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Anuphan:wght@400;500;600&family=Chonburi&display=swap">
   <link rel="stylesheet" href="css/style.css?v=20261003h">
-  <link rel="stylesheet" href="css/booking.css?v=20261003g">
+  <link rel="stylesheet" href="css/booking.css?v=20261003i">
 </head>
 <body>
 
@@ -191,8 +191,9 @@
         <section class="tent-card" id="tents" aria-labelledby="tent-h">
           <h3 id="tent-h"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M2 20h20M3 20 12 4l9 16M9.5 20 12 15l2.5 5"/></svg>ลานกางเต็นท์ริมน้ำ</h3>
           <p class="house-type">เพิ่มคู่กับบ้านพัก หรือจองเฉพาะเต็นท์ก็ได้ · มีจุดพ่วงปลั๊กไฟ และห้องน้ำแยกชาย–หญิง</p>
+          <div class="tent-opts">
           <div class="qty-row">
-            <div><b>นำเต็นท์มาเอง</b><small>200 บาท/ท่าน/คืน (นับผู้ใหญ่และเด็ก 15 ปีขึ้นไป · เด็ก 10–14 ปี 100 บาท ต่ำกว่า 10 ปีฟรี ชำระหน้างาน)</small></div>
+            <div class="opt-info"><b>นำเต็นท์มาเอง</b><p class="opt-price">200 <span>บาท/ท่าน/คืน</span></p><small>นับผู้ใหญ่และเด็ก 15 ปีขึ้นไป · เด็ก 10–14 ปี 100 บาท ต่ำกว่า 10 ปีฟรี (ชำระหน้างาน)</small></div>
             <div class="qty">
               <button type="button" data-qty="#tent-guests" data-d="-1" aria-label="ลดจำนวนคนนำเต็นท์มาเอง">−</button>
               <input type="number" id="tent-guests" min="0" max="30" value="0" inputmode="numeric" aria-label="จำนวนคนนำเต็นท์มาเอง">
@@ -201,13 +202,14 @@
             </div>
           </div>
           <div class="qty-row">
-            <div><b>เช่าเต็นท์ของรีสอร์ท</b><small>1,300 บาท/หลัง/คืน · นอนได้ 2 ท่าน พร้อมเครื่องนอน 2 ชุด พัดลม และปลั๊ก</small></div>
+            <div class="opt-info"><b>เช่าเต็นท์ของรีสอร์ท</b><p class="opt-price">1,300 <span>บาท/หลัง/คืน</span></p><small>นอนได้ 2 ท่าน พร้อมเครื่องนอน 2 ชุด พัดลม และปลั๊ก</small></div>
             <div class="qty">
               <button type="button" data-qty="#tent-rent" data-d="-1" aria-label="ลดจำนวนเต็นท์เช่า">−</button>
               <input type="number" id="tent-rent" min="0" max="10" value="0" inputmode="numeric" aria-label="จำนวนเต็นท์เช่า">
               <button type="button" data-qty="#tent-rent" data-d="1" aria-label="เพิ่มจำนวนเต็นท์เช่า">+</button>
               <span>หลัง</span>
             </div>
+          </div>
           </div>
         </section>
 
