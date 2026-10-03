@@ -275,6 +275,10 @@ section.tent-card { padding: 22px 22px 24px; }
 .opt-price span { font-size: .85rem; font-weight: 400; color: var(--muted); }
 .qty-row small { display: block; color: var(--muted); font-size: .86rem; line-height: 1.55; }
 .qty-row .qty { align-self: flex-start; }
+/* กรอบบ้านพักริมน้ำ: ใช้หน้าตาเดียวกับการ์ดลานกางเต็นท์ · กล่องบ้านข้างในใช้พื้นสีเดียวกับกล่องตัวเลือกเต็นท์ */
+.tent-card.house-card { margin: 0 0 32px; }
+.house-card .house { background: var(--bg); }
+.house-card .house-all { margin-bottom: 14px; }
 .qty { display: inline-flex; align-items: center; gap: 8px; }
 .qty button { width: 44px; height: 44px; border-radius: 50%; border: 1.5px solid var(--forest); background: transparent; color: var(--forest); font-size: 1.4rem; line-height: 1; cursor: pointer; }
 .qty button:hover { background: var(--forest); color: var(--bg); }
