@@ -165,6 +165,12 @@ main > section + section { border-top: 1px solid var(--line); }
   .nav ul::-webkit-scrollbar { display: none; }
   .nav ul a { white-space: nowrap; }
 }
+/* มือถือจอแคบ: เมนู 4 ข้อใส่ไม่พอในแถวเดียว → จัดเป็น 2 แถว × 2 ช่อง เห็นครบไม่ต้องปัด */
+@media (max-width: 440px) {
+  .nav ul { display: grid; grid-template-columns: 1fr 1fr; gap: 0 12px; overflow: visible; padding-block: 2px 6px; }
+  .nav ul li { min-width: 0; }
+  .nav ul a { padding-block: 3px 5px; }
+}
 
 /* ---------- ภาพปก (Hero) ---------- */
 /* รูปพระอาทิตย์ตกเต็มจอเป็นพื้นหลัง + ข้อความด้านล่างซ้าย + ป้ายราคาวงกลม */

@@ -34,6 +34,7 @@ const TENT_PRICE = 200;  // นำเต็นท์มาเอง บาท/�
 const TENT_RENT = 1200;  // เช่าเต็นท์ของรีสอร์ท บาท/หลัง/คืน (นอน 2 ท่าน พร้อมเครื่องนอน+พัดลม) — ต้องตรงกับ js/booking.js
 // จองเฉพาะเต็นท์ (ไม่มีบ้าน) บันทึกเป็น 1 แถว รหัสบ้าน 'tent' (ไม่ล็อกบ้านหลังไหน)
 const TENT_ROW = { id: 'tent', name: 'ลานกางเต็นท์' };
+const SAME_DAY_CUTOFF = 18; // หลัง 18:00 น. ไม่รับจองเข้าพักวันนี้ทางเว็บ (ให้โทรจอง) — ต้องตรงกับ js/booking.js
 
 // ราคาต่อคืน — ต้องตรงกับ js/booking.js (ระบบคำนวณยอดจากราคานี้ ไม่เชื่อยอดที่ส่งมาจากหน้าเว็บ)
 const HOUSES = {
@@ -260,6 +261,7 @@ function validate_(d) {
   if (!(Number.isInteger(rent) && rent >= 0 && rent <= 10)) return 'bad_tent';
   if (!d.houses.length && !tent && !rent) return 'bad_house'; // ต้องมีบ้านหรือเต็นท์อย่างน้อย 1 อย่าง
   if (!isDate(d.checkin) || !isDate(d.checkout) || d.checkout <= d.checkin || d.checkin < todayISO_()) return 'bad_dates';
+  if (d.checkin === todayISO_() && Number(Utilities.formatDate(new Date(), TZ, 'H')) >= SAME_DAY_CUTOFF) return 'too_late';
   if (nights_(d.checkin, d.checkout) > 30) return 'too_long';
   if (!d.name || String(d.name).trim().length > 100) return 'bad_name';
   if (!/^0[0-9]{8,9}$/.test(String(d.phone || '').replace(/[\s-]/g, ''))) return 'bad_phone';

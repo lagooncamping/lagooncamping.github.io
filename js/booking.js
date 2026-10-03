@@ -17,6 +17,7 @@ const HOLD_HOURS = 6;
 const TENT_PRICE = 200;      // นำเต็นท์มาเอง บาท/ท่าน/คืน — ต้องตรงกับ Code.gs
 const TENT_RENT = 1200;      // เช่าเต็นท์ของรีสอร์ท บาท/หลัง/คืน (พร้อมเครื่องนอน 2 ชุด + พัดลม) — ต้องตรงกับ Code.gs
 const TENT_RENT_SLEEPS = 2;  // เต็นท์เช่า 1 หลังนอนได้ 2 ท่าน
+const SAME_DAY_CUTOFF = 18;  // หลัง 18:00 น. ปิดรับจองเข้าพักวันนี้ทางเว็บ — ต้องตรงกับ Code.gs
 
 // ---------- QR พร้อมเพย์ (มาตรฐาน EMVCo ที่ธนาคารไทยใช้) ----------
 const tlv = (id, value) => id + String(value.length).padStart(2, '0') + value;
@@ -224,11 +225,18 @@ $('#tent-guests').addEventListener('input', render);
 $('#tent-rent').addEventListener('input', render);
 
 // ---------- เลือกวัน ----------
-checkinEl.min = today;
-checkoutEl.min = addDays(today, 1);
-// ค่าเริ่มต้น: เข้าพักวันนี้ ออกพรุ่งนี้ (ลูกค้าเปลี่ยนเองได้)
-state.checkin = checkinEl.value = today;
-state.checkout = checkoutEl.value = addDays(today, 1);
+// หลัง SAME_DAY_CUTOFF น. (เวลาไทย) ปิดรับจองเข้าพักวันนี้ทางเว็บ ให้โทรจองแทน — ต้องตรงกับ Code.gs
+const bangkokHour = Number(new Intl.DateTimeFormat('en-GB', { hour: '2-digit', hourCycle: 'h23', timeZone: 'Asia/Bangkok' }).format(new Date()));
+const firstDay = bangkokHour >= SAME_DAY_CUTOFF ? addDays(today, 1) : today;
+if (firstDay !== today) {
+  $('#late-note').hidden = false;
+  $('#late-note').innerHTML = `หลัง ${SAME_DAY_CUTOFF}:00 น. จองเข้าพักคืนนี้ทางเว็บไม่ได้ กรุณาโทร <a href="tel:+66819304969">${PHONE}</a> หรือทัก <a href="https://line.me/R/ti/p/${LINE_ID}" target="_blank" rel="noopener">LINE ${LINE_ID}</a>`;
+}
+checkinEl.min = firstDay;
+checkoutEl.min = addDays(firstDay, 1);
+// ค่าเริ่มต้น: เข้าพักวันแรกที่จองได้ (ปกติ = วันนี้) ออกวันถัดไป (ลูกค้าเปลี่ยนเองได้)
+state.checkin = checkinEl.value = firstDay;
+state.checkout = checkoutEl.value = addDays(firstDay, 1);
 checkinEl.addEventListener('change', () => {
   state.checkin = checkinEl.value;
   if (state.checkin) {
@@ -378,6 +386,10 @@ $('#details-form').addEventListener('submit', async (e) => {
         out.houses.forEach((h) => state.selected.delete(h));
         await loadBookings();
         go('pick');
+        return;
+      }
+      if (out.error === 'too_late') {
+        errorEl.innerHTML = `หลัง ${SAME_DAY_CUTOFF}:00 น. จองเข้าพักคืนนี้ทางเว็บไม่ได้ กรุณาโทร ${PHONE} หรือทัก LINE ${LINE_ID}`;
         return;
       }
       if (!out.ok) throw new Error(out.error);
