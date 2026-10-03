@@ -22,21 +22,23 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Anuphan:wght@400;500;600&family=Chonburi&display=swap">
-  <link rel="stylesheet" href="/css/style.css?v=20261003c">
+  <link rel="stylesheet" href="/css/style.css?v=20261003d">
 </head>
-<body>
+<body class="has-dock">
 
   <!-- ===== เมนูด้านบน (เหมือนกันทุกหน้า แก้ต้องแก้ทุกไฟล์ .html) ===== -->
-  <nav class="nav" aria-label="เมนูหลัก">
+  <nav class="nav nav-compact" aria-label="เมนูหลัก">
     <div class="wrap">
       <a class="brand" href="/">The Lagoon</a>
-      <ul>
+      <ul id="main-menu">
         <li><a href="/prices.html">ที่พัก &amp; ราคา</a></li>
         <li><a href="/gallery.html">บรรยากาศ</a></li>
         <li><a href="/stay.html">ข้อมูลเข้าพัก &amp; FAQ</a></li>
         <li><a href="/contact.html">ติดต่อ &amp; เดินทาง</a></li>
       </ul>
       <a class="btn btn-primary btn-small" href="/booking.html">จองที่พัก</a>
+      <!-- มือถือ: ปุ่มเปิด-ปิดเมนู (ดู js/nav.js) -->
+      <button class="menu-btn" type="button" aria-expanded="false" aria-controls="main-menu"><svg viewBox="0 0 24 24" aria-hidden="true"><path class="i-open" d="M4 7h16M4 12h16M4 17h16"/><path class="i-close" d="M6 6l12 12M18 6 6 18"/></svg>เมนู</button>
     </div>
   </nav>
 
@@ -100,12 +102,18 @@
       <span>ธรรมชาติ + เพื่อน = ความสุข</span>
     </div>
   </footer>
+  <!-- ===== แถบปุ่มล่างจอ (มือถือเท่านั้น): โทร | LINE | จองที่พัก — จอใหญ่ใช้ปุ่ม LINE ลอยแทน ===== -->
+  <nav class="dock" aria-label="โทร ทักไลน์ หรือจองที่พัก">
+    <a class="call" href="tel:+66819304969"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M22 16.9v3a2 2 0 0 1-2.2 2 19.8 19.8 0 0 1-8.6-3.1 19.5 19.5 0 0 1-6-6A19.8 19.8 0 0 1 2.1 4.2 2 2 0 0 1 4.1 2h3a2 2 0 0 1 2 1.7c.1.9.4 1.8.7 2.7a2 2 0 0 1-.5 2.1L8 9.8a16 16 0 0 0 6 6l1.3-1.3a2 2 0 0 1 2.1-.4c.9.3 1.8.6 2.7.7a2 2 0 0 1 1.7 2z"/></svg>โทร</a>
+    <a class="line" href="https://line.me/R/ti/p/@477nvamb" target="_blank" rel="noopener"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3C6.5 3 2 6.6 2 11c0 3.9 3.5 7.2 8.3 7.9.3.1.8.2.9.5.1.3.1.7 0 1l-.1.9c0 .3-.2 1 .9.5s5.9-3.5 8-6C21.3 14.2 22 12.7 22 11c0-4.4-4.5-8-10-8z"/></svg>LINE</a>
+    <a class="book" href="/booking.html">จองที่พัก</a>
+  </nav>
   <!-- ===== ปุ่ม LINE ลอยมุมขวาล่าง (เหมือนกันทุกหน้า ยกเว้นหน้าจอง) ===== -->
   <a class="line-float" href="https://line.me/R/ti/p/@477nvamb" target="_blank" rel="noopener" aria-label="ทัก LINE @477nvamb เพื่อจองหรือสอบถาม">
     <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3C6.5 3 2 6.6 2 11c0 3.9 3.5 7.2 8.3 7.9.3.1.8.2.9.5.1.3.1.7 0 1l-.1.9c0 .3-.2 1 .9.5s5.9-3.5 8-6C21.3 14.2 22 12.7 22 11c0-4.4-4.5-8-10-8z"/></svg>
     <span>ทักไลน์</span>
   </a>
 
-  <script src="/js/nav.js?v=20261003c" defer></script>
+  <script src="/js/nav.js?v=20261003d" defer></script>
 </body>
 </html>

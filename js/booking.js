@@ -192,8 +192,10 @@ function render() {
     marker.classList.toggle('is-booked', booked);
     marker.classList.toggle('is-selected', picked);
     marker.setAttribute('aria-pressed', String(picked));
-    marker.setAttribute('aria-label', `${h.name}${booked ? ' ถูกจองแล้ว' : picked ? ' เลือกแล้ว' : dated ? ' ว่าง' : ''}`);
-    marker.querySelector('.st').textContent = !dated ? '' : booked ? 'ถูกจองแล้ว' : picked ? 'เลือกแล้ว' : 'ว่าง';
+    // ป้ายใต้ชื่อบ้านบนแผนผัง: ถูกจอง → "ถูกจองแล้ว" · เลือกแล้ว → "เลือกแล้ว" · ว่าง/ยังไม่เลือกวัน → ราคาต่อคืน
+    const price = `${baht(h.price)} บาท/คืน`;
+    marker.setAttribute('aria-label', `${h.name}${booked ? ' ถูกจองแล้ว' : picked ? ' เลือกแล้ว' : dated ? ' ว่าง' : ''}${booked ? '' : ` ${price}`}`);
+    marker.querySelector('.st').textContent = booked ? 'ถูกจองแล้ว' : picked ? 'เลือกแล้ว' : price;
   });
 
   $('#nights').innerHTML = state.loading ? 'กำลังเช็กวันว่าง…'
@@ -314,6 +316,12 @@ if (linked) {
 const STEPS = ['pick', 'details', 'done'];
 function go(step, push = true) {
   STEPS.forEach((s) => { $(`#step-${s}`).hidden = s !== step; });
+  // แถบขั้นตอน 1–2–3 ด้านบน: ขั้นที่ผ่านแล้วขึ้น ✓ ขั้นปัจจุบันเป็นสีเขียว
+  const at = STEPS.indexOf(step);
+  document.querySelectorAll('#steps li').forEach((li, i) => {
+    li.classList.toggle('is-done', i < at);
+    if (i === at) li.setAttribute('aria-current', 'step'); else li.removeAttribute('aria-current');
+  });
   $('#bar').hidden = step !== 'pick' || !hasItems();
   if (push) history.pushState({ step }, '', step === 'pick' ? location.pathname : `#${step}`);
   window.scrollTo(0, 0);

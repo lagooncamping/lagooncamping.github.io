@@ -20,6 +20,8 @@
   --nav-bg: #1f3b2c;    /* พื้นเมนูด้านบน */
   --nav-ink: #f6efe2;
   --radius: 20px;       /* ความโค้งมุมรูปและการ์ด */
+  --radius-sm: 12px;    /* มุมโค้งเล็ก (ปุ่มในแถบล่างมือถือ) */
+  --shadow: 0 10px 30px rgba(20, 30, 20, .12);   /* เงาการ์ดเวลาเอาเมาส์ชี้ */
 
   --font: "Anuphan", "IBM Plex Sans Thai", system-ui, -apple-system, "Segoe UI", sans-serif;
   --font-display: "Chonburi", "Anuphan", serif;   /* หัวข้อใหญ่ */
@@ -44,6 +46,7 @@
     --clay: #eb9a5c;
     --nav-bg: #10130f;
     --nav-ink: #ece8df;
+    --shadow: 0 10px 30px rgba(0, 0, 0, .4);
     color-scheme: dark;
   }
 }
@@ -70,15 +73,18 @@ h2 { font-size: clamp(1.6rem, 4vw, 2.4rem); font-weight: 400; }
 /* หัวข้อใหญ่ใช้ฟอนต์ Chonburi (มีน้ำหนักเดียว) */
 h1, h2 { font-family: var(--font-display); font-weight: 400; letter-spacing: 0; line-height: 1.4; }
 .site-footer h2 { font-family: var(--font); }
-section { padding-block: clamp(64px, 10vw, 112px); }
+section { padding-block: clamp(48px, 9vw, 104px); }
 main > section + section { border-top: 1px solid var(--line); }
 
-.eyebrow { font-family: var(--font-display); font-size: clamp(1.15rem, 2.4vw, 1.35rem); line-height: 1.4; letter-spacing: 0; color: var(--clay); font-weight: 400; }
+.eyebrow { font-family: var(--font-display); font-size: clamp(1rem, 2vw, 1.15rem); line-height: 1.4; letter-spacing: 0; color: var(--clay); font-weight: 400; }
+/* ข้อความเล็กเหนือหัวข้อ: มีขีดสั้นๆ ด้านหน้า ดูเบาลง */
+.eyebrow { display: inline-flex; align-items: center; gap: 8px; align-self: flex-start; }
+.eyebrow::before { content: ""; flex: none; width: 22px; height: 2px; border-radius: 2px; background: currentColor; }
 /* ภาษาไทยห้ามยืดระยะตัวอักษร (สระ/วรรณยุกต์จะลอย) — ยืดได้เฉพาะคำภาษาอังกฤษที่ใส่ lang="en" */
 .eyebrow:lang(en) { font-family: var(--font); font-size: .78rem; font-weight: 500; letter-spacing: .18em; text-transform: uppercase; color: var(--muted); }
 /* ห้ามตัดคำนี้กลางคำ (ใช้กับชื่อสถานที่/คำที่บราวเซอร์ตัดผิด) */
 .nw { white-space: nowrap; }
-.head { display: flex; flex-direction: column; gap: 10px; margin-bottom: 48px; max-width: 640px; }
+.head { display: flex; flex-direction: column; gap: 10px; margin-bottom: clamp(24px, 5vw, 48px); max-width: 640px; }
 .head p { color: var(--muted); margin: 0; }
 
 /* ---------- ปุ่ม ---------- */
@@ -157,22 +163,63 @@ main > section + section { border-top: 1px solid var(--line); }
 .nav-over:not(.is-solid) ul a { text-shadow: 0 1px 8px rgba(0,0,0,.35); }
 .nav-over:not(.is-solid) ul a { color: #fbf8f1; }
 @media (max-width: 720px) { .nav-over .wrap { padding-block: 10px 4px; } .nav-over.is-solid .wrap { padding-block: 8px 2px; } }
-/* มือถือ: เมนูย้ายลงแถวที่สอง เลื่อนซ้าย-ขวาได้ */
+/* แบบเก่า (เฉพาะหน้าที่ยังไม่มีปุ่ม "เมนู" เช่นหน้าจอง): เมนูย้ายลงแถวที่สอง เลื่อนซ้าย-ขวาได้ */
 @media (max-width: 720px) {
-  .nav .wrap { flex-wrap: wrap; row-gap: 0; padding-block: 8px 2px; }
+  .nav:not(.nav-compact) .wrap { flex-wrap: wrap; row-gap: 0; padding-block: 8px 2px; }
   .nav .btn-small { padding: 6px 14px; }
-  .nav ul { order: 3; width: 100%; flex-wrap: nowrap; gap: 16px; overflow-x: auto; scrollbar-width: none; padding-block: 4px 6px; }
-  .nav ul a { font-size: .86rem; }
+  .nav:not(.nav-compact) ul { order: 3; width: 100%; flex-wrap: nowrap; gap: 16px; overflow-x: auto; scrollbar-width: none; padding-block: 4px 6px; }
+  .nav:not(.nav-compact) ul a { font-size: .86rem; }
   .nav ul::-webkit-scrollbar { display: none; }
-  .nav ul a { white-space: nowrap; }
+  .nav:not(.nav-compact) ul a { white-space: nowrap; }
 }
-/* มือถือจอแคบ: เมนู 4 ข้อใส่ไม่พอในแถวเดียว → จัดเป็น 2 แถว × 2 ช่อง เห็นครบไม่ต้องปัด */
 @media (max-width: 440px) {
-  .nav ul { display: grid; grid-template-columns: 1fr 1fr; gap: 0 12px; overflow: visible; padding-block: 2px 6px; }
-  .nav ul li { min-width: 0; }
-  .nav ul a { padding-block: 10px; }   /* ให้พื้นที่กดสูงพอสำหรับนิ้ว (~44px) */
-  .nav ul a::after { bottom: 6px; }    /* เส้นส้มใต้เมนูอยู่ชิดตัวหนังสือเหมือนเดิม */
+  .nav:not(.nav-compact) ul { display: grid; grid-template-columns: 1fr 1fr; gap: 0 12px; overflow: visible; padding-block: 2px 6px; }
+  .nav:not(.nav-compact) ul li { min-width: 0; }
+  .nav:not(.nav-compact) ul a { padding-block: 10px; }
+  .nav:not(.nav-compact) ul a::after { bottom: 6px; }
 }
+
+/* ปุ่ม "เมนู" (มือถือ) — จอใหญ่ซ่อนไว้ เมนูแสดงเรียงแถวเหมือนเดิม */
+.menu-btn {
+  display: none; align-items: center; justify-content: center; gap: 8px;
+  min-height: 44px; min-width: 44px; padding: 0 16px; border-radius: 999px;
+  border: 1px solid color-mix(in srgb, var(--nav-ink) 45%, transparent);
+  background: rgba(255, 255, 255, .1); color: var(--nav-ink);
+  -webkit-backdrop-filter: blur(6px); backdrop-filter: blur(6px);
+  font-family: var(--font); font-size: .92rem; font-weight: 500; cursor: pointer;
+}
+.menu-btn svg { width: 20px; height: 20px; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; flex: none; }
+.menu-btn .i-close, .menu-btn[aria-expanded="true"] .i-open { display: none; }
+.menu-btn[aria-expanded="true"] .i-close { display: inline; }
+
+/* มือถือ: แถวเดียว = โลโก้ + ปุ่มจอง + ปุ่ม "เมนู" กดแล้วรายการเมนูเลื่อนลงมาใต้แถบ (ดู js/nav.js) */
+@media (max-width: 720px) {
+  .nav-compact .wrap, .nav-over.nav-compact .wrap, .nav-over.nav-compact.is-solid .wrap { flex-wrap: nowrap; gap: 8px; padding-block: 10px; padding-inline: 16px; }
+  .nav-compact .brand { margin-right: auto; font-size: 1.1rem; min-width: 0; }
+  .nav-compact .brand::before { width: 36px; height: 36px; }
+  .nav-compact .menu-btn { display: inline-flex; }
+  .nav-compact ul {
+    position: absolute; top: 100%; left: 0; right: 0;
+    display: none; flex-direction: column; gap: 0;
+    padding: 4px 16px 12px; background: var(--nav-bg);
+    border-top: 1px solid color-mix(in srgb, var(--nav-ink) 15%, transparent);
+    box-shadow: 0 14px 24px rgba(0, 0, 0, .25);
+  }
+  .nav-compact.is-open ul { display: flex; }
+  .nav-compact ul a {
+    display: flex; align-items: center; min-height: 48px; padding: 0 4px;
+    font-size: 1rem; color: var(--nav-ink);
+    border-bottom: 1px solid color-mix(in srgb, var(--nav-ink) 12%, transparent);
+  }
+  .nav-compact ul li:last-child a { border-bottom: 0; }
+  .nav-compact ul a::after { display: none; }
+  .nav-compact ul a:hover { transform: none; }
+  .nav-compact ul a[aria-current="page"] { color: var(--sun); }
+  .nav-over.is-open { background: var(--nav-bg); }
+  .nav-over.is-open ul a, .nav-over.is-open .brand { text-shadow: none; }
+}
+/* จอแคบมาก: ซ่อนปุ่มจองบนเมนู (มีปุ่ม "จองที่พัก" ในแถบล่างแล้ว) ให้ทุกอย่างอยู่แถวเดียว */
+@media (max-width: 400px) { .nav-compact .btn-small { display: none; } }
 
 /* ---------- ภาพปก (Hero) ---------- */
 /* รูปพระอาทิตย์ตกเต็มจอเป็นพื้นหลัง + ข้อความด้านล่างซ้าย + ป้ายราคาวงกลม */
@@ -194,24 +241,55 @@ main > section + section { border-top: 1px solid var(--line); }
     linear-gradient(to top, rgba(12,14,10,.85), rgba(12,14,10,.45) 60%, rgba(12,14,10,.15));
 }
 .hero-text { position: relative; z-index: 2; width: 100%; padding-block: 120px 72px; text-shadow: 0 2px 12px rgba(0,0,0,.55); }
+@media (max-width: 720px) { .hero-text { padding-block: 96px 44px; } }
 .hero h1 { font-size: clamp(2.2rem, 7vw, 4.4rem); line-height: 1.3; color: #fbf8f1; }
 /* ข้อความตัวเขียนเล็กๆ เหนือหัวข้อ */
 .hero-name { margin: 0 0 6px; font-family: var(--font-display); font-weight: 400; font-size: clamp(1.25rem, 3vw, 1.7rem); letter-spacing: 0; color: var(--sun); line-height: 1.4; }
-.hero .lead { font-size: 1.1rem; margin: 20px 0 32px; max-width: 32em; opacity: .92; }
-.hero .btn-primary { background: var(--sun); color: #1f231f; font-weight: 600; }
+.hero .lead { font-size: 1.1rem; margin: 16px 0 20px; max-width: 32em; opacity: .92; }
+.hero .btn-primary { background: var(--sun); color: #1f231f; font-weight: 600; box-shadow: 0 6px 20px rgba(242, 182, 109, .35); }
 .hero .btn-ghost { color: #fbf8f1; }
+/* บรรทัดที่ตั้ง (มีหมุดสีส้ม) เหนือชื่อรีสอร์ท */
+.hero .loc { display: inline-flex; align-items: center; gap: 6px; margin: 0 0 8px; font-size: .92rem; font-weight: 500; opacity: .95; }
+.hero .loc svg { width: 16px; height: 16px; flex: none; fill: none; stroke: var(--sun); stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+/* ป้ายราคาเริ่มต้น: ตอบคำถาม "ราคาเท่าไหร่" ตั้งแต่หน้าแรก */
+.chips { display: flex; flex-wrap: wrap; gap: 8px; margin: 0 0 20px; padding: 0; list-style: none; text-shadow: none; }
+.chips li {
+  display: flex; flex-direction: column; padding: 8px 14px; border-radius: 14px; line-height: 1.3;
+  background: rgba(251, 248, 241, .14); border: 1px solid rgba(251, 248, 241, .35);
+  -webkit-backdrop-filter: blur(8px); backdrop-filter: blur(8px);
+}
+.chips small { font-size: .8rem; opacity: .85; }
+.chips b { font-family: var(--font-display); font-weight: 400; font-size: 1.25rem; color: var(--sun); }
+.chips b span { font-family: var(--font); font-size: .82rem; color: #fbf8f1; margin-left: 4px; }
+.hero .btns { gap: 10px; }
+.hero .btns .btn { min-height: 50px; justify-content: center; }
+/* มือถือ: ปุ่มจองเต็มความกว้าง + ปุ่ม "โทรจอง" กับ "ดูราคา" อยู่คู่กันแถวล่าง */
+@media (max-width: 599px) {
+  .hero .btns .btn-primary { flex: 1 1 100%; }
+  .hero .btns .btn-glass { flex: 1 1 0; min-width: 0; }
+}
+.hero-open { margin: 14px 0 0; font-size: .85rem; opacity: .8; }
+/* เส้นคลื่นใต้ภาพปก (และก่อนแถบราคาสีเขียว) */
+.wave { display: block; width: 100%; height: 28px; color: var(--bg); }
+.wave-hero { position: relative; z-index: 3; margin-top: -27px; }
+.wave-plate { color: var(--plate); margin-bottom: -1px; }
 
 /* ---------- ของฟรี ---------- */
 .free h2 { margin-bottom: 32px; }
-.free .eyebrow { display: block; margin-bottom: 4px; }
-/* 4 ช่องเรียงแถวเดียว → จอกลาง 2×2 → มือถือเล็ก 1 คอลัมน์ (ไม่มีช่องเหลือค้างแถวละใบ) */
+.free { padding-top: clamp(32px, 6vw, 80px); }   /* อยู่ใต้เส้นคลื่นภาพปก ไม่ต้องเว้นบนมาก */
+.free .eyebrow { margin-bottom: 4px; }
+/* 4 ช่องเรียงแถวเดียว → จอกลางและมือถือ 2×2 */
 .free-items { display: grid; grid-template-columns: repeat(4, 1fr); gap: 20px; align-items: stretch; }
-@media (max-width: 900px) { .free-items { grid-template-columns: repeat(2, 1fr); gap: 16px; } }
-@media (max-width: 420px) { .free-items { grid-template-columns: 1fr; gap: 12px; } }
-.free .item { min-width: 0; padding: 24px; background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius); }
-.free .item svg { display: block; width: 36px; height: 36px; margin-bottom: 12px; color: var(--forest); }
-.free .item strong { display: block; font-weight: 600; font-size: 1.1rem; }
-.free .item span { color: var(--muted); font-size: .92rem; }
+@media (max-width: 900px) { .free-items { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px; } }
+@media (max-width: 420px) { .free-items { gap: 10px; } .free .item { padding: 16px 14px; } }
+.free .item { min-width: 0; padding: 24px; background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius); transition: transform .2s ease, box-shadow .2s ease; }
+.free .item:hover { transform: translateY(-3px); box-shadow: var(--shadow); }
+/* ไอคอนอยู่ในกรอบสี่เหลี่ยมมุมมน พื้นเขียวจางๆ */
+.free .item .ico { display: grid; place-items: center; width: 44px; height: 44px; margin-bottom: 10px; border-radius: 14px; color: var(--forest); background: color-mix(in srgb, var(--forest) 12%, transparent); }
+.free .item .ico svg { display: block; width: 26px; height: 26px; }
+.free .item strong { display: block; font-weight: 600; font-size: 1.05rem; line-height: 1.4; }
+.free .item span:not(.ico) { display: block; margin-top: 2px; color: var(--muted); font-size: .9rem; line-height: 1.5; }
+@media (prefers-reduced-motion: reduce) { .free .item:hover { transform: none; } }
 
 /* ---------- แกลเลอรีรูป ---------- */
 .gallery { display: grid; grid-template-columns: repeat(4, 1fr); grid-auto-rows: 200px; gap: 12px; }
@@ -227,7 +305,7 @@ main > section + section { border-top: 1px solid var(--line); }
 }
 .gallery .big { grid-column: span 2; grid-row: span 2; }
 .gallery .wide { grid-column: span 2; }
-@media (max-width: 720px) { .gallery { grid-template-columns: repeat(2, 1fr); grid-auto-rows: 150px; } }
+@media (max-width: 720px) { .gallery { grid-template-columns: repeat(2, 1fr); grid-auto-rows: 180px; } .gallery figcaption { font-size: .9rem; } }
 
 /* ---------- ตารางราคา ---------- */
 .price-grid { display: grid; grid-template-columns: 1fr 1.4fr; gap: 48px; }
@@ -351,11 +429,19 @@ main > .rates + section { border-top: 0; }
 .rate-cards { display: grid; grid-template-columns: repeat(2, 1fr); gap: 24px; }
 @media (max-width: 720px) { .rate-cards { grid-template-columns: 1fr; } }
 .rate-card {
-  display: flex; flex-direction: column; min-width: 0; overflow: hidden;
+  position: relative; display: flex; flex-direction: column; min-width: 0; overflow: hidden;
   background: var(--bg); color: var(--ink); border-radius: var(--radius); text-decoration: none;
+  box-shadow: var(--shadow); transition: transform .25s ease;
 }
-.rate-card img { width: 100%; aspect-ratio: 16 / 9; object-fit: cover; display: block; transition: opacity .3s; }
-.rate-card:hover img { opacity: .9; }
+.rate-card:hover { transform: translateY(-4px); }
+.rate-card img { width: 100%; aspect-ratio: 16 / 9; object-fit: cover; display: block; transition: transform .6s ease; }
+.rate-card:hover img { transform: scale(1.04); }
+/* ป้ายจุดเด่นมุมซ้ายบนของรูป */
+.rate-card .tag { position: absolute; top: 12px; left: 12px; z-index: 1; padding: 4px 12px; border-radius: 999px; background: var(--sun); color: #1f231f; font-size: .85rem; font-weight: 600; line-height: 1.5; }
+.rate-card h3 { display: flex; justify-content: space-between; gap: 12px; }
+.rate-card h3::after { content: "→"; color: var(--muted); transition: transform .2s; }
+.rate-card:hover h3::after { transform: translateX(4px); }
+@media (prefers-reduced-motion: reduce) { .rate-card:hover, .rate-card:hover img, .rate-card:hover h3::after { transform: none; } }
 .rate-card div { padding: 24px 28px 28px; }
 .rate-card h3 { font-size: 1.25rem; font-weight: 600; color: var(--forest); }
 .rate-card .baht { margin: 4px 0; font-family: var(--font-display); font-size: clamp(2.2rem, 5vw, 2.8rem); line-height: 1.3; color: var(--clay); }
@@ -444,8 +530,41 @@ html:has(.lightbox[open]) { overflow: hidden; }
 @media (max-width: 480px) { .line-float { right: 14px; bottom: calc(14px + env(safe-area-inset-bottom)); padding: 11px 16px 11px 13px; font-size: .92rem; } }
 @media (prefers-reduced-motion: reduce) { .line-float:hover { transform: none; } }
 @media print { .line-float { display: none; } }
-/* มือถือ: เว้นที่ท้ายเว็บ ไม่ให้ปุ่ม LINE ลอยบังข้อความบรรทัดสุดท้าย */
-@media (max-width: 480px) { .footer-bottom { padding-bottom: 84px; } }
+
+/* ---------- แถบปุ่มล่างจอ (มือถือ): โทร | LINE | จองที่พัก ---------- */
+/* ใช้แทนปุ่ม LINE ลอยบนมือถือ — จอใหญ่ (เกิน 720px) ซ่อนแถบนี้ แล้วใช้ปุ่ม LINE ลอยเหมือนเดิม */
+.dock { display: none; }
+@media (max-width: 720px) {
+  .dock {
+    position: fixed; left: 0; right: 0; bottom: 0; z-index: 30;
+    display: grid; grid-template-columns: 1fr 1fr 1.6fr; gap: 8px;
+    padding: 10px 12px calc(10px + env(safe-area-inset-bottom));
+    background: color-mix(in srgb, var(--bg) 92%, transparent);
+    -webkit-backdrop-filter: blur(12px); backdrop-filter: blur(12px);
+    border-top: 1px solid var(--line); box-shadow: 0 -6px 20px rgba(0, 0, 0, .08);
+  }
+  .dock a {
+    display: flex; align-items: center; justify-content: center; gap: 6px; min-width: 0;
+    min-height: 48px; border-radius: var(--radius-sm); text-decoration: none;
+    font-weight: 600; font-size: .95rem; white-space: nowrap;
+  }
+  .dock svg { width: 20px; height: 20px; flex: none; }
+  .dock .call { color: var(--forest); border: 1.5px solid var(--forest); }
+  .dock .call svg { fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+  .dock .line { background: #06c755; color: #0b1f12; }
+  .dock .line svg { fill: currentColor; }
+  .dock .book { background: var(--sun); color: #1f231f; }
+  .dock :focus-visible { outline-color: var(--ink); }
+  /* มีแถบล่างแล้ว ไม่ต้องมีปุ่ม LINE ลอย + เว้นที่ท้ายเว็บไม่ให้แถบบังข้อความ */
+  .has-dock .line-float { display: none; }
+  body.has-dock { padding-bottom: calc(69px + env(safe-area-inset-bottom)); }
+}
+@media print { .dock { display: none; } body.has-dock { padding-bottom: 0; } }
+
+/* ---------- การเดินทาง (หน้าติดต่อ) ---------- */
+.travel { margin: 0 0 4px; }
+.travel p { display: flex; align-items: center; gap: 10px; margin: 0 0 16px; font-size: 1.05rem; }
+.travel svg { width: 22px; height: 22px; flex: none; fill: none; stroke: var(--forest); stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; }
 
 /* ---------- หน้า 404 ---------- */
 .notfound { min-height: 60vh; display: flex; align-items: center; }

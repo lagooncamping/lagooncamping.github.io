@@ -23,22 +23,24 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Anuphan:wght@400;500;600&family=Chonburi&display=swap">
-  <link rel="stylesheet" href="css/style.css">
-  <link rel="stylesheet" href="css/booking.css?v=20261003c">
+  <link rel="stylesheet" href="css/style.css?v=20261003d">
+  <link rel="stylesheet" href="css/booking.css?v=20261003d">
 </head>
 <body>
 
   <!-- ===== เมนูด้านบน (เหมือนกันทุกหน้า แก้ต้องแก้ทุกไฟล์ .html) ===== -->
-  <nav class="nav" aria-label="เมนูหลัก">
+  <nav class="nav nav-compact" aria-label="เมนูหลัก">
     <div class="wrap">
       <a class="brand" href="index.html">The Lagoon</a>
-      <ul>
+      <ul id="main-menu">
         <li><a href="prices.html">ที่พัก &amp; ราคา</a></li>
         <li><a href="gallery.html">บรรยากาศ</a></li>
         <li><a href="stay.html">ข้อมูลเข้าพัก &amp; FAQ</a></li>
         <li><a href="contact.html">ติดต่อ &amp; เดินทาง</a></li>
       </ul>
       <a class="btn btn-primary btn-small" href="booking.html" aria-current="page">จองที่พัก</a>
+      <!-- มือถือ: ปุ่มเปิด-ปิดเมนู (ดู js/nav.js) -->
+      <button class="menu-btn" type="button" aria-expanded="false" aria-controls="main-menu"><svg viewBox="0 0 24 24" aria-hidden="true"><path class="i-open" d="M4 7h16M4 12h16M4 17h16"/><path class="i-close" d="M6 6l12 12M18 6 6 18"/></svg>เมนู</button>
     </div>
   </nav>
 
@@ -46,6 +48,13 @@
     <div class="wrap">
       <!-- ลบกล่องนี้ออกเมื่อต่อ Google Sheets แล้ว -->
       <p class="demo-note">โหมดทดลอง: แผนผัง รูป และการจองที่ขึ้นว่า "ถูกจองแล้ว" เป็นข้อมูลตัวอย่าง ยังไม่บันทึกการจองจริง</p>
+
+      <!-- แถบบอกขั้นตอนการจอง 1–2–3 (js/booking.js อัปเดตให้ตอนเปลี่ยนขั้น) -->
+      <ol class="steps" id="steps" aria-label="ขั้นตอนการจอง">
+        <li data-step-for="pick" aria-current="step"><span>เลือกบ้าน/เต็นท์</span></li>
+        <li data-step-for="details"><span>กรอกข้อมูล</span></li>
+        <li data-step-for="done"><span>ชำระเงิน</span></li>
+      </ol>
 
       <!-- ===== ขั้นที่ 1: เลือกวันและบ้าน ===== -->
       <section id="step-pick" aria-labelledby="pick-h">
@@ -178,7 +187,7 @@
       <section id="step-details" aria-labelledby="details-h" hidden>
         <button class="back" type="button" data-back>← เปลี่ยนบ้านหรือวันที่</button>
         <div class="step-head">
-          <span class="eyebrow">ขั้นตอนสุดท้าย</span>
+          <span class="eyebrow">ขั้นที่ 2 จาก 3</span>
           <h1 id="details-h" tabindex="-1">กรอกข้อมูลผู้จอง</h1>
         </div>
         <dl class="summary" id="summary"></dl>
@@ -327,8 +336,8 @@
   <!-- สร้างรูป QR พร้อมเพย์ -->
   <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcode-generator/1.4.4/qrcode.min.js" defer></script>
   <script src="js/main.js" defer></script>
-  <script src="js/booking.js?v=20261003c" defer></script>
+  <script src="js/booking.js?v=20261003d" defer></script>
   <script src="js/lightbox.js" defer></script>
-  <script src="js/nav.js" defer></script>
+  <script src="js/nav.js?v=20261003d" defer></script>
 </body>
 </html>
