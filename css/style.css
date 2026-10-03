@@ -193,7 +193,7 @@ main > section + section { border-top: 1px solid var(--line); }
 .menu-btn[aria-expanded="true"] .i-close { display: inline; }
 
 /* มือถือ: แถวเดียว = โลโก้ + ปุ่มจอง + ปุ่ม "เมนู" กดแล้วรายการเมนูเลื่อนลงมาใต้แถบ (ดู js/nav.js) */
-@media (max-width: 720px) {
+@media (max-width: 960px) { /* 5 เมนูยาวเกินจอ 721–960px → ใช้ปุ่ม "เมนู" แบบมือถือ */
   .nav-compact .wrap, .nav-over.nav-compact .wrap, .nav-over.nav-compact.is-solid .wrap { flex-wrap: nowrap; gap: 8px; padding-block: 10px; padding-inline: 16px; }
   .nav-compact .brand { margin-right: auto; font-size: 1.1rem; min-width: 0; }
   .nav-compact .brand::before { width: 36px; height: 36px; }

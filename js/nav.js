@@ -5,7 +5,7 @@
 (() => {
   const nav = document.querySelector('.nav');
   if (!nav) return;
-  const mobile = window.matchMedia('(max-width: 720px)');
+  const mobile = window.matchMedia('(max-width: 960px)');
   let lastY = window.scrollY;
   let ticking = false;
 
