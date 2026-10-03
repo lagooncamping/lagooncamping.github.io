@@ -37,13 +37,19 @@ const TENT_ROW = { id: 'tent', name: 'ลานกางเต็นท์' };
 const SAME_DAY_CUTOFF = 18; // หลัง 18:00 น. ไม่รับจองเข้าพักวันนี้ทางเว็บ (ให้โทรจอง) — ต้องตรงกับ js/booking.js
 
 // ราคาต่อคืน — ต้องตรงกับ js/booking.js (ระบบคำนวณยอดจากราคานี้ ไม่เชื่อยอดที่ส่งมาจากหน้าเว็บ)
+// guests = นอนได้สูงสุดกี่ท่าน (ใช้เช็กว่าจำนวนผู้เข้าพักไม่เกินที่บ้านรับได้)
 const HOUSES = {
-  'lagoon-1': { name: 'Lagoon 1', price: 1300 },
-  'lagoon-2': { name: 'Lagoon 2', price: 1300 },
-  'studio': { name: 'Lagoon Studio', price: 1500 },
-  'family-1': { name: 'Lagoon Family 1', price: 2500 },
-  'family-2': { name: 'Lagoon Family 2', price: 3000 },
+  'lagoon-1': { name: 'Lagoon 1', price: 1300, guests: 2 },
+  'lagoon-2': { name: 'Lagoon 2', price: 1300, guests: 2 },
+  'studio': { name: 'Lagoon Studio', price: 1500, guests: 2 },
+  'family-1': { name: 'Lagoon Family 1', price: 2500, guests: 4 },
+  'family-2': { name: 'Lagoon Family 2', price: 3000, guests: 4 },
 };
+
+// รหัสบ้านนี้มีจริงไหม (เช็กเฉพาะรหัสใน HOUSES เอง กันค่าแปลก ๆ อย่าง 'constructor')
+function isHouse_(id) {
+  return typeof id === 'string' && Object.prototype.hasOwnProperty.call(HOUSES, id);
+}
 
 const HEADERS = ['เวลาที่จอง', 'รหัสการจอง', 'รหัสบ้าน', 'บ้าน', 'เช็กอิน', 'เช็กเอาต์', 'คืน', 'ผู้เข้าพัก',
   'ชื่อ', 'เบอร์โทร', 'หมายเหตุ', 'ยอดรวม (บาท)', 'สถานะ', 'ยอดที่ต้องชำระ (บาท)', 'ชำระภายใน', 'แบบชำระ',
@@ -103,17 +109,23 @@ function authorizeEmail() {
 /** เปลี่ยนการจองที่เลยเวลาชำระเงินเป็น "หมดเวลา" ให้แอดมินเห็นในชีต
  *  (หน้าเว็บปลดบ้านให้อยู่แล้วตั้งแต่เลยเวลา ไม่ต้องรอฟังก์ชันนี้) */
 function expireBookings() {
-  const sh = sheet_();
-  const last = sh.getLastRow();
-  if (last < 2) return;
-  const now = nowText_();
-  const status = sh.getRange(2, COL.status, last - 1, 1).getValues();
-  const deadline = sh.getRange(2, COL.deadline, last - 1, 1).getValues();
-  let changed = false;
-  status.forEach((row, i) => {
-    if (isExpired_(row[0], deadline[i][0], now)) { row[0] = STATUS.EXPIRED; changed = true; }
-  });
-  if (changed) sh.getRange(2, COL.status, last - 1, 1).setValues(status);
+  // ล็อกไว้ กันชนกับการจองใหม่ที่กำลังเขียนแถวอยู่
+  const lock = LockService.getScriptLock();
+  lock.waitLock(10000);
+  try {
+    const sh = sheet_();
+    const last = sh.getLastRow();
+    if (last < 2) return;
+    const now = nowText_();
+    const status = sh.getRange(2, COL.status, last - 1, 1).getValues();
+    const deadline = sh.getRange(2, COL.deadline, last - 1, 1).getValues();
+    // เขียนเฉพาะช่องที่เปลี่ยนจริง ไม่ทับสถานะที่แอดมินเพิ่งแก้ในแถวอื่น
+    status.forEach((row, i) => {
+      if (isExpired_(row[0], deadline[i][0], now)) sh.getRange(i + 2, COL.status).setValue(STATUS.EXPIRED);
+    });
+  } finally {
+    lock.releaseLock();
+  }
 }
 
 /** หน้าเว็บขอดูวันว่าง */
@@ -173,7 +185,11 @@ function doPost(e) {
     ]);
     sh.getRange(sh.getLastRow() + 1, 1, rows.length, HEADERS.length).setValues(rows);
   } finally {
-    lock.releaseLock();
+    try {
+      SpreadsheetApp.flush(); // เขียนลงชีตให้เสร็จก่อนปลดล็อก คนถัดไปจะเห็นแถวใหม่แน่นอน
+    } finally {
+      lock.releaseLock();
+    }
   }
 
   notify_(id, d, total, due, payType, deadline); // ส่งหลังปลดล็อก จะได้ไม่ทำให้คนอื่นที่กำลังจองต้องรอ
@@ -204,8 +220,13 @@ function nowText_() {
 }
 
 // แอดมินอาจพิมพ์วันที่เองจนชีตแปลงเป็น Date — แปลงกลับเป็นข้อความ
+// หรือพิมพ์แบบไทย เช่น 8/10/2569, 8/10/69, 8/10/2026 (ต้องมีปีเสมอ) → yyyy-mm-dd
 function iso_(v) {
-  return v instanceof Date ? Utilities.formatDate(v, TZ, 'yyyy-MM-dd') : String(v).trim();
+  if (v instanceof Date) return Utilities.formatDate(v, TZ, 'yyyy-MM-dd');
+  const s = String(v == null ? '' : v).trim();
+  const m = s.match(/^(\d{4})-(\d{1,2})-(\d{1,2})$/);
+  if (m) return m[1] + '-' + m[2].padStart(2, '0') + '-' + m[3].padStart(2, '0');
+  return parseDate_(s, '') || s; // อ่านไม่ออก ส่งคืนตามเดิม
 }
 function stamp_(v) {
   return v instanceof Date ? Utilities.formatDate(v, TZ, 'yyyy-MM-dd HH:mm') : String(v || '').trim();
@@ -221,14 +242,20 @@ function nights_(from, to) {
   return Math.round((new Date(to + 'T00:00:00Z') - new Date(from + 'T00:00:00Z')) / 86400000);
 }
 
-// แอดมินพิมพ์การจองเองในชีต อาจพิมพ์รหัสบ้านเป็นชื่อ เช่น "Lagoon 1", "Studio", "Family 2" — แปลงเป็นรหัสให้
+// แอดมินพิมพ์การจองเองในชีต อาจพิมพ์รหัสบ้านเป็นชื่อ เช่น "Lagoon 1", "Studio", "Family 2",
+// "สตูดิโอ", "แฟมิลี่ 1", "ครอบครัว1", "ลากูน 1" — แปลงเป็นรหัสให้ (ไม่สนตัวใหญ่เล็ก เว้นวรรค ขีด)
+const HOUSE_ALIAS = {
+  '1': 'lagoon-1', '2': 'lagoon-2',
+  studio: 'studio', 'สตูดิโอ': 'studio', 'สตูดิโอ้': 'studio',
+  family1: 'family-1', 'แฟมิลี่1': 'family-1', 'แฟมิลี1': 'family-1', 'แฟมมิลี่1': 'family-1', 'ครอบครัว1': 'family-1',
+  family2: 'family-2', 'แฟมิลี่2': 'family-2', 'แฟมิลี2': 'family-2', 'แฟมมิลี่2': 'family-2', 'ครอบครัว2': 'family-2',
+};
 function houseId_(v) {
-  const s = String(v || '').trim().toLowerCase().replace(/\s+/g, ' ');
-  if (HOUSES[s]) return s;
-  const key = s.replace(/^lagoon /, '').replace(/ /g, '');
-  const alias = { '1': 'lagoon-1', '2': 'lagoon-2', lagoon1: 'lagoon-1', lagoon2: 'lagoon-2',
-    studio: 'studio', family1: 'family-1', family2: 'family-2' };
-  return alias[key] || s;
+  const s = String(v == null ? '' : v).trim().toLowerCase();
+  if (isHouse_(s)) return s;
+  // ตัดเว้นวรรค ขีด ขีดล่าง แล้วตัดคำนำหน้า "บ้าน" / "lagoon" / "ลากูน"
+  const key = s.replace(/[\s\-_]+/g, '').replace(/^บ้าน/, '').replace(/^(lagoon|ลากูน)/, '');
+  return Object.prototype.hasOwnProperty.call(HOUSE_ALIAS, key) ? HOUSE_ALIAS[key] : s;
 }
 
 // การจองที่ยังล็อกบ้านอยู่ (ส่งเฉพาะบ้านกับวันที่ ไม่ส่งข้อมูลลูกค้า)
@@ -245,7 +272,7 @@ function activeBookings_(sh) {
       status: r[COL.status - 1],
       deadline: r[COL.deadline - 1],
     }))
-    .filter((b) => HOUSES[b.house] && b.to > today
+    .filter((b) => isHouse_(b.house) && b.to > today
       && b.status !== STATUS.CANCELLED && b.status !== STATUS.EXPIRED
       && !isExpired_(b.status, b.deadline, now))
     .map((b) => ({ house: b.house, from: b.from, to: b.to }));
@@ -253,7 +280,7 @@ function activeBookings_(sh) {
 
 function validate_(d) {
   const isDate = (s) => typeof s === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(s);
-  if (d.houses.some((h) => !HOUSES[h])) return 'bad_house';
+  if (d.houses.some((h) => !isHouse_(h))) return 'bad_house';
   const tent = Number(d.tentGuests || 0);
   const rent = Number(d.tentRentals || 0);
   if (!(Number.isInteger(tent) && tent >= 0 && tent <= 30)) return 'bad_tent';
@@ -262,10 +289,13 @@ function validate_(d) {
   if (!isDate(d.checkin) || !isDate(d.checkout) || d.checkout <= d.checkin || d.checkin < todayISO_()) return 'bad_dates';
   if (d.checkin === todayISO_() && Number(Utilities.formatDate(new Date(), TZ, 'H')) >= SAME_DAY_CUTOFF) return 'too_late';
   if (nights_(d.checkin, d.checkout) > 30) return 'too_long';
-  if (!d.name || String(d.name).trim().length > 100) return 'bad_name';
+  const name = String(d.name == null ? '' : d.name).trim();
+  if (!name || name.length > 100) return 'bad_name';
   if (!/^0[0-9]{8,9}$/.test(String(d.phone || '').replace(/[\s-]/g, ''))) return 'bad_phone';
   const guests = Number(d.guests);
-  if (!(guests >= (d.houses.length ? 1 : 0) && guests <= 30)) return 'bad_guests'; // จองแค่เต็นท์ = 0 คนในบ้าน
+  if (!(Number.isInteger(guests) && guests >= (d.houses.length ? 1 : 0) && guests <= 30)) return 'bad_guests'; // จองแค่เต็นท์ = 0 คนในบ้าน
+  const capacity = d.houses.reduce((sum, h) => sum + HOUSES[h].guests, 0);
+  if (d.houses.length && guests > capacity) return 'over_capacity'; // คนเกินที่บ้านที่เลือกนอนได้
   if (d.note && String(d.note).length > 500) return 'bad_note';
   return '';
 }
@@ -337,6 +367,9 @@ const LINE_HELP = [
   '• หยุดแจ้งเตือน = เลิกรับแจ้งเตือนการจองใหม่',
 ].join('\n');
 
+const REG_MAX_FAILS = 5;      // พิมพ์รหัสลงทะเบียนผิดได้กี่ครั้ง/ชั่วโมง ต่อคน
+const REG_MAX_FAILS_ALL = 20; // รวมทุกคน/ชั่วโมง (กันเปลี่ยนบัญชีมาเดา)
+
 function props_() {
   return PropertiesService.getScriptProperties();
 }
@@ -354,9 +387,24 @@ function lineEvent_(ev) {
   // ลงทะเบียนแอดมินด้วยรหัสลับ
   const reg = text.match(/^ลงทะเบียน\s+(.+)$/);
   if (reg) {
+    // กันคนสุ่มเดารหัส: ผิดเกิน REG_MAX_FAILS ครั้ง/ชั่วโมง (ต่อคน) หรือรวมทุกคนเกิน REG_MAX_FAILS_ALL = เงียบ ไม่เช็กรหัสเลย
+    const cache = CacheService.getScriptCache();
+    const userKey = 'reg_fail_' + user;
+    const fails = Number(cache.get(userKey)) || 0;
+    const allFails = Number(cache.get('reg_fail_all')) || 0;
+    if (fails >= REG_MAX_FAILS || allFails >= REG_MAX_FAILS_ALL) return;
     const code = props_().getProperty('ADMIN_CODE');
-    if (!code || reg[1].trim() !== code) return; // รหัสผิด: เงียบ ไม่บอกว่ามีระบบนี้
-    if (!admins.includes(user)) props_().setProperty('ADMIN_IDS', admins.concat(user).join(','));
+    if (!code || reg[1].trim() !== code) { // รหัสผิด: เงียบ ไม่บอกว่ามีระบบนี้
+      cache.put(userKey, String(fails + 1), 3600);
+      cache.put('reg_fail_all', String(allFails + 1), 3600);
+      return;
+    }
+    cache.remove(userKey);
+    if (!admins.includes(user)) {
+      props_().setProperty('ADMIN_IDS', admins.concat(user).join(','));
+      // บอกแอดมินเดิมทุกคน เผื่อรหัสหลุดไปถึงคนแปลกหน้า
+      if (admins.length) linePush_(admins, 'มีแอดมินใหม่ลงทะเบียนในบอท ถ้าไม่ใช่คนที่คุณรู้จัก ให้เปลี่ยนรหัส ADMIN_CODE ทันที');
+    }
     lineReply_(ev.replyToken, 'ลงทะเบียนแอดมินแล้วครับ ✅\nมีคนจองใหม่จะแจ้งเตือนที่แชทนี้\n\n' + LINE_HELP);
     return;
   }
@@ -392,10 +440,24 @@ function lineNotify_(id, d, due, payType) {
     '💰 ' + PAY_TYPES[payType] + ' ' + due.toLocaleString('en-US') + ' บาท (รอชำระเงิน)',
     'รหัส ' + id,
   ].join('\n');
+  linePush_(admins, text);
+}
+
+// ส่งข้อความหาแอดมินหลายคน: ลอง multicast ก่อน ถ้าพัง ส่งทีละคน (id ไหนเสีย คนอื่นยังได้รับ)
+function linePush_(ids, text) {
+  if (!ids.length || !props_().getProperty('LINE_TOKEN')) return;
+  const messages = [{ type: 'text', text: text.slice(0, 4900) }];
   try {
-    lineApi_('/v2/bot/message/multicast', { to: admins, messages: [{ type: 'text', text }] });
+    lineApi_('/v2/bot/message/multicast', { to: ids, messages });
   } catch (err) {
-    console.error('ส่ง LINE แจ้งเตือนไม่สำเร็จ: ' + err);
+    console.error('ส่ง LINE แบบรวมไม่สำเร็จ ลองส่งทีละคน: ' + err);
+    ids.forEach((id) => {
+      try {
+        lineApi_('/v2/bot/message/push', { to: id, messages });
+      } catch (err2) {
+        console.error('ส่ง LINE ถึง ' + id + ' ไม่สำเร็จ: ' + err2);
+      }
+    });
   }
 }
 
@@ -430,15 +492,30 @@ function bookingGroups_() {
       guests: r[7], tent: Number(r[18]) || 0, rent: Number(r[19]) || 0, name: String(r[8]), phone: String(r[9]), note: String(r[10] || ''), status,
     });
     const hid = houseId_(r[COL.house - 1]) || houseId_(r[3]);
-    g.houses.push(HOUSES[hid] ? HOUSES[hid].name : String(r[3] || r[COL.house - 1]));
+    if (hid === TENT_ROW.id) return; // แถวจองเฉพาะเต็นท์ ไม่นับเป็นบ้าน
+    g.houses.push(isHouse_(hid) ? HOUSES[hid].name : String(r[3] || r[COL.house - 1]));
   });
   return Object.values(groups).sort((a, b) => (a.from < b.from ? -1 : a.from > b.from ? 1 : 0));
 }
 
+// จำนวนคนทั้งหมดของการจอง = คนในบ้าน + เต็นท์มาเอง + เช่าเต็นท์ × 2
+// (จองเฉพาะเต็นท์ที่แอดมินพิมพ์เองโดยไม่ใส่ช่องเต็นท์ ใช้ช่องผู้เข้าพักแทน)
+function groupPeople_(g) {
+  const inHouse = Number(g.guests) || 0;
+  const tents = g.tent + g.rent * 2;
+  if (!g.houses.length) return tents || inHouse;
+  return inHouse + tents;
+}
+
 function bookingText_(g) {
+  const people = [
+    g.houses.length ? (Number(g.guests) || 0) + ' ท่านในบ้าน' : 'ไม่มีบ้าน',
+    g.tent ? '⛺ มาเอง ' + g.tent + ' ท่าน' : '',
+    g.rent ? '⛺ เช่า ' + g.rent + ' หลัง' : '',
+  ].filter(Boolean).join(' · ');
   return [
-    '🏠 ' + g.houses.join(', '),
-    '👤 ' + g.name + ' · ' + (Number(g.guests) ? g.guests + ' ท่านในบ้าน' : 'ไม่มีบ้าน') + (g.tent ? ' · ⛺ มาเอง ' + g.tent + ' ท่าน' : '') + (g.rent ? ' · ⛺ เช่า ' + g.rent + ' หลัง' : ''),
+    g.houses.length ? '🏠 ' + g.houses.join(', ') : '⛺ ' + TENT_ROW.name + ' (ไม่มีบ้าน)',
+    '👤 ' + g.name + ' · ' + people,
     '📞 ' + g.phone,
     '📅 ' + thaiRange_(g.from, g.to),
     (g.status === STATUS.CONFIRMED ? '✅ ' : '⏳ ') + g.status + (g.note ? '\n📝 ' + g.note : ''),
@@ -458,9 +535,17 @@ function nightText_(day) {
   const list = bookingGroups_().filter((g) => g.from <= day && g.to > day);
   const head = '🌙 คืนวัน' + thaiDate_(day, true);
   if (!list.length) return head + '\nยังไม่มีคนจองครับ บ้านว่างทุกหลัง';
-  const guests = list.reduce((sum, g) => sum + Number(g.guests || 0), 0);
+  const people = list.reduce((sum, g) => sum + groupPeople_(g), 0);
   const houses = list.reduce((sum, g) => sum + g.houses.length, 0);
-  return head + '\nจอง ' + houses + ' หลัง · ' + guests + ' ท่าน\n\n' + list.map(bookingText_).join('\n\n');
+  const tent = list.reduce((sum, g) => sum + g.tent, 0);
+  const rent = list.reduce((sum, g) => sum + g.rent, 0);
+  const summary = [
+    'บ้าน ' + houses + ' หลัง',
+    tent ? 'เต็นท์มาเอง ' + tent + ' ท่าน' : '',
+    rent ? 'เช่าเต็นท์ ' + rent + ' หลัง' : '',
+    'รวม ' + people + ' ท่าน',
+  ].filter(Boolean).join(' · ');
+  return head + '\n' + summary + '\n\n' + list.map(bookingText_).join('\n\n');
 }
 
 const TH_MONTHS = ['ม.ค.', 'ก.พ.', 'มี.ค.', 'เม.ย.', 'พ.ค.', 'มิ.ย.', 'ก.ค.', 'ส.ค.', 'ก.ย.', 'ต.ค.', 'พ.ย.', 'ธ.ค.'];
@@ -483,8 +568,9 @@ function addDaysISO_(iso, n) {
 }
 
 // "15/10", "15/10/69", "15/10/2569", "15/10/2026" → yyyy-mm-dd (ไม่ใส่ปี = ครั้งถัดไปที่ถึงวันนั้น)
+// today ว่าง = ต้องมีปี (ใช้กับวันที่ที่แอดมินพิมพ์ในชีต) · วันที่ไม่มีจริง เช่น 31/2 → ''
 function parseDate_(text, today) {
-  const m = text.match(/^(\d{1,2})\s*[/.-]\s*(\d{1,2})(?:\s*[/.-]\s*(\d{2,4}))?$/);
+  const m = String(text).match(/^(\d{1,2})\s*[/.-]\s*(\d{1,2})(?:\s*[/.-]\s*(\d{2,4}))?$/);
   if (!m) return '';
   const day = Number(m[1]);
   const month = Number(m[2]);
@@ -495,10 +581,15 @@ function parseDate_(text, today) {
     year = Number(m[3]);
     if (year < 100) year += year >= 60 ? 2500 : 2000; // 69 = พ.ศ. 2569, 26 = ค.ศ. 2026
     if (year > 2400) year -= 543;
+    if (year < 2000 || year > 2100) return '';
   } else {
+    if (!today) return '';
     year = Number(today.slice(0, 4));
     if (year + '-' + pad(month) + '-' + pad(day) < today) year += 1;
   }
+  // วันที่ต้องมีจริง (31/2, 31/4 ไม่มี) — แปลงไปมาแล้วต้องได้วันเดิม
+  const t = new Date(Date.UTC(year, month - 1, day));
+  if (t.getUTCFullYear() !== year || t.getUTCMonth() !== month - 1 || t.getUTCDate() !== day) return '';
   return year + '-' + pad(month) + '-' + pad(day);
 }
 

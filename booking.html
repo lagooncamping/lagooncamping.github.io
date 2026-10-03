@@ -22,9 +22,9 @@
   <link rel="apple-touch-icon" href="img/apple-touch-icon.png">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Anuphan:wght@300;400;500;600&family=Chonburi&display=swap">
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Anuphan:wght@400;500;600&family=Chonburi&display=swap">
   <link rel="stylesheet" href="css/style.css">
-  <link rel="stylesheet" href="css/booking.css?v=20261003b">
+  <link rel="stylesheet" href="css/booking.css?v=20261003c">
 </head>
 <body>
 
@@ -51,7 +51,7 @@
       <section id="step-pick" aria-labelledby="pick-h">
         <div class="step-head">
           <span class="eyebrow">จองที่พัก</span>
-          <h1 id="pick-h">เลือกวันและบ้านพัก</h1>
+          <h1 id="pick-h" tabindex="-1">เลือกวันและบ้านพัก</h1>
         </div>
 
         <div class="dates">
@@ -139,7 +139,7 @@
             <li><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 20h18M5 20V10h14v10M3 10l9-6 9 6"/><path d="M9 20v-5h6v5"/></svg>ระเบียงเห็นวิวน้ำ</li>
             <li><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3s6 6.5 6 11a6 6 0 0 1-12 0c0-4.5 6-11 6-11z"/></svg>ห้องน้ำในตัว มีน้ำอุ่น</li>
             <li><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="6" y="2.5" width="12" height="19" rx="2"/><path d="M6 10h12M9 6v2M9 13v3"/></svg>ตู้เย็น</li>
-            <li><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M2 9a15 15 0 0 1 20 0M5 12.5a10 10 0 0 1 14 0M8.5 16a5 5 0 0 1 7 0"/><circle cx="12" cy="19.5" r="1"/></svg>ไวไฟ</li>
+            <li><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M2 9a15 15 0 0 1 20 0M5 12.5a10 10 0 0 1 14 0M8.5 16a5 5 0 0 1 7 0"/><circle cx="12" cy="19.5" r="1"/></svg>Wi‑Fi</li>
             <li><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 20h14l-1.5-9h-11zM9 11V8a3 3 0 0 1 6 0v3M17.5 13l3-2"/></svg>กาต้มน้ำร้อน</li>
             <li><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 9h12v5a5 5 0 0 1-5 5H9a5 5 0 0 1-5-5zM16 10h2a2 2 0 0 1 0 4h-2M8 3c0 1.5 1 1.5 1 3M12 3c0 1.5 1 1.5 1 3"/></svg>กาแฟยามเช้า</li>
           </ul>
@@ -179,7 +179,7 @@
         <button class="back" type="button" data-back>← เปลี่ยนบ้านหรือวันที่</button>
         <div class="step-head">
           <span class="eyebrow">ขั้นตอนสุดท้าย</span>
-          <h1 id="details-h">กรอกข้อมูลผู้จอง</h1>
+          <h1 id="details-h" tabindex="-1">กรอกข้อมูลผู้จอง</h1>
         </div>
         <dl class="summary" id="summary"></dl>
 
@@ -188,14 +188,14 @@
             <input type="text" name="name" autocomplete="name" required>
           </label>
           <label class="field">เบอร์โทร
-            <input type="tel" name="phone" autocomplete="tel" inputmode="tel" pattern="0[0-9\- ]{8,11}" placeholder="08X-XXX-XXXX" required>
+            <input type="tel" name="phone" autocomplete="tel" inputmode="tel" pattern="0[0-9]{1,2}[\- ]?[0-9]{3}[\- ]?[0-9]{3,4}" placeholder="08X-XXX-XXXX" required>
           </label>
           <label class="field" id="guests-field">จำนวนคนพักในบ้าน (ท่าน)
             <input type="number" name="guests" min="1" max="30" value="2" required>
           </label>
           <p class="hint" id="capacity"></p>
           <label class="field">หมายเหตุ (ถ้ามี)
-            <textarea name="note" rows="3" placeholder="เช่น พาน้องหมามาด้วย, มาถึงประมาณ 15:00"></textarea>
+            <textarea name="note" rows="3" maxlength="500" placeholder="เช่น พาน้องหมามาด้วย, มาถึงประมาณ 15:00"></textarea>
           </label>
           <!-- เลือกแบบชำระเงิน (ยอดเงินเติมโดย js/booking.js) -->
           <fieldset class="paytype">
@@ -224,7 +224,7 @@
           </div>
           <label class="agree"><input type="checkbox" name="agree" required> ฉันอ่านและยอมรับเงื่อนไขการจอง</label>
           <!-- ช่องลับกันบอท: คนจริงมองไม่เห็น ห้ามลบ -->
-          <label class="hp" aria-hidden="true">เว็บไซต์<input type="text" name="website" tabindex="-1" autocomplete="off"></label>
+          <label class="hp" aria-hidden="true">เว็บไซต์<input type="text" name="hp_extra" tabindex="-1" autocomplete="new-password"></label>
           <p class="form-error" id="form-error" role="alert"></p>
           <button class="btn btn-primary" type="submit">ยืนยันการจอง</button>
         </form>
@@ -234,7 +234,7 @@
       <section id="step-done" aria-labelledby="done-h" hidden>
         <div class="step-head">
           <span class="eyebrow">ขั้นตอนสุดท้าย</span>
-          <h1 id="done-h">ชำระเงินเพื่อยืนยันการจอง</h1>
+          <h1 id="done-h" tabindex="-1">ชำระเงินเพื่อยืนยันการจอง</h1>
           <p>ล็อกบ้านไว้ให้คุณแล้ว กรุณาชำระเงินภายในเวลาที่กำหนด ไม่เช่นนั้นการจองจะถูกยกเลิกอัตโนมัติ</p>
         </div>
 
@@ -274,7 +274,7 @@
     <!-- แถบสรุปด้านล่าง (โชว์เมื่อเลือกบ้านแล้ว) -->
     <div class="book-bar" id="bar" hidden>
       <div class="wrap">
-        <p id="bar-text"></p>
+        <p id="bar-text" aria-live="polite"></p>
         <button class="btn btn-primary" type="button" id="to-details">ถัดไป</button>
       </div>
     </div>
@@ -325,10 +325,10 @@
   </footer>
 
   <!-- สร้างรูป QR พร้อมเพย์ -->
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcode-generator/1.4.4/qrcode.min.js"></script>
-  <script src="js/main.js"></script>
-  <script src="js/booking.js?v=20261003b"></script>
-  <script src="js/lightbox.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcode-generator/1.4.4/qrcode.min.js" defer></script>
+  <script src="js/main.js" defer></script>
+  <script src="js/booking.js?v=20261003c" defer></script>
+  <script src="js/lightbox.js" defer></script>
   <script src="js/nav.js" defer></script>
 </body>
 </html>

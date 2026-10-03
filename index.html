@@ -3,8 +3,8 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>The Lagoon Camping Resort | ลานกางเต็นท์และบ้านพักริมทะเลสาบ นายายอาม จันทบุรี</title>
-  <meta name="description" content="ลานกางเต็นท์และบ้านพักริมทะเลสาบ ที่นายายอาม จันทบุรี ตกปลา พายแคนูฟรี พาสัตว์เลี้ยงมาพักได้ โทรจอง 081-930-4969">
+  <title>The Lagoon Camping Resort | ลานกางเต็นท์ แคมป์ปิ้ง บ้านพักริมน้ำ นายายอาม จันทบุรี</title>
+  <meta name="description" content="ลานกางเต็นท์และบ้านพักริมน้ำ นายายอาม จันทบุรี กางเต็นท์ 200 บาท/ท่าน บ้านพักมีแอร์เริ่ม 1,300 บาท ตกปลา พายแคนูฟรี สัตว์เลี้ยงพักฟรี โทร 081-930-4969">
   <link rel="canonical" href="https://lagooncamping.github.io/">
   <!-- ตัวอย่างลิงก์เวลาแชร์ใน Facebook / LINE -->
   <meta property="og:site_name" content="The Lagoon Camping Resort">
@@ -12,7 +12,7 @@
   <meta property="og:locale" content="th_TH">
   <meta property="og:url" content="https://lagooncamping.github.io/">
   <meta property="og:title" content="The Lagoon Camping Resort">
-  <meta property="og:description" content="ลานกางเต็นท์และบ้านพักริมทะเลสาบ ที่นายายอาม จันทบุรี ตกปลา พายแคนูฟรี พาสัตว์เลี้ยงมาพักได้ โทรจอง 081-930-4969">
+  <meta property="og:description" content="ลานกางเต็นท์และบ้านพักริมน้ำ นายายอาม จันทบุรี กางเต็นท์ 200 บาท/ท่าน บ้านพักมีแอร์เริ่ม 1,300 บาท ตกปลา พายแคนูฟรี สัตว์เลี้ยงพักฟรี โทร 081-930-4969">
   <meta property="og:image" content="https://lagooncamping.github.io/img/sunset.jpg">
   <meta name="twitter:card" content="summary_large_image">
   <meta name="theme-color" content="#1f3b2c">
@@ -22,9 +22,11 @@
   <link rel="apple-touch-icon" href="img/apple-touch-icon.png">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Anuphan:wght@300;400;500;600&family=Chonburi&display=swap">
-  <link rel="stylesheet" href="css/style.css">
-  <link rel="preload" as="image" href="img/sunset.jpg" fetchpriority="high">
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Anuphan:wght@400;500;600&family=Chonburi&display=swap">
+  <link rel="stylesheet" href="css/style.css?v=20261003c">
+  <!-- รูปปก: จอใหญ่โหลด sunset.jpg / มือถือโหลด sunset-800.jpg (เล็กกว่า) ให้ตรงกับ css/style.css -->
+  <link rel="preload" as="image" href="img/sunset.jpg" media="(min-width:721px)" fetchpriority="high">
+  <link rel="preload" as="image" href="img/sunset-800.jpg" media="(max-width:720px)" fetchpriority="high">
 
   <!-- ข้อมูลธุรกิจสำหรับ Google (Schema.org) — ถ้าเปลี่ยนเบอร์/ราคา/เวลา ต้องแก้ตรงนี้ด้วย -->
   <script type="application/ld+json">
@@ -32,7 +34,7 @@
   "@context": "https://schema.org",
   "@type": "Campground",
   "name": "The Lagoon Camping Resort",
-  "description": "ลานกางเต็นท์และบ้านพักริมทะเลสาบ ที่นายายอาม จันทบุรี ตกปลา พายแคนูฟรี พาสัตว์เลี้ยงมาพักได้",
+  "description": "ลานกางเต็นท์และบ้านพักริมน้ำ นายายอาม จันทบุรี กางเต็นท์ 200 บาท/ท่าน บ้านพักมีแอร์เริ่ม 1,300 บาท ตกปลา พายแคนูฟรี สัตว์เลี้ยงพักฟรี โทร 081-930-4969",
   "url": "https://lagooncamping.github.io/",
   "image": [
     "https://lagooncamping.github.io/img/sunset.jpg",
@@ -93,6 +95,16 @@
       "@type": "LocationFeatureSpecification",
       "name": "ที่จอดรถ",
       "value": true
+    },
+    {
+      "@type": "LocationFeatureSpecification",
+      "name": "ห้องพักมีแอร์",
+      "value": true
+    },
+    {
+      "@type": "LocationFeatureSpecification",
+      "name": "สัตว์เลี้ยงพักฟรี",
+      "value": true
     }
   ],
   "sameAs": [
@@ -149,7 +161,7 @@
           </div>
           <div class="item">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M2 15c4 4 16 4 20 0z"/><path d="M7 3l9 14M15 15l2 3"/></svg>
-            <strong>พายเรือแคนู 1 ชม.</strong><span>ต่อ 1 ท่าน (ปกติชั่วโมงละ 100 บาท)</span>
+            <strong>พายเรือแคนู 1 ชม.</strong><span>ต่อ 1 ท่าน (ชั่วโมงต่อไป 100 บาท/ท่าน)</span>
           </div>
           <div class="item">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M8 3L4 6v14h6v-6h4v6h6V6l-4-3-2 4h-4z"/></svg>
@@ -176,7 +188,7 @@
             <div>
               <h3>ลานกางเต็นท์</h3>
               <p class="baht">200 <small>บาท / ท่าน</small></p>
-              <p>นำเต็นท์มาเอง · มีเต็นท์ให้เช่าด้วย</p>
+              <p>นำเต็นท์มาเอง · หรือเช่าเต็นท์ 1,300 บาท/หลัง (นอน 2 ท่าน)</p>
             </div>
           </a>
           <a class="rate-card" href="prices.html">
@@ -276,6 +288,6 @@
     <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3C6.5 3 2 6.6 2 11c0 3.9 3.5 7.2 8.3 7.9.3.1.8.2.9.5.1.3.1.7 0 1l-.1.9c0 .3-.2 1 .9.5s5.9-3.5 8-6C21.3 14.2 22 12.7 22 11c0-4.4-4.5-8-10-8z"/></svg>
     <span>ทักไลน์</span>
   </a>
-  <script src="js/nav.js" defer></script>
+  <script src="js/nav.js?v=20261003c" defer></script>
 </body>
 </html>

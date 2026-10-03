@@ -60,7 +60,7 @@ const HOUSES = [
   },
   {
     id: 'family-1', name: 'Lagoon Family 1', type: 'บ้านหลังกลาง', guests: 4, price: 2500,
-    features: ['2 เตียง', 'ห้องน้ำในตัว'],
+    features: ['1 ห้องนอน 2 เตียง', 'ห้องน้ำในตัว'],
     photos: [
       { src: 'img/houses.jpg', alt: 'รูปตัวอย่าง: บ้านพักไม้ท่ามกลางสนามหญ้า' },
       { src: 'img/kayak.jpg', alt: 'รูปตัวอย่าง: พายเรือแคนูในทะเลสาบ' },
@@ -101,7 +101,8 @@ const addDays = (iso, n) => { const d = new Date(iso + 'T00:00:00'); d.setDate(d
 const nightsBetween = (a, b) => Math.round((new Date(b + 'T00:00:00') - new Date(a + 'T00:00:00')) / 86400000);
 const thaiDate = (iso) => new Date(iso + 'T00:00:00').toLocaleDateString('th-TH', { weekday: 'short', day: 'numeric', month: 'short', year: 'numeric' });
 const baht = (n) => n.toLocaleString('th-TH');
-const today = toISO(new Date());
+// วันนี้ตามเวลาไทยเสมอ (ไม่ขึ้นกับเขตเวลาในเครื่องลูกค้า) — en-CA ให้รูปแบบ YYYY-MM-DD
+const today = new Intl.DateTimeFormat('en-CA', { timeZone: 'Asia/Bangkok' }).format(new Date());
 
 // การจองที่มีอยู่แล้ว (from = วันเช็คอิน, to = วันเช็คเอาท์)
 // โหมดทดลองใช้ตัวอย่างนี้ ถ้าต่อ Google Sheets แล้วจะโหลดของจริงมาแทน
@@ -140,7 +141,7 @@ const itemNames = () => [
 // ---------- สร้างการ์ดบ้าน ----------
 housesEl.innerHTML = HOUSES.map((h) => `
   <article class="house" id="house-${h.id}" data-house="${h.id}">
-    <div class="slides" tabindex="0" aria-label="รูป ${h.name} ปัดซ้ายขวาเพื่อดูรูปถัดไป">
+    <div class="slides" role="region" tabindex="0" aria-label="รูป ${h.name} ปัดซ้ายขวาเพื่อดูรูปถัดไป">
       ${h.photos.map((p) => `<img src="${p.src}" alt="${p.alt}" loading="lazy">`).join('')}
     </div>
     <div class="slide-nav">
@@ -155,7 +156,7 @@ housesEl.innerHTML = HOUSES.map((h) => `
       ${(h.features || []).map((f) => `<li>${/ห้องน้ำ/.test(f) ? ICON.bath : ICON.bed}${f}</li>`).join('')}
     </ul>
     <p class="house-price"><b>${baht(h.price)}</b> บาท/คืน</p>
-    <label class="pick"><input type="checkbox" value="${h.id}"><span>เลือกบ้านหลังนี้</span></label>
+    <label class="pick"><input type="checkbox" value="${h.id}" aria-label="เลือก ${h.name}"><span>เลือกบ้านหลังนี้</span></label>
   </article>`).join('');
 
 // ปุ่มเลื่อนรูป + จุดบอกตำแหน่งรูป
@@ -190,20 +191,33 @@ function render() {
     const marker = document.querySelector(`.m[data-house="${h.id}"]`);
     marker.classList.toggle('is-booked', booked);
     marker.classList.toggle('is-selected', picked);
-    marker.setAttribute('aria-label', `${h.name}${booked ? ' ถูกจองแล้ว' : picked ? ' เลือกแล้ว' : ''}`);
+    marker.setAttribute('aria-pressed', String(picked));
+    marker.setAttribute('aria-label', `${h.name}${booked ? ' ถูกจองแล้ว' : picked ? ' เลือกแล้ว' : dated ? ' ว่าง' : ''}`);
     marker.querySelector('.st').textContent = !dated ? '' : booked ? 'ถูกจองแล้ว' : picked ? 'เลือกแล้ว' : 'ว่าง';
   });
 
   $('#nights').innerHTML = state.loading ? 'กำลังเช็กวันว่าง…'
-    : state.loadError ? `เช็กวันว่างไม่สำเร็จ กรุณารีเฟรชหน้า หรือโทรจอง ${PHONE}`
+    : state.loadError ? `เช็กวันว่างไม่สำเร็จ กรุณาลองใหม่ หรือโทรจอง ${PHONE} <button type="button" class="retry" data-retry>ลองอีกครั้ง</button>`
     : dated ? `${thaiDate(state.checkin)} – ${thaiDate(state.checkout)} · <b>${nights()} คืน</b>`
     : (state.checkin && state.checkout ? 'วันเช็กเอาต์ต้องหลังวันเช็กอิน' : 'เลือกวันเข้าพักก่อน แล้วติ๊กเลือกบ้านที่ว่าง');
 
   $('#bar').hidden = !hasItems() || $('#step-pick').hidden;
   if (hasItems()) {
-    $('#bar-text').innerHTML = `${itemNames().join(', ')}<br><b>${nights()} คืน · รวม ${baht(total())} บาท</b>`;
+    // บรรทัดแรก = รายการ (ยาวเกินตัดด้วย …) บรรทัดสอง = ยอดรวม (เห็นเสมอ)
+    $('#bar-text').innerHTML = `<span class="bar-items">${itemNames().join(', ')}</span><b>${nights()} คืน · รวม ${baht(total())} บาท</b>`;
   }
+  syncBarHeight();
 }
+
+// เว้นที่ท้ายหน้าเท่าความสูงจริงของแถบสรุปด้านล่าง (ไม่ให้บังท้ายเว็บ) — ค่าสำรองใน CSS คือ 110px
+const barEl = $('#bar');
+function syncBarHeight() {
+  if (!barEl.hidden && barEl.offsetHeight) document.documentElement.style.setProperty('--bar-h', `${barEl.offsetHeight}px`);
+}
+new ResizeObserver(syncBarHeight).observe(barEl);
+
+// ปุ่ม "ลองอีกครั้ง" ตอนโหลดวันว่างไม่สำเร็จ
+$('#nights').addEventListener('click', (e) => { if (e.target.closest('[data-retry]')) loadBookings(); });
 
 // ---------- ปุ่ม − / + ของเต็นท์ ----------
 document.querySelectorAll('[data-qty]').forEach((btn) => {
@@ -213,8 +227,15 @@ document.querySelectorAll('[data-qty]').forEach((btn) => {
     render();
   });
 });
-$('#tent-guests').addEventListener('input', render);
-$('#tent-rent').addEventListener('input', render);
+// พิมพ์ตัวเลขเอง: คำนวณทันที และพอออกจากช่อง ปรับตัวเลขในช่องให้อยู่ระหว่าง 0 ถึงค่าสูงสุด
+['#tent-guests', '#tent-rent'].forEach((sel) => {
+  const input = $(sel);
+  input.addEventListener('input', render);
+  input.addEventListener('change', () => {
+    input.value = qty(sel, Number(input.max));
+    render();
+  });
+});
 
 // ---------- เลือกวัน ----------
 // หลัง SAME_DAY_CUTOFF น. (เวลาไทย) ปิดรับจองเข้าพักวันนี้ทางเว็บ ให้โทรจองแทน — ต้องตรงกับ Code.gs
@@ -257,14 +278,26 @@ document.querySelectorAll('.m').forEach((marker) => {
     card.classList.add('flash');
     setTimeout(() => card.classList.remove('flash'), 1200);
   };
+  // เป็น <button> อยู่แล้ว กด Enter/Space ได้เอง ไม่ต้องดักคีย์บอร์ดเพิ่ม
   marker.addEventListener('click', open);
-  marker.addEventListener('keydown', (e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); open(); } });
 });
 
-// ---------- ย่อแผนผังมุมสูง (วาดไว้กว้าง 800px) ให้พอดีความกว้างจอ ไม่เล็กกว่า 0.6 เท่า (เล็กกว่านั้นเลื่อนซ้ายขวาเอา) ----------
+// ---------- ย่อแผนผังมุมสูง (วาดไว้กว้าง 800px) ให้พอดีความกว้างจอ ไม่เล็กกว่า 0.45 เท่า (เล็กกว่านั้นเลื่อนซ้ายขวาเอา) ----------
+// ย่อเหลือน้อยกว่า 0.7 เท่า → ใส่คลาส is-small ให้ตัวหนังสือบนแผนผังใหญ่ขึ้น อ่านออกบนมือถือ
 const aerialBox = $('.aerial-scroll');
-const fitAerial = () => aerialBox.style.setProperty('--s', Math.max(0.6, Math.min(1, aerialBox.clientWidth / 800)));
+// ยังเลื่อนไปทางขวาได้อีก → โชว์ขอบจางด้านขวาเป็นคำใบ้
+const updateAerialHint = () => {
+  const more = aerialBox.scrollWidth - aerialBox.clientWidth - aerialBox.scrollLeft > 2;
+  aerialBox.classList.toggle('can-scroll', more);
+};
+const fitAerial = () => {
+  const s = Math.max(0.45, Math.min(1, aerialBox.clientWidth / 800));
+  aerialBox.style.setProperty('--s', s);
+  aerialBox.classList.toggle('is-small', s < 0.7);
+  updateAerialHint();
+};
 new ResizeObserver(fitAerial).observe(aerialBox);
+aerialBox.addEventListener('scroll', updateAerialHint, { passive: true });
 fitAerial();
 
 // ---------- มาจากลิงก์ชื่อบ้านในหน้าราคา (เช่น booking.html#house-family-1) → เลื่อนไปที่การ์ดนั้น ----------
@@ -284,11 +317,16 @@ function go(step, push = true) {
   $('#bar').hidden = step !== 'pick' || !hasItems();
   if (push) history.pushState({ step }, '', step === 'pick' ? location.pathname : `#${step}`);
   window.scrollTo(0, 0);
+  // ย้ายโฟกัสไปที่หัวข้อของขั้นตอนนั้น (โปรแกรมอ่านหน้าจอรู้ว่าเปลี่ยนหน้าแล้ว) โดยไม่ให้หน้ากระโดด
+  $(`#step-${step} h1`).focus({ preventScroll: true });
 }
 window.addEventListener('popstate', (e) => {
   const step = e.state?.step || 'pick';
-  // ถ้าย้อนมาหน้ากรอกข้อมูลแต่ยังไม่ได้เลือกบ้าน ให้กลับไปหน้าเลือกบ้าน
-  go(step === 'details' && !hasItems() ? 'pick' : step, false);
+  // ถ้าย้อนมาหน้ากรอกข้อมูลแต่ยังไม่ได้เลือกบ้าน/วัน ให้กลับไปหน้าเลือกบ้าน
+  const target = step === 'details' && (!hasItems() || !hasDates()) ? 'pick' : step;
+  // กดปุ่ม Forward ของเบราว์เซอร์มาหน้ากรอกข้อมูล → เตรียมสรุปและยอดเงินใหม่ให้ตรงกับที่เลือกล่าสุด
+  if (target === 'details') prepDetails();
+  go(target, false);
 });
 history.replaceState({ step: 'pick' }, '', location.pathname);
 
@@ -308,8 +346,8 @@ function updateSummary() {
   document.querySelector('[data-amount="full"]').textContent = `${baht(total())} บาท`;
 }
 
-$('#to-details').addEventListener('click', () => {
-  if (!hasItems() || !hasDates()) return;
+// เตรียมหน้ากรอกข้อมูล: ช่องจำนวนคน + ข้อความความจุ + สรุปรายการและยอดเงิน
+function prepDetails() {
   // ช่อง "จำนวนคนพักในบ้าน" ใช้เฉพาะตอนจองบ้าน (จองแค่เต็นท์ จำนวนคนนับจากเต็นท์)
   const withHouse = state.selected.size > 0;
   $('#guests-field').hidden = !withHouse;
@@ -317,11 +355,29 @@ $('#to-details').addEventListener('click', () => {
   const capacity = selectedHouses().reduce((sum, h) => sum + h.guests, 0);
   $('#capacity').textContent = withHouse ? `บ้านที่เลือกรองรับได้ ${capacity} ท่าน (มากกว่านี้ ทัก LINE ขอเสริมเตียง หรือย้อนกลับไปเพิ่มเต็นท์)` : '';
   updateSummary();
+}
+
+$('#to-details').addEventListener('click', () => {
+  if (!hasItems() || !hasDates()) return;
+  prepDetails();
   go('details');
 });
 document.querySelector('[data-back]').addEventListener('click', () => history.back());
 
 // ---------- ยืนยันการจอง ----------
+// ข้อความเมื่อ Google ตอบกลับว่ามีปัญหา (รหัสต้องตรงกับ google-apps-script/Code.gs)
+// รหัสที่ไม่อยู่ในรายการนี้ จะขึ้นข้อความทั่วไปพร้อมเบอร์โทร
+const SERVER_ERRORS = {
+  bad_dates: 'วันที่ไม่ถูกต้อง กรุณาเลือกวันใหม่',
+  too_long: 'จองได้สูงสุด 30 คืน',
+  bad_phone: 'เบอร์โทรต้องเป็นตัวเลข 9–10 หลัก เช่น 0812345678',
+  bad_guests: 'จำนวนคนไม่ถูกต้อง',
+  over_capacity: 'จำนวนคนเกินที่บ้านที่เลือกรับได้ กรุณาเลือกบ้านหรือเต็นท์เพิ่ม',
+  bad_tent: 'จำนวนเต็นท์ไม่ถูกต้อง',
+  bad_name: 'กรุณากรอกชื่อผู้จอง',
+  bad_note: 'หมายเหตุยาวเกินไป (ไม่เกิน 500 ตัวอักษร)',
+  bad_house: 'กรุณาเลือกบ้านหรือเต็นท์อย่างน้อย 1 อย่าง',
+};
 $('#details-form').addEventListener('submit', async (e) => {
   e.preventDefault();
   const form = e.target;
@@ -368,7 +424,7 @@ $('#details-form').addEventListener('submit', async (e) => {
           phone: data.phone.trim(),
           note: data.note.trim(),
           payType,
-          website: data.website, // ช่องลับกันบอท
+          website: data.hp_extra, // ช่องลับกันบอท (ในหน้าเว็บชื่อ hp_extra แต่ส่งไป Google ในชื่อ website เหมือนเดิม)
         }),
       });
       const out = await res.json();
@@ -385,10 +441,12 @@ $('#details-form').addEventListener('submit', async (e) => {
         return;
       }
       if (!out.ok) throw new Error(out.error);
+      // รหัสหลอก LG000000-0000 = ระบบไม่ได้บันทึกการจองจริง → ถือว่าไม่สำเร็จ ไม่โชว์ QR ชำระเงิน
+      if (out.id === 'LG000000-0000') throw new Error('fake_id');
       id = out.id;
       if (out.due) ({ total: bookingTotal, due: amountDue, deadline } = out);
     } catch (err) {
-      errorEl.textContent = `ส่งการจองไม่สำเร็จ กรุณาลองใหม่อีกครั้ง หรือโทรจอง ${PHONE}`;
+      errorEl.textContent = SERVER_ERRORS[err.message] || `ส่งการจองไม่สำเร็จ กรุณาลองใหม่อีกครั้ง หรือโทรจอง ${PHONE}`;
       return;
     } finally {
       btn.disabled = false;
