@@ -227,6 +227,75 @@ function itemsText(b) {
 // ยอดที่ยังต้องเก็บ = ยอดรวม − ที่จ่ายมาแล้ว
 const remaining = (b) => Math.max(0, (Number(b.total) || 0) - (Number(b.due) || 0));
 const refundAmount = (b) => Math.floor((Number(b.total) || 0) / 2);
+// เงินที่ยังต้องเก็บจากแขก (เหมือนบรรทัด "ยังต้องเก็บอีก" บนการ์ด)
+const owed = (b) => (!b.blocked && b.status === ST.CONFIRMED && b.balance === BAL.UNPAID ? remaining(b) : 0);
+
+// ---------- ข้อความส่งลูกค้าทาง LINE ----------
+// ข้อมูลร้านทั้งหมดมาจากหน้าเว็บ (booking.html / stay.html) — ห้ามแต่งเพิ่ม
+const SHOP = {
+  name: 'The Lagoon Camping Resort',
+  promptpay: '090-936-5562',
+  phone: '081-930-4969',
+  map: 'https://goo.gl/maps/8mGhpGAEaRzAJNGq6',
+  times: 'เช็กอินได้ตั้งแต่ 11:00 น. และเช็กเอาต์ก่อน 12:00 น.', // stay.html
+  payLater: 'เงินสดหรือโอนหน้าเคาน์เตอร์',
+};
+const TH_DAY_FULL = ['อาทิตย์', 'จันทร์', 'อังคาร', 'พุธ', 'พฤหัสบดี', 'ศุกร์', 'เสาร์'];
+// "เสาร์ 18 ต.ค. 2569" (ข้อความธรรมดา ไม่ใช่ HTML)
+function msgDate(iso) {
+  if (!isISO(iso)) return String(iso || '-');
+  const t = utc(iso);
+  return `${TH_DAY_FULL[t.getUTCDay()]} ${t.getUTCDate()} ${TH_M[t.getUTCMonth()]} ${t.getUTCFullYear() + 543}`;
+}
+function messageFor(b) {
+  if (!b || b.blocked) return '';
+  const name = b.name ? `คุณ${b.name}` : 'คุณลูกค้า';
+  const stay = [
+    `รหัสการจอง: ${b.id}`,
+    `ที่พัก: ${itemsText(b)}`,
+    `เข้าพัก: ${msgDate(b.checkin)}`,
+    `วันออก: ${msgDate(b.checkout)} (${b.nights} คืน)`,
+  ];
+  if (people(b)) stay.push(`จำนวน: ${people(b)} ท่าน`);
+  const due = owed(b);
+  const payLine = due ? (Number(b.due) > 0
+    ? `ชำระแล้ว ${baht(b.due)} บาท · ส่วนที่เหลือ ${baht(due)} บาท ชำระวันเช็กอิน (${SHOP.payLater})`
+    : `ยอดที่ต้องชำระวันเช็กอิน ${baht(due)} บาท (${SHOP.payLater})`) : 'ชำระครบแล้ว ✓';
+
+  if (b.status === ST.PENDING) {
+    const lines = [`สวัสดี${name} 🙏`, `${SHOP.name} ได้รับการจองแล้ว`, '', ...stay, `ยอดรวม: ${baht(b.total)} บาท`, ''];
+    lines.push(`💰 ยอดที่ต้องโอน: ${baht(b.due)} บาท${b.payType ? ` (${b.payType})` : ''}`);
+    if (b.deadline) {
+      const [d, t] = String(b.deadline).split(' ');
+      lines.push(`กรุณาโอนภายใน ${msgDate(d)}${t ? ` เวลา ${t} น.` : ''}`);
+    }
+    lines.push(`พร้อมเพย์ ${SHOP.promptpay}`, 'โอนแล้วส่งสลิปในแชตนี้ได้เลย');
+    if (b.payType !== PAY_FULL && remaining(b) > 0) lines.push(`(ส่วนที่เหลือ ${baht(remaining(b))} บาท ชำระวันเช็กอิน ${SHOP.payLater})`);
+    return lines.join('\n');
+  }
+  if (b.status === ST.CONFIRMED && b.checkin === state.today) {
+    const lines = [`สวัสดี${name} 🙏`, `พบกันวันนี้ที่ ${SHOP.name}`, `ที่พัก: ${itemsText(b)} (${b.nights} คืน)`, SHOP.times];
+    if (due) lines.push(`ยอดที่ต้องชำระวันนี้ ${baht(due)} บาท (${SHOP.payLater})`);
+    lines.push(`แผนที่: ${SHOP.map}`, `หาทางไม่เจอ โทร ${SHOP.phone}`);
+    return lines.join('\n');
+  }
+  if (b.status === ST.CONFIRMED) {
+    return [`ยืนยันการจองแล้ว ✅`, `${name}`, '', ...stay, `ยอดรวม: ${baht(b.total)} บาท`, payLine, '',
+      SHOP.times, `แผนที่: ${SHOP.map}`, `สอบถาม โทร ${SHOP.phone}`, `ขอบคุณที่ใช้บริการ ${SHOP.name} 🙏`].join('\n');
+  }
+  if (b.status === ST.CANCELLED) {
+    const lines = [`สวัสดี${name}`, `ยกเลิกการจองเรียบร้อยแล้ว`, `รหัสการจอง: ${b.id}`,
+      `ที่พัก: ${itemsText(b)}`, `วันที่: ${msgDate(b.checkin)} – ${msgDate(b.checkout)}`];
+    if (b.payType === PAY_FULL) {
+      lines.push(b.refund === REFUND_DONE
+        ? `โอนเงินคืน 50% ของยอดจอง ${baht(refundAmount(b))} บาท เรียบร้อยแล้ว`
+        : `ได้รับเงินคืน 50% ของยอดจอง = ${baht(refundAmount(b))} บาท (แอดมินโอนคืนให้)`);
+    }
+    lines.push(`ขอบคุณที่ติดต่อ ${SHOP.name} 🙏`);
+    return lines.join('\n');
+  }
+  return '';
+}
 
 function moneyHtml(b) {
   if (b.blocked) return '';
@@ -299,6 +368,11 @@ function card(b) {
     ${b.note ? `<p class="bk-note">📝 ${esc(b.note)}</p>` : ''}
     ${moneyHtml(b)}
     ${phone.length >= 9 && !b.blocked ? `<a class="btn-call" href="tel:${esc(phone)}">📞 โทร ${esc(b.phone)}</a>` : (b.phone ? `<p>📞 ${esc(b.phone)}</p>` : '')}
+    ${messageFor(b) ? `<div class="msg-acts">
+      <button type="button" class="msg-copy" data-msg-copy>📋 คัดลอกข้อความส่งลูกค้า</button>
+      <button type="button" class="link" data-msg-view aria-expanded="false">ดูข้อความ</button>
+    </div>
+    <div class="msg-box" hidden><textarea readonly rows="8" aria-label="ข้อความส่งลูกค้า"></textarea></div>` : ''}
     <div class="acts">${actionsFor(b).map(([act, label, ask, kind]) =>
       `<button type="button" class="${kind}" data-act="${act}" data-ask="${esc(ask)}">${esc(label)}</button>`).join('')}</div>
     <div class="ask" hidden>
@@ -356,6 +430,39 @@ document.addEventListener('click', async (e) => {
   if (c.isConnected) renderView(); // โหลดใหม่ไม่สำเร็จ: วาดการ์ดใหม่ ให้ปุ่มกดได้อีก
 });
 
+// ปุ่ม "คัดลอกข้อความส่งลูกค้า" / "ดูข้อความ"
+function showMsg(c, text, open) {
+  const box = c.querySelector('.msg-box');
+  const area = box.querySelector('textarea');
+  const view = c.querySelector('[data-msg-view]');
+  area.value = text;
+  box.hidden = !open;
+  view.setAttribute('aria-expanded', String(open));
+  view.textContent = open ? 'ซ่อนข้อความ' : 'ดูข้อความ';
+  if (open) area.style.height = area.scrollHeight + 4 + 'px';
+  return area;
+}
+document.addEventListener('click', (e) => {
+  const el = e.target.closest('[data-msg-copy], [data-msg-view]');
+  const c = el && el.closest('.bk');
+  if (!c) return;
+  const text = messageFor(byId(c.dataset.id));
+  if (!text) return;
+  if (el.hasAttribute('data-msg-view')) { showMsg(c, text, c.querySelector('.msg-box').hidden); return; }
+  // คัดลอกไม่ได้ (เบราว์เซอร์เก่า/ไม่อนุญาต) → เปิดข้อความให้กดค้างเลือกคัดลอกเอง
+  const fallback = () => {
+    const area = showMsg(c, text, true);
+    area.focus();
+    area.select();
+    toast('คัดลอกอัตโนมัติไม่ได้ กดค้างที่ข้อความแล้วเลือก “คัดลอก”');
+  };
+  try {
+    navigator.clipboard.writeText(text).then(() => toast('คัดลอกแล้ว วางในแชต LINE ได้เลย'), fallback);
+  } catch (err) {
+    fallback();
+  }
+});
+
 // ---------- แท็บ "วันนี้" ----------
 function renderToday() {
   const t = state.today;
@@ -368,8 +475,39 @@ function renderToday() {
   const used = new Set(bookings().filter((b) => isActive(b) && b.checkin <= t && b.checkout > t).flatMap((b) => b.houses));
   const free = houseIds().filter((h) => !used.has(h)).map(houseName);
   const pending = bookings().filter((b) => b.status === ST.PENDING && !b.blocked).length;
+
+  // งานวันนี้: เงินที่ต้องเก็บ (ยืนยันแล้ว ยังไม่ได้รับส่วนที่เหลือ)
+  const collect = tonight.filter((b) => owed(b) > 0);
+  const collectSum = collect.reduce((s, b) => s + owed(b), 0);
+  // เตรียมงาน
+  const arriveHouses = new Set(arrive.flatMap((b) => b.houses));
+  const clean = [...new Set(leave.flatMap((b) => b.houses))];
+  const rentTonight = tonight.reduce((s, b) => s + (Number(b.rent) || 0), 0);
+  const rentNew = arrive.reduce((s, b) => s + (Number(b.rent) || 0), 0);
+  const ownTent = arrive.reduce((s, b) => s + (Number(b.tent) || 0), 0);
+  const blocks = bookings().filter((b) => b.blocked && b.status === ST.CONFIRMED && b.checkin === t);
+  const prep = clean.map((h) => `🧹 ทำความสะอาด <b>${esc(houseName(h))}</b> (แขกออกวันนี้)${arriveHouses.has(h) ? ' <b class="warn">⚠️ ต้องเสร็จก่อนแขกเข้า</b>' : ''}`);
+  if (rentTonight) prep.push(`⛺ เต็นท์เช่าคืนนี้ <b>${rentTonight} หลัง</b>${rentNew ? ` (ต้องกางใหม่วันนี้ ${rentNew} หลัง)` : ' (กางไว้แล้ว)'}`);
+  if (ownTent) prep.push(`🏕️ แขกนำเต็นท์มาเอง เข้าวันนี้ <b>${ownTent} ท่าน</b>`);
+  blocks.forEach((b) => prep.push(`🔒 ปิดบ้านวันนี้: <b>${esc(b.houseNames.join(', '))}</b>${b.note ? ` (${esc(b.note)})` : ''}`));
+
+  // พรุ่งนี้
+  const tm = addDays(t, 1);
+  const row = (b) => `<li><b>${esc(itemsText(b))}</b> · ${esc(b.name || '-')}${people(b) ? ` · ${people(b)} ท่าน` : ''}${b.status === ST.PENDING ? ' <span class="warn">(รอชำระ)</span>' : ''}</li>`;
+  const list = (arr, empty) => (arr.length ? `<ul class="mini">${arr.map(row).join('')}</ul>` : `<p class="muted">${empty}</p>`);
+  const inTm = act.filter((b) => b.checkin === tm);
+  const outTm = act.filter((b) => b.checkout === tm);
+
   $('#h-today').textContent = `วันนี้ ${thDate(t)}`;
   $('#today-body').innerHTML = `
+    <div class="work">
+      <h2>งานวันนี้</h2>
+      <p class="collect ${collectSum ? 'is-due' : 'is-done'}">${collectSum
+        ? `💵 ต้องเก็บเงินวันนี้ รวม <b>${baht(collectSum)} บาท</b> (${collect.length} การจอง)`
+        : '✓ ไม่มีเงินต้องเก็บวันนี้'}</p>
+      <h3>เตรียมงาน</h3>
+      ${prep.length ? `<ul class="prep">${prep.map((p) => `<li>${p}</li>`).join('')}</ul>` : '<p class="muted">ไม่มีงานต้องเตรียม</p>'}
+    </div>
     <div class="summary">
       <p>คืนนี้มีแขก <b>${tonight.reduce((s, b) => s + people(b), 0)} ท่าน</b> (${tonight.length} การจอง)</p>
       <p>บ้านว่างคืนนี้: <b>${free.length ? esc(free.join(', ')) : 'เต็มทุกหลัง'}</b></p>
@@ -377,7 +515,12 @@ function renderToday() {
     </div>
     <h2 class="sub">เข้าพักวันนี้ (${arrive.length})</h2>${cards(arrive, 'ไม่มีคนเข้าพักวันนี้')}
     <h2 class="sub">พักต่อคืนนี้ (${stay.length})</h2>${cards(stay, 'ไม่มี')}
-    <h2 class="sub">ออกวันนี้ (${leave.length})</h2>${cards(leave, 'ไม่มีคนออกวันนี้')}`;
+    <h2 class="sub">ออกวันนี้ (${leave.length})</h2>${cards(leave, 'ไม่มีคนออกวันนี้')}
+    <div class="tomorrow">
+      <h2>พรุ่งนี้ ${thDate(tm)}</h2>
+      <h3>เข้าพัก (${inTm.length})</h3>${list(inTm, 'ไม่มีคนเข้าพัก')}
+      <h3>ออก (${outTm.length})</h3>${list(outTm, 'ไม่มีคนออก')}
+    </div>`;
 }
 document.addEventListener('click', (e) => {
   const b = e.target.closest('[data-goto]');

@@ -103,6 +103,33 @@ const thaiDate = (iso) => new Date(iso + 'T00:00:00').toLocaleDateString('th-TH'
 const baht = (n) => n.toLocaleString('th-TH');
 // วันนี้ตามเวลาไทยเสมอ (ไม่ขึ้นกับเขตเวลาในเครื่องลูกค้า) — en-CA ให้รูปแบบ YYYY-MM-DD
 const today = new Intl.DateTimeFormat('en-CA', { timeZone: 'Asia/Bangkok' }).format(new Date());
+// วันเวลาตามเวลาไทยในรูปแบบ 'yyyy-MM-dd HH:mm' (แบบเดียวกับที่ Code.gs ส่งกลับมา) — sv-SE ให้รูปแบบนี้พอดี
+const bangkokStamp = (d) => new Intl.DateTimeFormat('sv-SE', { timeZone: 'Asia/Bangkok', year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit', hourCycle: 'h23' }).format(d);
+// 'yyyy-MM-dd HH:mm' (เวลาไทย) → เวลาจริงเป็นมิลลิวินาที (ผิดรูปแบบ = NaN)
+const bangkokTime = (s) => (/^\d{4}-\d{2}-\d{2} \d{2}:\d{2}$/.test(s || '') ? new Date(`${s.replace(' ', 'T')}:00+07:00`).getTime() : NaN);
+
+// ---------- จำการจองที่รอชำระไว้ในเครื่องลูกค้า ----------
+// ลูกค้าสลับไปแอปธนาคารแล้วมือถือรีโหลดหน้า → เปิดหน้าชำระเงินกลับมาได้ (booking.html#pay)
+// เก็บเฉพาะรหัสการจอง ยอด เวลา และรายการแบบย่อ — ไม่เก็บชื่อ/เบอร์โทร · js/main.js อ่านคีย์เดียวกันเพื่อโชว์แถบเตือนหน้าอื่น
+const PENDING_KEY = 'lagoon-booking';
+function savePending(p) {
+  try { localStorage.setItem(PENDING_KEY, JSON.stringify(p)); } catch (err) { /* โหมดส่วนตัว/ปิดที่เก็บข้อมูล: ข้ามไป */ }
+}
+// การจองที่ยังไม่หมดเวลาชำระ (หมดเวลาแล้วหรือข้อมูลเสีย → ลบทิ้งเงียบๆ)
+function loadPending() {
+  try {
+    const p = JSON.parse(localStorage.getItem(PENDING_KEY) || 'null');
+    if (!p) return null;
+    const ok = p.id && Number(p.due) > 0 && bangkokTime(p.deadline) > Date.now();
+    if (!ok) { localStorage.removeItem(PENDING_KEY); return null; }
+    return p;
+  } catch (err) {
+    return null;
+  }
+}
+function dropPending() {
+  try { localStorage.removeItem(PENDING_KEY); } catch (err) { /* ข้าม */ }
+}
 
 // การจองที่มีอยู่แล้ว (from = วันเช็คอิน, to = วันเช็คเอาท์)
 // โหมดทดลองใช้ตัวอย่างนี้ ถ้าต่อ Google Sheets แล้วจะโหลดของจริงมาแทน
@@ -353,19 +380,28 @@ function go(step, push = true) {
     if (i === at) li.setAttribute('aria-current', 'step'); else li.removeAttribute('aria-current');
   });
   $('#bar').hidden = step !== 'pick' || !hasItems();
-  if (push) history.pushState({ step }, '', step === 'pick' ? location.pathname : `#${step}`);
+  updatePendingNote(step);
+  // ขั้นชำระเงินใช้ #pay — รีโหลดหน้าแล้วเปิดหน้าชำระเงินจากที่จำไว้ได้
+  if (push) history.pushState({ step }, '', step === 'pick' ? location.pathname : step === 'done' ? '#pay' : `#${step}`);
   window.scrollTo(0, 0);
   // ย้ายโฟกัสไปที่หัวข้อของขั้นตอนนั้น (โปรแกรมอ่านหน้าจอรู้ว่าเปลี่ยนหน้าแล้ว) โดยไม่ให้หน้ากระโดด
   $(`#step-${step} h1`).focus({ preventScroll: true });
 }
 window.addEventListener('popstate', (e) => {
-  const step = e.state?.step || 'pick';
+  let step = e.state?.step || 'pick';
+  // เปลี่ยนเป็น #pay เอง (พิมพ์/กดลิงก์ในหน้าเดิม) → เปิดหน้าชำระเงินจากการจองที่จำไว้
+  if (!e.state && location.hash === '#pay') {
+    const p = loadPending();
+    if (p) { showPayment(p); step = 'done'; }
+  }
   // ถ้าย้อนมาหน้ากรอกข้อมูลแต่ยังไม่ได้เลือกบ้าน/วัน ให้กลับไปหน้าเลือกบ้าน
-  const target = step === 'details' && (!hasItems() || !hasDates()) ? 'pick' : step;
+  // ย้อน/ไปหน้าชำระเงินแต่ยังไม่มีข้อมูลการจองในหน้านี้ ก็กลับไปหน้าเลือกบ้านเช่นกัน
+  const target = (step === 'details' && (!hasItems() || !hasDates())) || (step === 'done' && !payShown) ? 'pick' : step;
   // กดปุ่ม Forward ของเบราว์เซอร์มาหน้ากรอกข้อมูล → เตรียมสรุปและยอดเงินใหม่ให้ตรงกับที่เลือกล่าสุด
   if (target === 'details') prepDetails();
   go(target, false);
 });
+const startHash = location.hash; // จำไว้ก่อนล้าง (#pay = เปิดหน้าชำระเงินจากการจองที่จำไว้)
 history.replaceState({ step: 'pick' }, '', location.pathname);
 
 // สรุปรายการ + ยอดในตัวเลือกแบบชำระเงิน
@@ -441,8 +477,7 @@ $('#details-form').addEventListener('submit', async (e) => {
   let id = '';
   let bookingTotal = total();
   let amountDue = payType === 'full' ? bookingTotal : Math.ceil(bookingTotal * DEPOSIT_RATE);
-  const dueAt = new Date(Date.now() + HOLD_HOURS * 3600000);
-  let deadline = `${toISO(dueAt)} ${pad(dueAt.getHours())}:${pad(dueAt.getMinutes())}`;
+  let deadline = bangkokStamp(new Date(Date.now() + HOLD_HOURS * 3600000));
   if (API_URL) {
     const btn = form.querySelector('[type=submit]');
     btn.disabled = true;
@@ -492,8 +527,6 @@ $('#details-form').addEventListener('submit', async (e) => {
     }
   }
 
-  const [dueDate, dueTime] = deadline.split(' ');
-  const deadlineText = `${thaiDate(dueDate)} เวลา ${dueTime} น.`;
   const summary = [
     houses.length ? `บ้าน: ${houses.map((h) => h.name).join(', ')} (${houseGuests} ท่าน)` : '',
     tentGuests() ? `นำเต็นท์มาเอง: ${tentGuests()} ท่าน` : '',
@@ -506,41 +539,29 @@ $('#details-form').addEventListener('submit', async (e) => {
     `เบอร์: ${data.phone.trim()}`,
     data.note.trim() ? `หมายเหตุ: ${data.note.trim()}` : '',
   ].filter(Boolean).join('\n');
-  const payLabel = payType === 'full' ? 'ยอดชำระเต็มจำนวน' : 'ยอดมัดจำ 50%';
-  // ข้อความที่ลูกค้าส่งเข้าแชต LINE พร้อมแนบสลิป
-  const message = [
+  const payLabel = payLabelOf(payType);
+  // ข้อความที่ลูกค้าส่งเข้าแชต LINE พร้อมแนบสลิป (body = รายละเอียดการจองต่อท้าย)
+  const lineMessage = (body) => [
     'ส่งสลิปการจอง The Lagoon 🏕️',
     id ? `รหัสการจอง: ${id}` : null,
     `${payLabel}: ${baht(amountDue)} บาท`,
     '(แนบรูปสลิปโอนเงินในแชตนี้)',
     '',
-    summary,
+    body,
   ].filter((line) => line !== null).join('\n');
+  const lineUrl = (body) => `https://line.me/R/oaMessage/${encodeURIComponent(LINE_ID)}/?${encodeURIComponent(lineMessage(body))}`;
+  // รายการแบบย่อ (ไม่มีชื่อ/เบอร์) เช่น "Lagoon 1, เช่าเต็นท์ 1 หลัง · ศ. 3 ต.ค. 2569 – ส. 4 ต.ค. 2569 (1 คืน)"
+  const shortSummary = `${itemNames().join(', ')} · ${thaiDate(state.checkin)} – ${thaiDate(state.checkout)} (${nights()} คืน)`;
 
   // จำไว้ในหน้านี้ด้วย เพื่อให้บ้านขึ้นว่า "ถูกจองแล้ว" ทันที
   houses.forEach((h) => BOOKINGS.push({ house: h.id, from: state.checkin, to: state.checkout }));
 
-  // หน้าชำระเงิน
-  $('#pay-id').textContent = id || '(โหมดทดลอง)';
-  $('#pay-due-label').textContent = payLabel;
-  $('#pay-due').textContent = `${baht(amountDue)} บาท`;
-  $('#pay-rest').textContent = `${baht(bookingTotal - amountDue)} บาท — ชำระวันเช็กอิน (เงินสดหรือโอนหน้าเคาน์เตอร์)`;
-  document.querySelectorAll('.pay-rest-row').forEach((el) => { el.hidden = payType === 'full'; });
-  $('#pay-deadline').textContent = deadlineText;
-  $('#pay-refund').textContent = payType === 'full'
-    ? `ชำระเต็มจำนวน: หากยกเลิกหรือไม่มาเข้าพัก รับเงินคืน 50% ของยอดจอง (${baht(Math.floor(bookingTotal / 2))} บาท) แอดมินจะโอนคืนให้`
-    : 'มัดจำ 50%: หากยกเลิกหรือไม่มาเข้าพัก ไม่คืนเงินมัดจำ';
-  const qrBox = $('#pay-qr');
-  if (window.qrcode) {
-    const qr = qrcode(0, 'M');
-    qr.addData(promptPayPayload(PROMPTPAY, amountDue));
-    qr.make();
-    qrBox.innerHTML = qr.createSvgTag({ cellSize: 6, margin: 2, scalable: true });
-  } else {
-    qrBox.textContent = `โหลด QR ไม่สำเร็จ — โอนเข้าพร้อมเพย์ 090-936-5562 ยอด ${baht(amountDue)} บาท`;
-  }
-  $('#done-text').textContent = (id ? `รหัสการจอง: ${id}\n` : '') + summary;
-  $('#line-link').href = `https://line.me/R/oaMessage/${encodeURIComponent(LINE_ID)}/?${encodeURIComponent(message)}`;
+  const pay = { id, due: amountDue, total: bookingTotal, payType, deadline, summary: shortSummary };
+  // จำการจองไว้ในเครื่อง (เฉพาะการจองจริงที่มีรหัส) — ลิงก์ LINE ที่เก็บใช้รายการแบบย่อ ไม่มีชื่อ/เบอร์
+  if (id) savePending({ ...pay, lineUrl: lineUrl(shortSummary), savedAt: Date.now() });
+
+  // หน้าชำระเงิน (ตอนนี้ยังอยู่ในหน้าเดิม: ลิงก์ LINE และรายละเอียดใช้ข้อความเต็มที่มีชื่อ/เบอร์เหมือนเดิม)
+  showPayment({ ...pay, lineUrl: lineUrl(summary), detail: (id ? `รหัสการจอง: ${id}\n` : '') + summary });
 
   state.selected.clear();
   $('#tent-guests').value = 0;
@@ -549,6 +570,191 @@ $('#details-form').addEventListener('submit', async (e) => {
   render();
   go('done');
 });
+
+// ---------- หน้าชำระเงิน (ใช้ทั้งตอนเพิ่งจองเสร็จ และตอนเปิดกลับมาจากการจองที่จำไว้) ----------
+const payLabelOf = (payType) => (payType === 'full' ? 'ยอดชำระเต็มจำนวน' : 'ยอดมัดจำ 50%');
+const PROMPTPAY_TEXT = PROMPTPAY.replace(/^(\d{3})(\d{3})(\d{4})$/, '$1-$2-$3'); // 0909365562 → 090-936-5562
+// 'yyyy-MM-dd HH:mm' → "ศ. 3 ต.ค. 2569 เวลา 20:00 น."
+const deadlineThai = (deadline) => {
+  const [dueDate, dueTime] = deadline.split(' ');
+  return `${thaiDate(dueDate)} เวลา ${dueTime} น.`;
+};
+let payShown = null; // การจองที่โชว์อยู่ในหน้าชำระเงิน (ปุ่มบันทึกรูป/คัดลอกใช้ข้อมูลนี้)
+let payTimer = 0;
+
+// p = { id, due, total, payType, deadline, lineUrl, summary, detail? }
+function showPayment(p) {
+  payShown = p;
+  const full = p.payType === 'full';
+  $('#pay-id').textContent = p.id || '(โหมดทดลอง)';
+  $('#pay-due-label').textContent = payLabelOf(p.payType);
+  $('#pay-due').textContent = `${baht(p.due)} บาท`;
+  $('#pay-rest').textContent = `${baht(p.total - p.due)} บาท — ชำระวันเช็กอิน (เงินสดหรือโอนหน้าเคาน์เตอร์)`;
+  document.querySelectorAll('.pay-rest-row').forEach((el) => { el.hidden = full; });
+  $('#pay-deadline').textContent = deadlineThai(p.deadline);
+  $('#pay-refund').textContent = full
+    ? `ชำระเต็มจำนวน: หากยกเลิกหรือไม่มาเข้าพัก รับเงินคืน 50% ของยอดจอง (${baht(Math.floor(p.total / 2))} บาท) แอดมินจะโอนคืนให้`
+    : 'มัดจำ 50%: หากยกเลิกหรือไม่มาเข้าพัก ไม่คืนเงินมัดจำ';
+  const qrBox = $('#pay-qr');
+  const qr = makeQr(p.due);
+  if (qr) {
+    qrBox.innerHTML = qr.createSvgTag({ cellSize: 6, margin: 2, scalable: true });
+  } else {
+    qrBox.textContent = `โหลด QR ไม่สำเร็จ — โอนเข้าพร้อมเพย์ ${PROMPTPAY_TEXT} ยอด ${baht(p.due)} บาท`;
+  }
+  $('#save-qr').hidden = !qr;
+  $('#done-text').textContent = p.detail || `${p.id ? `รหัสการจอง: ${p.id}\n` : ''}${p.summary}`;
+  $('#line-link').href = p.lineUrl;
+  $('#pay-tools-msg').textContent = '';
+  $('#pay-copy-text').hidden = true;
+  tickCountdown();
+  clearInterval(payTimer);
+  payTimer = setInterval(tickCountdown, 30000);
+}
+
+// QR พร้อมเพย์ตามยอด (ไลบรารี qrcode โหลดไม่สำเร็จ → null)
+function makeQr(amount) {
+  if (!window.qrcode) return null;
+  const qr = qrcode(0, 'M');
+  qr.addData(promptPayPayload(PROMPTPAY, amount));
+  qr.make();
+  return qr;
+}
+
+// เวลาที่เหลือก่อนหมดเวลาชำระ (อัปเดตทุก 30 วินาที) — หมดเวลาแล้วลบการจองที่จำไว้
+function tickCountdown() {
+  if (!payShown) return;
+  const left = bangkokTime(payShown.deadline) - Date.now();
+  const el = $('#pay-left');
+  if (!(left > 0)) {
+    el.textContent = '(หมดเวลาแล้ว)';
+    if (payShown.id) dropPending();
+    clearInterval(payTimer);
+    return;
+  }
+  const mins = Math.ceil(left / 60000);
+  const h = Math.floor(mins / 60);
+  el.textContent = `(เหลืออีก ${h ? `${h} ชม. ` : ''}${mins % 60} นาที)`;
+}
+
+// ปุ่ม "บันทึกรูป QR": วาด QR + รหัสการจอง + ยอด + เวลาโอน ลงภาพเดียว แล้วดาวน์โหลดเป็น lagoon-<รหัส>.png
+async function qrCanvas(p) {
+  const qr = makeQr(p.due);
+  if (!qr) return null;
+  // รอฟอนต์ของเว็บโหลดเสร็จก่อน ไม่งั้นตัวหนังสือในรูปจะเป็นฟอนต์สำรอง
+  try { await Promise.all([document.fonts.load('40px Chonburi'), document.fonts.load('600 28px Anuphan')]); } catch (err) { /* ใช้ฟอนต์สำรอง */ }
+  const n = qr.getModuleCount();
+  const cell = Math.floor(400 / (n + 4)); // ขนาดช่อง QR (รวมขอบขาว 2 ช่องรอบนอก ให้แอปธนาคารอ่านง่าย)
+  const size = cell * (n + 4);
+  const W = 640;
+  const y0 = 136; // ขอบบนของ QR
+  const H = y0 + size + 216;
+  const canvas = document.createElement('canvas');
+  canvas.width = W;
+  canvas.height = H;
+  const ctx = canvas.getContext('2d');
+  ctx.fillStyle = '#fbf9f4';
+  ctx.fillRect(0, 0, W, H);
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'alphabetic';
+  ctx.fillStyle = '#2f4a36';
+  ctx.font = '40px Chonburi, Anuphan, serif';
+  ctx.fillText('The Lagoon', W / 2, 72);
+  ctx.fillStyle = '#6b6a5f';
+  ctx.font = '22px Anuphan, sans-serif';
+  ctx.fillText(`พร้อมเพย์ ${PROMPTPAY_TEXT}`, W / 2, 110);
+
+  // QR: กรอบขาว + ช่องดำทีละช่อง
+  const x0 = (W - size) / 2;
+  ctx.fillStyle = '#ffffff';
+  ctx.fillRect(x0, y0, size, size);
+  ctx.fillStyle = '#000000';
+  for (let r = 0; r < n; r++) {
+    for (let c = 0; c < n; c++) {
+      if (qr.isDark(r, c)) ctx.fillRect(x0 + (c + 2) * cell, y0 + (r + 2) * cell, cell, cell);
+    }
+  }
+
+  let y = y0 + size + 52;
+  ctx.fillStyle = '#1f231f';
+  ctx.font = '600 26px Anuphan, sans-serif';
+  ctx.fillText(`รหัสการจอง ${p.id || '(โหมดทดลอง)'}`, W / 2, y);
+  y += 72;
+  ctx.fillStyle = '#2f4a36';
+  ctx.font = '600 60px Anuphan, sans-serif';
+  ctx.fillText(`฿${baht(p.due)}`, W / 2, y);
+  y += 48;
+  ctx.fillStyle = '#b4462f';
+  ctx.font = '600 24px Anuphan, sans-serif';
+  ctx.fillText(`โอนภายใน ${deadlineThai(p.deadline)}`, W / 2, y);
+  return canvas;
+}
+
+// ข้อความรายละเอียดสำหรับปุ่ม "คัดลอกรายละเอียด" (ไม่มีชื่อ/เบอร์)
+const payText = (p) => [
+  'The Lagoon Camping Resort',
+  p.id ? `รหัสการจอง: ${p.id}` : null,
+  p.summary,
+  `${payLabelOf(p.payType)}: ${baht(p.due)} บาท`,
+  `พร้อมเพย์: ${PROMPTPAY_TEXT}`,
+  `ชำระภายใน: ${deadlineThai(p.deadline)}`,
+].filter(Boolean).join('\n');
+
+const toolsMsg = (text) => { $('#pay-tools-msg').textContent = text; };
+
+$('#save-qr').addEventListener('click', async () => {
+  if (!payShown) return;
+  const canvas = await qrCanvas(payShown);
+  if (!canvas) { toolsMsg(`สร้างรูปไม่สำเร็จ — โอนเข้าพร้อมเพย์ ${PROMPTPAY_TEXT} ยอด ${baht(payShown.due)} บาท`); return; }
+  const a = document.createElement('a');
+  a.href = canvas.toDataURL('image/png');
+  a.download = `lagoon-${payShown.id || 'demo'}.png`;
+  document.body.append(a);
+  a.click();
+  a.remove();
+  toolsMsg('บันทึกรูป QR แล้ว');
+});
+
+$('#copy-pay').addEventListener('click', async () => {
+  if (!payShown) return;
+  const text = payText(payShown);
+  try {
+    await navigator.clipboard.writeText(text);
+    toolsMsg('คัดลอกรายละเอียดแล้ว');
+    return;
+  } catch (err) { /* ลองวิธีสำรองด้านล่าง */ }
+  // วิธีสำรอง: ใส่ข้อความในกล่อง เลือกทั้งหมด แล้วสั่งคัดลอก · ไม่ได้อีก → โชว์กล่องให้กดค้างคัดลอกเอง
+  const box = $('#pay-copy-text');
+  box.value = text;
+  box.hidden = false;
+  box.focus();
+  box.select();
+  let copied = false;
+  try { copied = document.execCommand('copy'); } catch (err) { copied = false; }
+  if (copied) {
+    box.hidden = true;
+    toolsMsg('คัดลอกรายละเอียดแล้ว');
+  } else {
+    toolsMsg('คัดลอกอัตโนมัติไม่ได้ — กดค้างที่ข้อความด้านล่างเพื่อคัดลอก');
+  }
+});
+
+// แถบบอก "มีการจองรอชำระ" ด้านบนหน้าจอง (โชว์เฉพาะขั้นเลือกบ้าน และยังไม่ได้กดซ่อน)
+let pendingHidden = false;
+function updatePendingNote(step = 'pick') {
+  const note = $('#pending-note');
+  const p = step === 'pick' && !pendingHidden ? loadPending() : null;
+  note.hidden = !p;
+  if (p) $('#pending-id').textContent = p.id;
+}
+function openPending() {
+  const p = loadPending();
+  if (!p) { updatePendingNote(); return; }
+  showPayment(p);
+  go('done');
+}
+$('#pending-open').addEventListener('click', openPending);
+$('#pending-hide').addEventListener('click', () => { pendingHidden = true; updatePendingNote(); });
 
 // ---------- โหลดวันว่างจาก Google Sheets ----------
 async function loadBookings() {
@@ -570,3 +776,8 @@ async function loadBookings() {
 document.querySelector('.demo-note').hidden = Boolean(API_URL);
 render();
 loadBookings();
+
+// เปิดหน้าด้วย booking.html#pay (หรือรีโหลดตอนอยู่หน้าชำระเงิน) และมีการจองที่ยังไม่หมดเวลา → ไปหน้าชำระเงินเลย
+// ไม่มี #pay → โชว์แถบ "คุณมีการจองรอชำระ" ด้านบนแทน
+if ((startHash === '#pay' || startHash === '#done') && loadPending()) openPending();
+else updatePendingNote();

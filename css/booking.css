@@ -293,7 +293,37 @@ body:has(.book-bar:not([hidden])) { padding-bottom: var(--bar-h, 110px); }
 .pay-deadline { font-weight: 500; color: #b4462f; }
 @media (prefers-color-scheme: dark) { .pay-deadline { color: #f0a08c; } }
 .pay-steps { margin: 0 0 28px; padding-left: 1.3em; display: grid; gap: 8px; max-width: 640px; }
+.pay-left { font-weight: 400; font-size: .85rem; color: var(--muted); white-space: nowrap; }
+/* ปุ่ม "บันทึกรูป QR" / "คัดลอกรายละเอียด" ใต้ QR */
+.pay-tools { display: flex; flex-wrap: wrap; align-items: center; gap: 10px; margin: -12px 0 28px; max-width: 720px; }
+.pay-tool {
+  min-height: 44px; padding: 8px 16px; border-radius: 999px; cursor: pointer;
+  font-family: var(--font); font-size: .92rem; font-weight: 500;
+  border: 1px solid var(--forest); background: transparent; color: var(--forest);
+}
+.pay-tool:hover { background: color-mix(in srgb, var(--forest) 10%, transparent); }
+.pay-tools-msg { flex-basis: 100%; margin: 0; font-size: .88rem; color: var(--forest); min-height: 1.4em; }
+.pay-tools-msg:empty { min-height: 0; }
+.pay-copy-text {
+  flex-basis: 100%; width: 100%; max-width: 520px; padding: 12px; resize: vertical;
+  font: .9rem/1.6 var(--font); color: var(--ink); background: var(--surface);
+  border: 1px solid var(--line); border-radius: var(--radius-sm, 12px);
+}
 .pay-summary { margin-top: 32px; max-width: 520px; }
+
+/* ---------- แถบ "คุณมีการจองรอชำระ" ด้านบนหน้าจอง ---------- */
+.pending-note {
+  display: flex; flex-wrap: wrap; align-items: center; gap: 8px 12px; max-width: 720px;
+  margin: 0 0 24px; padding: 10px 8px 10px 16px;
+  background: var(--surface); border: 1px solid var(--line); border-left: 4px solid var(--sun); border-radius: var(--radius-sm, 12px);
+}
+.pending-note p { margin: 0; flex: 1 1 180px; }
+.pending-note b { font-weight: 600; font-variant-numeric: tabular-nums; }
+.pending-hide {
+  min-width: 44px; min-height: 44px; border: 0; background: transparent; cursor: pointer;
+  color: var(--muted); font-size: 1.4rem; line-height: 1; border-radius: 999px;
+}
+.pending-hide:hover { color: var(--ink); }
 .pay-summary summary { cursor: pointer; color: var(--muted); }
 .pay-summary .done-text { margin-top: 12px; }
 

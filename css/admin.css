@@ -80,6 +80,17 @@ body.admin { font-size: 18px; line-height: 1.6; padding-bottom: 96px; }
 /* ---------- สรุปวันนี้ ---------- */
 .summary { background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius-sm); padding: 12px 16px; }
 .summary p { margin: 4px 0; }
+.work, .tomorrow { background: var(--surface); border: 2px solid var(--line); border-radius: var(--radius-sm); padding: 12px 16px; margin: 0 0 14px; }
+.tomorrow { margin-top: 28px; }
+.work h2, .tomorrow h2 { font-family: var(--font); font-weight: 700; font-size: 1.25rem; margin: 0 0 8px; }
+.work h3, .tomorrow h3 { font-family: var(--font); font-weight: 600; font-size: 1.15rem; margin: 12px 0 4px; }
+.collect { margin: 0; padding: 10px 12px; border-radius: var(--radius-sm); font-size: 1.1rem; }
+.collect.is-due { background: var(--warn-bg); color: var(--warn-ink); }
+.collect.is-done { background: var(--ok-bg); color: var(--ok-ink); }
+.prep, .mini { margin: 0; padding: 0; list-style: none; }
+.prep li, .mini li { padding: 8px 0; border-bottom: 1px solid var(--line); overflow-wrap: anywhere; }
+.prep li:last-child, .mini li:last-child { border-bottom: 0; }
+.work .muted, .tomorrow .muted { margin: 4px 0; }
 .empty { color: var(--muted); background: var(--surface); border: 1px dashed var(--line); border-radius: var(--radius-sm); padding: 14px 16px; margin: 0 0 12px; }
 
 /* ---------- การ์ดการจอง ---------- */
@@ -109,6 +120,12 @@ body.admin { font-size: 18px; line-height: 1.6; padding-bottom: 96px; }
   display: flex; align-items: center; justify-content: center; min-height: 48px; margin: 10px 0 0;
   border-radius: var(--radius-sm); border: 2px solid var(--forest); color: var(--forest);
   font-weight: 600; text-decoration: none;
+}
+.msg-acts { display: flex; flex-wrap: wrap; align-items: center; gap: 4px 8px; margin-top: 10px; }
+.admin button.msg-copy { flex: 1 1 220px; background: var(--ok-bg); border-color: var(--booked); color: var(--ok-ink); font-weight: 600; }
+.msg-box textarea {
+  display: block; width: 100%; margin-top: 8px; padding: 10px 12px; min-height: 120px; resize: vertical;
+  border: 2px solid var(--line); border-radius: var(--radius-sm); background: var(--bg); line-height: 1.5; font-size: 18px;
 }
 .acts { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 10px; }
 .acts button { flex: 1 1 140px; }

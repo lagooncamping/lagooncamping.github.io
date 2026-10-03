@@ -561,6 +561,26 @@ html:has(.lightbox[open]) { overflow: hidden; }
 }
 @media print { .dock { display: none; } body.has-dock { padding-bottom: 0; } }
 
+/* ---------- แถบเตือน "มีการจองรอชำระ" (js/main.js สร้างให้ทุกหน้า ยกเว้นหน้าจอง) ----------
+   ลอยมุมซ้ายล่าง เหนือปุ่ม LINE ลอย (จอใหญ่) และเหนือแถบปุ่มล่างจอ .dock สูง 69px (มือถือ) — z-index ต่ำกว่าสองอย่างนั้น */
+.pending-bar {
+  position: fixed; left: 12px; bottom: calc(84px + env(safe-area-inset-bottom)); z-index: 29;
+  display: flex; flex-wrap: wrap; align-items: center; gap: 2px 12px;
+  width: max-content; max-width: min(440px, calc(100vw - 24px));
+  padding: 8px 4px 8px 16px; border-radius: var(--radius-sm);
+  background: var(--surface); color: var(--ink);
+  border: 1px solid var(--line); border-left: 4px solid var(--sun); box-shadow: var(--shadow);
+  font-size: .92rem; line-height: 1.4;
+}
+.pending-bar p { margin: 0; }
+.pending-bar a { font-weight: 600; white-space: nowrap; display: inline-flex; align-items: center; min-height: 44px; }
+.pending-bar button {
+  min-width: 44px; min-height: 44px; margin-left: auto; border: 0; background: transparent; cursor: pointer;
+  color: var(--muted); font-size: 1.4rem; line-height: 1; border-radius: 999px;
+}
+.pending-bar button:hover { color: var(--ink); }
+@media print { .pending-bar { display: none; } }
+
 /* ---------- การเดินทาง (หน้าติดต่อ) ---------- */
 .travel { margin: 0 0 4px; }
 .travel p { display: flex; align-items: center; gap: 10px; margin: 0 0 16px; font-size: 1.05rem; }

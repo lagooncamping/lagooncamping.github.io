@@ -23,8 +23,8 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Anuphan:wght@400;500;600&family=Chonburi&display=swap">
-  <link rel="stylesheet" href="css/style.css?v=20261003e">
-  <link rel="stylesheet" href="css/booking.css?v=20261003e">
+  <link rel="stylesheet" href="css/style.css?v=20261003f">
+  <link rel="stylesheet" href="css/booking.css?v=20261003f">
 </head>
 <body>
 
@@ -48,6 +48,12 @@
     <div class="wrap">
       <!-- ลบกล่องนี้ออกเมื่อต่อ Google Sheets แล้ว -->
       <p class="demo-note">โหมดทดลอง: แผนผัง รูป และการจองที่ขึ้นว่า "ถูกจองแล้ว" เป็นข้อมูลตัวอย่าง ยังไม่บันทึกการจองจริง</p>
+      <!-- มีการจองที่ยังไม่ได้ชำระในเครื่องนี้ (js/booking.js โชว์/ซ่อนให้ · ข้อมูลจำไว้ใน localStorage คีย์ lagoon-booking) -->
+      <div class="pending-note" id="pending-note" role="status" hidden>
+        <p>คุณมีการจองรอชำระ <b id="pending-id"></b></p>
+        <button class="btn btn-primary btn-small" type="button" id="pending-open">เปิดหน้าชำระเงิน</button>
+        <button class="pending-hide" type="button" id="pending-hide" aria-label="ซ่อน">×</button>
+      </div>
 
       <!-- แถบบอกขั้นตอนการจอง 1–2–3 (js/booking.js อัปเดตให้ตอนเปลี่ยนขั้น) -->
       <ol class="steps" id="steps" aria-label="ขั้นตอนการจอง">
@@ -276,9 +282,16 @@
             <dt>รหัสการจอง</dt><dd id="pay-id"></dd>
             <dt id="pay-due-label">ยอดที่ต้องชำระ</dt><dd class="pay-amount" id="pay-due"></dd>
             <dt class="pay-rest-row">ยอดคงเหลือ</dt><dd class="pay-rest-row" id="pay-rest"></dd>
-            <dt>ชำระภายใน</dt><dd class="pay-deadline" id="pay-deadline"></dd>
+            <dt>ชำระภายใน</dt><dd class="pay-deadline"><span id="pay-deadline"></span> <small class="pay-left" id="pay-left"></small></dd>
             <dt>พร้อมเพย์</dt><dd><span>090-936-5562</span> <button class="copy" data-copy="0909365562" type="button">คัดลอก</button></dd>
           </dl>
+        </div>
+        <!-- บันทึกรูป QR ไว้สแกนในแอปธนาคาร / คัดลอกรายละเอียดการจอง (js/booking.js) -->
+        <div class="pay-tools">
+          <button class="pay-tool" type="button" id="save-qr">บันทึกรูป QR</button>
+          <button class="pay-tool" type="button" id="copy-pay">คัดลอกรายละเอียด</button>
+          <p class="pay-tools-msg" id="pay-tools-msg" role="status"></p>
+          <textarea class="pay-copy-text" id="pay-copy-text" rows="7" readonly hidden aria-label="รายละเอียดการจอง"></textarea>
         </div>
         <p class="pay-refund" id="pay-refund"></p>
 
@@ -355,8 +368,8 @@
 
   <!-- สร้างรูป QR พร้อมเพย์ -->
   <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcode-generator/1.4.4/qrcode.min.js" defer></script>
-  <script src="js/main.js" defer></script>
-  <script src="js/booking.js?v=20261003e" defer></script>
+  <script src="js/main.js?v=20261003f" defer></script>
+  <script src="js/booking.js?v=20261003f" defer></script>
   <script src="js/lightbox.js" defer></script>
   <script src="js/nav.js?v=20261003d" defer></script>
 </body>

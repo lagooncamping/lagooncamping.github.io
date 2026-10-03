@@ -15,3 +15,48 @@ document.querySelectorAll('.copy').forEach((button) => {
     }
   });
 });
+
+// ---------- แถบเตือน "มีการจองรอชำระ" (ทุกหน้า ยกเว้นหน้าจอง — js/booking.js จัดการเองในหน้านั้น) ----------
+// js/booking.js จำการจองที่เพิ่งส่งไว้ในเครื่อง (คีย์ lagoon-booking: รหัส ยอด เวลาหมดเขต — ไม่มีชื่อ/เบอร์)
+// ยังไม่หมดเวลาชำระ → โชว์แถบเล็กๆ มุมซ้ายล่าง ลิงก์ไป booking.html#pay · กด × = ซ่อนเฉพาะการจองนี้
+(function pendingBanner() {
+  if (document.getElementById('step-done')) return; // หน้าจอง
+  const KEY = 'lagoon-booking';
+  const HIDDEN_KEY = 'lagoon-booking-hidden';
+  let p;
+  let left;
+  try {
+    p = JSON.parse(localStorage.getItem(KEY) || 'null');
+    if (!p) return;
+    // เวลาหมดเขตเป็นเวลาไทย รูปแบบ 'yyyy-MM-dd HH:mm'
+    const ok = /^\d{4}-\d{2}-\d{2} \d{2}:\d{2}$/.test(p.deadline || '') && p.id;
+    left = ok ? new Date(`${p.deadline.replace(' ', 'T')}:00+07:00`).getTime() - Date.now() : NaN;
+    if (!(left > 0)) { localStorage.removeItem(KEY); return; }
+    if (localStorage.getItem(HIDDEN_KEY) === String(p.id)) return;
+  } catch (err) {
+    return;
+  }
+
+  // ใช้ลิงก์ "จองที่พัก" ที่มีอยู่ในหน้าเป็นต้นแบบ (หน้า 404 ใช้ /booking.html)
+  const bookLink = document.querySelector('a[href$="booking.html"]');
+  const bar = document.createElement('aside');
+  bar.className = 'pending-bar';
+  bar.setAttribute('aria-label', 'การจองรอชำระ');
+  const text = document.createElement('p');
+  text.textContent = `มีการจองรอชำระ · ภายใน ${p.deadline.slice(11)} น.`;
+  const go = document.createElement('a');
+  go.href = `${bookLink ? bookLink.getAttribute('href') : 'booking.html'}#pay`;
+  go.textContent = 'ดู QR / ส่งสลิป';
+  const hide = document.createElement('button');
+  hide.type = 'button';
+  hide.setAttribute('aria-label', 'ซ่อน');
+  hide.textContent = '×';
+  hide.addEventListener('click', () => {
+    try { localStorage.setItem(HIDDEN_KEY, String(p.id)); } catch (err) { /* ซ่อนแค่หน้านี้ */ }
+    bar.remove();
+  });
+  bar.append(text, go, hide);
+  document.body.append(bar);
+  // ถึงเวลาหมดเขตระหว่างเปิดหน้าอยู่ → เอาแถบออก
+  if (left < 2147483647) setTimeout(() => bar.remove(), left);
+})();
