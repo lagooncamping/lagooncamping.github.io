@@ -415,7 +415,7 @@ function renderCal() {
   $('#cal-next').disabled = calOffset >= CAL_MAX_AHEAD;
   $('#cal-status').textContent = state.loading ? 'กำลังโหลดวันว่าง…'
     : state.loadError ? 'โหลดวันว่างไม่สำเร็จ ยังเลือกวันได้ตามปกติ'
-    : calNext === 'out' ? 'แตะวันเช็กเอาต์ในปฏิทิน' : 'แตะวันที่เพื่อเลือกวันเช็กอิน';
+    : ''; // เจ้าของขอเอาข้อความแนะนำ "แตะวันที่…" ออก (เหลือแค่ตอนโหลด/โหลดไม่สำเร็จ)
   // มีคืนในช่วงที่เลือกที่บ้านเต็มทุกหลัง → บอกให้รู้ (บ้านที่ถูกจองยังขึ้น "ถูกจองแล้ว" ตามเดิม)
   let full = false;
   if (hasDates()) for (let d = state.checkin; d < state.checkout && !full; d = addDays(d, 1)) full = freeOn(d) === 0;
