@@ -15,7 +15,7 @@ const PROMPTPAY = '0909365562';
 const DEPOSIT_RATE = 0.5;
 const HOLD_HOURS = 6;
 const TENT_PRICE = 200;      // นำเต็นท์มาเอง บาท/ท่าน/คืน — ต้องตรงกับ Code.gs
-const TENT_RENT = 1200;      // เช่าเต็นท์ของรีสอร์ท บาท/หลัง/คืน (พร้อมเครื่องนอน 2 ชุด + พัดลม) — ต้องตรงกับ Code.gs
+const TENT_RENT = 1300;      // เช่าเต็นท์ของรีสอร์ท บาท/หลัง/คืน (พร้อมเครื่องนอน 2 ชุด พัดลม ปลั๊ก) — ต้องตรงกับ Code.gs
 const TENT_RENT_SLEEPS = 2;  // เต็นท์เช่า 1 หลังนอนได้ 2 ท่าน
 const SAME_DAY_CUTOFF = 18;  // หลัง 18:00 น. ปิดรับจองเข้าพักวันนี้ทางเว็บ — ต้องตรงกับ Code.gs
 
@@ -41,7 +41,7 @@ function promptPayPayload(phone, amount) {
 // TODO: เปลี่ยนรูปตัวอย่างเป็นรูปจริงของแต่ละหลัง
 const HOUSES = [
   {
-    id: 'lagoon-1', name: 'Lagoon 1', type: 'บ้านหลังเล็ก', guests: 2, price: 1500,
+    id: 'lagoon-1', name: 'Lagoon 1', type: 'บ้านหลังเล็ก', guests: 2, price: 1300,
     features: ['1 เตียงใหญ่', 'ห้องน้ำในตัว'],
     photos: [
       { src: 'img/houses.jpg', alt: 'รูปตัวอย่าง: บ้านพักไม้ท่ามกลางสนามหญ้า' },
@@ -50,18 +50,10 @@ const HOUSES = [
     ],
   },
   {
-    id: 'lagoon-2', name: 'Lagoon 2', type: 'บ้านหลังเล็ก', guests: 2, price: 1500,
+    id: 'lagoon-2', name: 'Lagoon 2', type: 'บ้านหลังเล็ก', guests: 2, price: 1300,
     features: ['1 เตียงใหญ่', 'ห้องน้ำในตัว'],
     photos: [
       { src: 'img/house-orchid.jpg', alt: 'รูปตัวอย่าง: บ้านพักไม้' },
-      { src: 'img/houses.jpg', alt: 'รูปตัวอย่าง: บ้านพักไม้ท่ามกลางสนามหญ้า' },
-      { src: 'img/lake-view.jpg', alt: 'รูปตัวอย่าง: วิวทะเลสาบ' },
-    ],
-  },
-  {
-    id: 'lagoon-3', name: 'Lagoon 3', type: 'บ้านหลังเล็ก', guests: 2, price: 1500,
-    features: ['1 เตียงใหญ่', 'ห้องน้ำในตัว'],
-    photos: [
       { src: 'img/houses.jpg', alt: 'รูปตัวอย่าง: บ้านพักไม้ท่ามกลางสนามหญ้า' },
       { src: 'img/lake-view.jpg', alt: 'รูปตัวอย่าง: วิวทะเลสาบ' },
     ],
@@ -86,7 +78,7 @@ const HOUSES = [
   },
   {
     id: 'studio', name: 'Lagoon Studio', type: 'บ้านหลังใหม่ สไตล์โมเดิร์น', guests: 2, price: 1500,
-    features: ['1 เตียงใหญ่', 'ห้องน้ำในตัว'],
+    features: ['2 เตียง', 'ห้องน้ำในตัว'],
     photos: [
       { src: 'img/house-orchid.jpg', alt: 'รูปตัวอย่าง: บ้านพัก' },
       { src: 'img/sunset.jpg', alt: 'รูปตัวอย่าง: พระอาทิตย์ตกริมทะเลสาบ' },
