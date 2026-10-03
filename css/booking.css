@@ -61,13 +61,31 @@ body:has(.book-bar:not([hidden])) { padding-bottom: var(--bar-h, 110px); }
 }
 .retry:hover { background: var(--forest); color: var(--bg); }
 
+/* ---------- ปุ่มลัด 3 แบบที่พัก (บ้าน / นำเต็นท์มาเอง / เช่าเต็นท์) ----------
+   จอ 360px: พื้นที่ราว 320px → 3 ช่องเท่ากัน ช่องละ ~101px · ตัวหนังสือราคาขึ้นบรรทัดใหม่ได้ */
+.type-pick { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; max-width: 640px; margin: -24px 0 32px; }
+.type-pick a {
+  display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 2px; min-width: 0; min-height: 64px;
+  padding: 10px 6px; border: 1.5px solid var(--line); border-radius: var(--radius-sm, 12px); background: var(--surface);
+  color: var(--ink); text-align: center; text-decoration: none; line-height: 1.3; transition: border-color .2s, background .2s;
+}
+.type-pick a:hover { border-color: var(--forest); }
+.type-pick svg { width: 24px; height: 24px; margin-bottom: 2px; fill: none; stroke: var(--forest); stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; }
+.type-pick span { font-weight: 600; font-size: .9rem; overflow-wrap: anywhere; }
+.type-pick small { color: var(--muted); font-size: .76rem; overflow-wrap: anywhere; }
+.type-pick a.on { border-color: var(--forest); background: color-mix(in srgb, var(--forest) 10%, var(--surface)); }
+.type-pick a.on span { color: var(--forest); }
+.late-note:not([hidden]) + .type-pick { margin-top: 16px; } /* มีข้อความหลัง 18:00 คั่นอยู่ → ไม่ดึงขึ้นไปทับ */
+@media (max-width: 420px) { .type-pick span { font-size: .84rem; } .type-pick small { font-size: .72rem; } }
+
 /* ---------- แผนผัง ---------- */
-.map { margin: 0 0 56px; max-width: 800px; }
+.map { margin: 0 0 56px; max-width: 800px; scroll-margin-top: 56px; }
 /* แผนผังมุมสูง (จากงาน Claude Design): วาดที่ขนาด 800×640 แล้ว js/booking.js ย่อด้วย --s ให้พอดีจอ
    จอแคบมาก ย่อไม่ต่ำกว่า 0.45 แล้วเลื่อนซ้ายขวาดูได้ (ย่อต่ำกว่า 0.7 → คลาส is-small ขยายตัวหนังสือ) */
 .aerial-scroll { overflow-x: auto; border-radius: var(--radius-sm, 12px); scrollbar-width: thin; }
 /* ยังเลื่อนไปทางขวาได้อีก → ขอบขวาจางลงเป็นคำใบ้ */
 .aerial-scroll.can-scroll { -webkit-mask-image: linear-gradient(to right, #000 calc(100% - 32px), rgba(0,0,0,.25)); mask-image: linear-gradient(to right, #000 calc(100% - 32px), rgba(0,0,0,.25)); }
+.map.flash .aerial-scroll { box-shadow: 0 0 0 3px var(--forest); }
 .aerial-fit { width: calc(800px * var(--s, 1)); height: calc(640px * var(--s, 1)); }
 .aerial {
   position: relative; width: 800px; height: 640px; overflow: hidden; transform: scale(var(--s, 1)); transform-origin: 0 0;
@@ -81,9 +99,20 @@ body:has(.book-bar:not([hidden])) { padding-bottom: var(--bar-h, 110px); }
 .aerial .road span { position: absolute; left: 16px; top: 9px; z-index: 1; padding: 1px 12px; border-radius: 999px; background: rgba(20,22,19,.78); color: #ece8df; font-size: 13px; }
 .aerial .tree { position: absolute; background: radial-gradient(circle at 34% 30%, #8AA477 0%, #5A7448 45%, #38492F 100%); box-shadow: 10px 14px 16px rgba(15,25,8,.45); }
 .aerial .tree i { position: absolute; background: radial-gradient(circle at 35% 32%, #94AD80 0%, #61794D 50%, #3E5233 100%); opacity: .92; }
-.aerial .tents { position: absolute; left: 456px; top: 368px; display: flex; gap: 18px; }
+/* ลานกางเต็นท์บนแผนผัง = ปุ่ม (กดแล้วเลื่อนไปการ์ดลานกางเต็นท์) · จุดกึ่งกลางอยู่ที่ x=493px เหมือนเดิม
+   เต็นท์ + ป้ายวางในปุ่ม ตำแหน่งจึงขยับตามปุ่มเสมอ · z-index: ให้ป้ายอยู่เหนือแนวตลิ่ง (.bank) ถ้าเลยลงไปนิดหน่อย */
+.aerial .tent-spot {
+  position: absolute; left: 493px; top: 356px; z-index: 2; transform: translateX(-50%);
+  display: flex; flex-direction: column; align-items: center; gap: 8px;
+  padding: 10px 10px 4px; border: 0; border-radius: 14px; background: transparent; color: inherit; font: inherit; cursor: pointer;
+  transition: background .2s, box-shadow .2s;
+}
+.aerial .tent-spot:hover, .aerial .tent-spot:focus-visible { background: rgba(20,22,19,.22); outline: 2px solid var(--forest); outline-offset: 2px; }
+.aerial .tent-spot.is-picked { background: rgba(20,22,19,.28); box-shadow: 0 0 0 2px var(--forest); }
+.aerial .tent-spot.is-picked .tents-label { background: var(--forest); color: var(--bg); }
+.aerial .tents { display: flex; gap: 18px; }
 .aerial .tents i { width: 28px; height: 28px; background: linear-gradient(135deg, #F1EDE3 0 50%, #D6CDBA 50% 100%); transform: rotate(45deg); box-shadow: 5px 6px 8px rgba(20,30,10,.35); }
-.aerial .tents-label { position: absolute; left: 493px; top: 402px; transform: translateX(-50%); white-space: nowrap; padding: 1px 10px; border-radius: 999px; background: rgba(20,22,19,.7); font-size: 12px; line-height: 1.4; color: #F1EDE3; font-weight: 500; }
+.aerial .tents-label { display: block; white-space: nowrap; padding: 1px 10px; border-radius: 999px; background: rgba(20,22,19,.7); font-size: 12px; line-height: 1.4; color: #F1EDE3; font-weight: 500; }
 .aerial .row { position: absolute; left: 50%; top: 150px; transform: translateX(-50%); display: flex; gap: 10px; align-items: flex-end; border: 0; padding: 0; } /* จัดกลางภาพวาด 800px (ป้ายมีราคา จอเล็กตัวหนังสือใหญ่ แถว ~750px ยังพอดี) · border/padding: กัน .row ของตารางราคาใน style.css */
 .aerial .bank { position: absolute; left: 0; top: 424px; width: 800px; height: 34px; background-color: #A39276; background-image: radial-gradient(circle at 20% 30%, #BBAA88 0 3px, transparent 4px), radial-gradient(circle at 70% 65%, #8A795B 0 3px, transparent 4px), radial-gradient(circle at 45% 80%, #B3A280 0 2px, transparent 3px), radial-gradient(circle at 85% 20%, #978664 0 2.5px, transparent 3.5px); background-size: 14px 12px, 17px 13px, 11px 10px, 19px 15px; box-shadow: inset 0 3px 4px rgba(50,60,30,.35); }
 .aerial .water { position: absolute; left: 0; top: 458px; width: 800px; height: 182px; background: linear-gradient(180deg, #355F63 0%, #437A7D 35%, #4F8B8D 100%); }
@@ -99,7 +128,10 @@ body:has(.book-bar:not([hidden])) { padding-bottom: var(--bar-h, 110px); }
 .aerial .water-sub { position: absolute; left: 50%; top: 146px; transform: translateX(-50%); white-space: nowrap; padding: 1px 10px; border-radius: 999px; background: rgba(20,22,19,.7); color: #E4ECE6; font-size: 13px; line-height: 1.4; }
 /* จอเล็ก (แผนผังย่อเหลือน้อยกว่า 0.7 เท่า): ขยายตัวหนังสือในภาพวาด ให้ย่อแล้วยังอ่านได้ราว 10px ขึ้นไป */
 .is-small .aerial .road span { font-size: 20px; line-height: 1.4; top: 8px; }
-.is-small .aerial .tents-label { font-size: 18px; top: 400px; }
+/* จอเล็ก: ป้ายชื่อบ้านสูงขึ้น → ลานเต็นท์ขยับลงนิด และวางป้ายไว้ข้างเต็นท์ (แนวนอน) ไม่ให้ทับตลิ่ง/น้ำ
+   กว้างรวมราว 340px รอบจุด x=493 → อยู่ในช่วง ~320–665px ไม่เกินภาพวาด 800px */
+.is-small .aerial .tent-spot { top: 374px; flex-direction: row; gap: 14px; padding: 8px 10px 8px 14px; }
+.is-small .aerial .tents-label { font-size: 18px; }
 .is-small .aerial .water-title { font-size: 28px; top: 92px; }
 .is-small .aerial .water-sub { font-size: 20px; top: 142px; }
 .is-small .m .pill { padding: 4px 10px; white-space: nowrap; }
@@ -166,8 +198,11 @@ body:has(.book-bar:not([hidden])) { padding-bottom: var(--bar-h, 110px); }
 .house.is-booked .status { color: var(--ink); background: var(--line); padding: 0 10px; border-radius: 999px; }
 .house-type { color: var(--muted); font-size: .92rem; margin: 2px 0 6px; }
 /* การ์ดลานกางเต็นท์ + ปุ่ม − / + */
-.tent-card { margin: 24px 0 0; padding: 20px; border: 1px solid var(--line); border-radius: var(--radius); background: var(--surface); transition: box-shadow .3s ease; }
-.tent-card h3 { margin: 0 0 2px; }
+/* อยู่ใต้แผนผังทันที ก่อนกล่อง "บ้านทุกหลังมี" */
+.tent-card { margin: -24px 0 32px; padding: 20px; border: 1px solid var(--line); border-radius: var(--radius); background: var(--surface); transition: box-shadow .3s ease; scroll-margin-top: 56px; } /* + scroll-padding-top 64px ใน style.css = เว้นจากขอบบน ~120px */
+.tent-card.flash { box-shadow: 0 0 0 3px var(--forest); }
+.tent-card h3 { margin: 0 0 2px; display: flex; align-items: center; gap: 8px; }
+.tent-card h3 svg { width: 24px; height: 24px; flex: none; fill: none; stroke: var(--forest); stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; }
 .qty-row { display: flex; align-items: center; justify-content: space-between; gap: 12px 20px; flex-wrap: wrap; padding: 14px 0 0; margin-top: 14px; border-top: 1px solid var(--line); }
 .qty-row small { display: block; color: var(--muted); font-size: .86rem; }
 .qty { display: inline-flex; align-items: center; gap: 8px; }

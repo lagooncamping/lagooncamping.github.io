@@ -24,7 +24,7 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Anuphan:wght@400;500;600&family=Chonburi&display=swap">
   <link rel="stylesheet" href="css/style.css?v=20261003d">
-  <link rel="stylesheet" href="css/booking.css?v=20261003d">
+  <link rel="stylesheet" href="css/booking.css?v=20261003e">
 </head>
 <body>
 
@@ -60,7 +60,7 @@
       <section id="step-pick" aria-labelledby="pick-h">
         <div class="step-head">
           <span class="eyebrow">จองที่พัก</span>
-          <h1 id="pick-h" tabindex="-1">เลือกวันและบ้านพัก</h1>
+          <h1 id="pick-h" tabindex="-1">เลือกวันและที่พัก</h1>
         </div>
 
         <div class="dates">
@@ -74,9 +74,26 @@
         <p class="nights" id="nights" aria-live="polite">เลือกวันเข้าพักก่อน แล้วติ๊กเลือกบ้านที่ว่าง</p>
         <p class="hint late-note" id="late-note" hidden></p>
 
+        <!-- ปุ่มลัด 3 แบบที่พัก: กดแล้วเลื่อนไปที่แผนผังบ้าน หรือการ์ดลานกางเต็นท์ (js/booking.js ดู data-jump)
+             ราคาเริ่มต้นของบ้านคำนวณจากรายการบ้านใน js/booking.js · ราคาเต็นท์ต้องตรงกับ TENT_PRICE / TENT_RENT -->
+        <nav class="type-pick" aria-label="เลือกแบบที่พัก">
+          <a href="#map" class="tp-house" data-jump="#map">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 11 12 4l9 7M5 9.5V20h14V9.5M10 20v-5h4v5"/></svg>
+            <span>บ้านพักริมน้ำ</span><small id="tp-house-price">เริ่ม 1,300 บาท/คืน</small>
+          </a>
+          <a href="#tents" class="tp-own" data-jump="#tents" data-focus="#tent-guests">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M2 20h20M3 20 12 4l9 16M9.5 20 12 15l2.5 5"/></svg>
+            <span>นำเต็นท์มาเอง</span><small>200 บาท/ท่าน/คืน</small>
+          </a>
+          <a href="#tents" class="tp-rent" data-jump="#tents" data-focus="#tent-rent">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M2 20h20M3 20 12 4l9 16M7 20v-3.5h10V20M8.5 16.5v-1.5h3v1.5"/></svg>
+            <span>เช่าเต็นท์</span><small>1,300 บาท/หลัง · นอน 2 ท่าน</small>
+          </a>
+        </nav>
+
         <!-- แผนผังมุมสูง (ออกแบบใน Claude Design): บ้านเรียงแถวเดียวริมเขื่อน ซ้ายไปขวา Lagoon 1–2, Family 1–2, Studio
              ภาพวาดขนาด 800×640 แล้วย่อให้พอดีจอด้วย js/booking.js (จอเล็กเลื่อนซ้ายขวาได้) -->
-        <figure class="map">
+        <figure class="map" id="map">
           <div class="aerial-scroll">
           <div class="aerial-fit">
           <div class="aerial" role="group" aria-label="แผนผังบ้านพักมุมสูง กดที่บ้านเพื่อดูรูปและเลือก">
@@ -96,8 +113,11 @@
               <i class="tree" style="left:250px;top:370px;width:40px;height:40px;border-radius:42% 58% 53% 47% / 50% 52% 48% 50%"><i style="left:17px;top:-5px;width:25px;height:25px;border-radius:48% 52% 44% 56% / 52% 45% 55% 48%"></i></i>
               <i class="tree" style="left:730px;top:360px;width:50px;height:50px;border-radius:48% 52% 44% 56% / 52% 45% 55% 48%"><i style="left:21px;top:-6px;width:31px;height:31px;border-radius:55% 45% 50% 50% / 45% 55% 48% 52%"></i></i>
             </div>
-            <div class="tents"><i></i><i></i></div>
-            <span class="tents-label">ลานกางเต็นท์</span>
+            <!-- ลานกางเต็นท์บนแผนผัง: กดแล้วเลื่อนไปที่การ์ดลานกางเต็นท์ (ห้ามใส่คลาส m — คลาสนั้นใช้กับบ้านเท่านั้น) -->
+            <button type="button" class="tent-spot" data-jump="#tents" aria-label="ลานกางเต็นท์ ดูราคาและเลือกจำนวน">
+              <span class="tents" aria-hidden="true"><i></i><i></i></span>
+              <span class="tents-label">ลานกางเต็นท์ · 200฿/ท่าน</span>
+            </button>
             <div class="row">
               <button class="m" type="button" data-house="lagoon-1" style="--w:100px;--rh:92px">
                 <span class="roof"><i></i><i></i></span><span class="deck"></span>
@@ -140,27 +160,9 @@
           <figcaption>แผนผังจำลอง กดที่บ้านเพื่อดูรูปและเลือก</figcaption>
         </figure>
 
-        <!-- สิ่งที่บ้านทุกหลังมีเหมือนกัน -->
-        <div class="house-all">
-          <p class="house-all-title">บ้านทุกหลังอยู่แนวเดียวกัน ติดริมเขื่อน และมี</p>
-          <ul class="house-feats">
-            <li><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 2v20M4.9 6.5l14.2 11M19.1 6.5 4.9 17.5M9 3.5l3 2.5 3-2.5M9 20.5l3-2.5 3 2.5"/></svg>แอร์</li>
-            <li><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 20h18M5 20V10h14v10M3 10l9-6 9 6"/><path d="M9 20v-5h6v5"/></svg>ระเบียงเห็นวิวน้ำ</li>
-            <li><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3s6 6.5 6 11a6 6 0 0 1-12 0c0-4.5 6-11 6-11z"/></svg>ห้องน้ำในตัว มีน้ำอุ่น</li>
-            <li><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="6" y="2.5" width="12" height="19" rx="2"/><path d="M6 10h12M9 6v2M9 13v3"/></svg>ตู้เย็น</li>
-            <li><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M2 9a15 15 0 0 1 20 0M5 12.5a10 10 0 0 1 14 0M8.5 16a5 5 0 0 1 7 0"/><circle cx="12" cy="19.5" r="1"/></svg>Wi‑Fi</li>
-            <li><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 20h14l-1.5-9h-11zM9 11V8a3 3 0 0 1 6 0v3M17.5 13l3-2"/></svg>กาต้มน้ำร้อน</li>
-            <li><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 9h12v5a5 5 0 0 1-5 5H9a5 5 0 0 1-5-5zM16 10h2a2 2 0 0 1 0 4h-2M8 3c0 1.5 1 1.5 1 3M12 3c0 1.5 1 1.5 1 3"/></svg>กาแฟยามเช้า</li>
-          </ul>
-          <p class="house-all-note">ต้องการเพิ่มคนหรือเสริมเตียง สอบถามได้ที่ LINE หรือโทร 081-930-4969</p>
-          <p class="house-all-note">⛺ มากันหลายคน? เลือกบ้านได้หลายหลัง และเพิ่มเต็นท์ได้ที่การ์ด "ลานกางเต็นท์" ใต้รายการบ้าน (จองเฉพาะเต็นท์ก็ได้)</p>
-        </div>
-
-        <div class="houses" id="houses"></div>
-
         <!-- ===== ลานกางเต็นท์: จองคู่กับบ้าน หรือจองเฉพาะเต็นท์ก็ได้ (ราคาอยู่ใน js/booking.js และ Code.gs) ===== -->
         <section class="tent-card" id="tents" aria-labelledby="tent-h">
-          <h3 id="tent-h">⛺ ลานกางเต็นท์ริมน้ำ</h3>
+          <h3 id="tent-h"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M2 20h20M3 20 12 4l9 16M9.5 20 12 15l2.5 5"/></svg>ลานกางเต็นท์ริมน้ำ</h3>
           <p class="house-type">เพิ่มคู่กับบ้านพัก หรือจองเฉพาะเต็นท์ก็ได้ · มีจุดพ่วงปลั๊กไฟ และห้องน้ำแยกชาย–หญิง</p>
           <div class="qty-row">
             <div><b>นำเต็นท์มาเอง</b><small>200 บาท/ท่าน/คืน (นับผู้ใหญ่และเด็ก 15 ปีขึ้นไป · เด็ก 10–14 ปี 100 บาท ต่ำกว่า 10 ปีฟรี ชำระหน้างาน)</small></div>
@@ -181,6 +183,24 @@
             </div>
           </div>
         </section>
+
+        <!-- สิ่งที่บ้านทุกหลังมีเหมือนกัน -->
+        <div class="house-all">
+          <p class="house-all-title">บ้านทุกหลังอยู่แนวเดียวกัน ติดริมเขื่อน และมี</p>
+          <ul class="house-feats">
+            <li><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 2v20M4.9 6.5l14.2 11M19.1 6.5 4.9 17.5M9 3.5l3 2.5 3-2.5M9 20.5l3-2.5 3 2.5"/></svg>แอร์</li>
+            <li><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 20h18M5 20V10h14v10M3 10l9-6 9 6"/><path d="M9 20v-5h6v5"/></svg>ระเบียงเห็นวิวน้ำ</li>
+            <li><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3s6 6.5 6 11a6 6 0 0 1-12 0c0-4.5 6-11 6-11z"/></svg>ห้องน้ำในตัว มีน้ำอุ่น</li>
+            <li><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="6" y="2.5" width="12" height="19" rx="2"/><path d="M6 10h12M9 6v2M9 13v3"/></svg>ตู้เย็น</li>
+            <li><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M2 9a15 15 0 0 1 20 0M5 12.5a10 10 0 0 1 14 0M8.5 16a5 5 0 0 1 7 0"/><circle cx="12" cy="19.5" r="1"/></svg>Wi‑Fi</li>
+            <li><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 20h14l-1.5-9h-11zM9 11V8a3 3 0 0 1 6 0v3M17.5 13l3-2"/></svg>กาต้มน้ำร้อน</li>
+            <li><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 9h12v5a5 5 0 0 1-5 5H9a5 5 0 0 1-5-5zM16 10h2a2 2 0 0 1 0 4h-2M8 3c0 1.5 1 1.5 1 3M12 3c0 1.5 1 1.5 1 3"/></svg>กาแฟยามเช้า</li>
+          </ul>
+          <p class="house-all-note">ต้องการเพิ่มคนหรือเสริมเตียง สอบถามได้ที่ LINE หรือโทร 081-930-4969</p>
+          <p class="house-all-note">มากันหลายคน? เลือกบ้านได้หลายหลัง และ<a href="#tents" data-jump="#tents">เพิ่มเต็นท์ได้ที่การ์ดลานกางเต็นท์ด้านบน (จองเฉพาะเต็นท์ก็ได้)</a></p>
+        </div>
+
+        <div class="houses" id="houses"></div>
       </section>
 
       <!-- ===== ขั้นที่ 2: กรอกข้อมูล ===== -->
@@ -336,7 +356,7 @@
   <!-- สร้างรูป QR พร้อมเพย์ -->
   <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcode-generator/1.4.4/qrcode.min.js" defer></script>
   <script src="js/main.js" defer></script>
-  <script src="js/booking.js?v=20261003d" defer></script>
+  <script src="js/booking.js?v=20261003e" defer></script>
   <script src="js/lightbox.js" defer></script>
   <script src="js/nav.js?v=20261003d" defer></script>
 </body>

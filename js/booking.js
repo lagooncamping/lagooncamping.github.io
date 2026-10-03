@@ -203,6 +203,13 @@ function render() {
     : dated ? `${thaiDate(state.checkin)} – ${thaiDate(state.checkout)} · <b>${nights()} คืน</b>`
     : (state.checkin && state.checkout ? 'วันเช็กเอาต์ต้องหลังวันเช็กอิน' : 'เลือกวันเข้าพักก่อน แล้วติ๊กเลือกบ้านที่ว่าง');
 
+  // ปุ่มลัด 3 แบบที่พัก + ลานเต็นท์บนแผนผัง: ขึ้นสถานะ "เลือกแล้ว" ตามที่เลือกอยู่
+  const tentsOn = tentGuests() > 0 || tentRentals() > 0;
+  $('.tent-spot').classList.toggle('is-picked', tentsOn);
+  $('.tp-house').classList.toggle('on', state.selected.size > 0);
+  $('.tp-own').classList.toggle('on', tentGuests() > 0);
+  $('.tp-rent').classList.toggle('on', tentRentals() > 0);
+
   $('#bar').hidden = !hasItems() || $('#step-pick').hidden;
   if (hasItems()) {
     // บรรทัดแรก = รายการ (ยาวเกินตัดด้วย …) บรรทัดสอง = ยอดรวม (เห็นเสมอ)
@@ -284,6 +291,29 @@ document.querySelectorAll('.m').forEach((marker) => {
   marker.addEventListener('click', open);
 });
 
+// ---------- ปุ่ม/ลิงก์ที่มี data-jump (ปุ่มลัด 3 แบบที่พัก, ลานเต็นท์บนแผนผัง) → เลื่อนไปที่เป้าหมาย + ไฮไลต์ชั่วครู่ ----------
+// data-focus = ช่องตัวเลขที่จะโฟกัสปุ่ม "+" ข้างๆ ให้ (ไม่โฟกัสช่องพิมพ์ เพื่อไม่ให้แป้นพิมพ์มือถือเด้งขึ้นมา)
+// ระยะเว้นด้านบน (กันเมนูบังหัวการ์ด) ตั้งไว้ที่ scroll-margin-top ใน css/booking.css
+function flash(el, ms = 1200) {
+  el.classList.add('flash');
+  setTimeout(() => el.classList.remove('flash'), ms);
+}
+document.addEventListener('click', (e) => {
+  const link = e.target.closest('[data-jump]');
+  if (!link) return;
+  const target = $(link.dataset.jump);
+  if (!target) return;
+  e.preventDefault();
+  target.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  flash(target);
+  if (link.dataset.focus) {
+    const plus = document.querySelector(`[data-qty="${link.dataset.focus}"][data-d="1"]`);
+    if (plus) plus.focus({ preventScroll: true });
+  }
+});
+// ราคาเริ่มต้นบ้านบนปุ่มลัด: คำนวณจากรายการบ้านด้านบน (แก้ราคาบ้านแล้วปุ่มนี้เปลี่ยนตาม)
+$('#tp-house-price').textContent = `เริ่ม ${baht(Math.min(...HOUSES.map((h) => h.price)))} บาท/คืน`;
+
 // ---------- ย่อแผนผังมุมสูง (วาดไว้กว้าง 800px) ให้พอดีความกว้างจอ ไม่เล็กกว่า 0.45 เท่า (เล็กกว่านั้นเลื่อนซ้ายขวาเอา) ----------
 // ย่อเหลือน้อยกว่า 0.7 เท่า → ใส่คลาส is-small ให้ตัวหนังสือบนแผนผังใหญ่ขึ้น อ่านออกบนมือถือ
 const aerialBox = $('.aerial-scroll');
@@ -302,8 +332,8 @@ new ResizeObserver(fitAerial).observe(aerialBox);
 aerialBox.addEventListener('scroll', updateAerialHint, { passive: true });
 fitAerial();
 
-// ---------- มาจากลิงก์ชื่อบ้านในหน้าราคา (เช่น booking.html#house-family-1) → เลื่อนไปที่การ์ดนั้น ----------
-const linked = location.hash.startsWith('#house-') && document.getElementById(location.hash.slice(1));
+// ---------- มาจากลิงก์ในหน้าราคา/หน้าแรก (เช่น booking.html#house-family-1 หรือ booking.html#tents) → เลื่อนไปที่การ์ดนั้น ----------
+const linked = (location.hash.startsWith('#house-') || location.hash === '#tents') && document.getElementById(location.hash.slice(1));
 if (linked) {
   const jump = () => linked.scrollIntoView({ behavior: 'instant', block: 'start' });
   jump();
