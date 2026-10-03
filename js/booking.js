@@ -362,7 +362,7 @@ let calFocus = '';   // วันที่ที่กดปุ่ม Tab แล
 
 const monthAdd = (ym, n) => { const [y, m] = ym.split('-').map(Number); const d = new Date(y, m - 1 + n, 1); return `${d.getFullYear()}-${pad(d.getMonth() + 1)}`; };
 const monthDiff = (a, b) => { const [ay, am] = a.split('-').map(Number); const [by, bm] = b.split('-').map(Number); return (by - ay) * 12 + (bm - am); };
-const calCount = () => (calWide.matches ? 2 : 1);
+const calCount = () => 1; // เจ้าของขอให้แสดงเดือนเดียวทุกขนาดจอ
 const calMonths = () => Array.from({ length: calCount() }, (_, i) => monthAdd(firstMonth, calOffset + i));
 const thaiMonth = (ym) => `${TH_MONTHS[Number(ym.slice(5)) - 1]} ${Number(ym.slice(0, 4)) + 543}`;
 const shortThai = (iso) => { const d = new Date(iso + 'T00:00:00'); return `${TH_DOW[d.getDay()]} ${d.getDate()} ${TH_MONTHS_SHORT[d.getMonth()]}`; };

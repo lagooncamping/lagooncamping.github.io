@@ -58,8 +58,8 @@ body:has(.book-bar:not([hidden])) { padding-bottom: var(--bar-h, 110px); }
 @media (prefers-color-scheme: dark) { .full-note { color: var(--sun); } }
 
 /* ---------- ปฏิทินวันว่าง ----------
-   จอ 360px: พื้นที่ ~328px ÷ 7 ช่อง = ~46px ต่อวัน · ช่องสูง 44px กดง่าย · จอกว้าง 720px+ โชว์ 2 เดือนคู่กัน */
-.cal { max-width: 720px; margin: 16px 0 0; padding: 12px; border: 1px solid var(--line); border-radius: var(--radius-sm, 12px); background: var(--surface); }
+   จอ 360px: พื้นที่ ~328px ÷ 7 ช่อง = ~46px ต่อวัน · ช่องสูง 44px กดง่าย · แสดงเดือนเดียวทุกขนาดจอ */
+.cal { max-width: 440px; margin: 16px 0 0; padding: 12px; border: 1px solid var(--line); border-radius: var(--radius-sm, 12px); background: var(--surface); }
 .cal-head { display: flex; align-items: center; justify-content: space-between; gap: 8px; margin-bottom: 2px; }
 .cal-title { margin: 0; font-weight: 600; text-align: center; }
 .cal-nav {
@@ -74,14 +74,12 @@ body:has(.book-bar:not([hidden])) { padding-bottom: var(--bar-h, 110px); }
 .cal-months.two .cal-mname { display: block; }
 .cal-grid { display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)); gap: 2px 0; }
 .cal-dow { text-align: center; font-size: .75rem; color: var(--muted); padding: 0 0 2px; }
-.cal-dow:nth-child(6), .cal-dow:nth-child(7) { color: var(--clay); }
 .cal-day {
   position: relative; min-width: 0; min-height: 42px; padding: 1px 0; margin: 0;
   display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 0;
   border: 0; border-radius: 8px; background: transparent; color: var(--ink); font: inherit; line-height: 1.15; cursor: pointer;
   font-variant-numeric: tabular-nums;
 }
-.cal-day.is-wknd { background: color-mix(in srgb, var(--sun) 14%, transparent); }
 .cal-day:hover:not(:disabled) { box-shadow: inset 0 0 0 1.5px var(--forest); }
 .cal-day:focus-visible { outline: 3px solid var(--sun); outline-offset: 0; z-index: 1; }
 .cal-day:disabled { color: var(--muted); opacity: .45; cursor: default; background: transparent; }
@@ -109,7 +107,6 @@ body:has(.book-bar:not([hidden])) { padding-bottom: var(--bar-h, 110px); }
 .cal-legend .all { background: #2e7a45; }
 .cal-legend .some { background: #a35a00; }
 .cal-legend .full { background: var(--muted); }
-.cal-legend .wknd { border-radius: 3px; background: color-mix(in srgb, var(--sun) 35%, transparent); }
 @media (prefers-color-scheme: dark) { .cal-legend .all { background: #8fd19e; } .cal-legend .some { background: #f2b66d; } }
 .cal-status { margin: 6px 0 0; font-size: .85rem; color: var(--forest); font-weight: 500; }
 .cal-status:empty { display: none; }
