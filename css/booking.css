@@ -119,22 +119,6 @@ body:has(.book-bar:not([hidden])) { padding-bottom: var(--bar-h, 110px); }
 }
 .retry:hover { background: var(--forest); color: var(--bg); }
 
-/* ---------- ปุ่มลัด 3 แบบที่พัก (บ้าน / นำเต็นท์มาเอง / เช่าเต็นท์) ----------
-   จอ 360px: พื้นที่ราว 320px → 3 ช่องเท่ากัน ช่องละ ~101px · ตัวหนังสือราคาขึ้นบรรทัดใหม่ได้ */
-.type-pick { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; max-width: 640px; margin: -24px 0 32px; }
-.type-pick a {
-  display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 2px; min-width: 0; min-height: 64px;
-  padding: 10px 6px; border: 1.5px solid var(--line); border-radius: var(--radius-sm, 12px); background: var(--surface);
-  color: var(--ink); text-align: center; text-decoration: none; line-height: 1.3; transition: border-color .2s, background .2s;
-}
-.type-pick a:hover { border-color: var(--forest); }
-.type-pick svg { width: 24px; height: 24px; margin-bottom: 2px; fill: none; stroke: var(--forest); stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; }
-.type-pick span { font-weight: 600; font-size: .9rem; overflow-wrap: anywhere; }
-.type-pick small { color: var(--muted); font-size: .76rem; overflow-wrap: anywhere; }
-.type-pick a.on { border-color: var(--forest); background: color-mix(in srgb, var(--forest) 10%, var(--surface)); }
-.type-pick a.on span { color: var(--forest); }
-.late-note:not([hidden]) + .type-pick { margin-top: 16px; } /* มีข้อความหลัง 18:00 คั่นอยู่ → ไม่ดึงขึ้นไปทับ */
-@media (max-width: 420px) { .type-pick span { font-size: .84rem; } .type-pick small { font-size: .72rem; } }
 
 /* ---------- แผนผัง ---------- */
 .map { margin: 0 0 56px; max-width: 800px; scroll-margin-top: 56px; }

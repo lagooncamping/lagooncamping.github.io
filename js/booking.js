@@ -277,9 +277,9 @@ function render() {
   // ปุ่มลัด 3 แบบที่พัก + ลานเต็นท์บนแผนผัง: ขึ้นสถานะ "เลือกแล้ว" ตามที่เลือกอยู่
   const tentsOn = tentGuests() > 0 || tentRentals() > 0;
   $('.tent-spot').classList.toggle('is-picked', tentsOn);
-  $('.tp-house').classList.toggle('on', state.selected.size > 0);
-  $('.tp-own').classList.toggle('on', tentGuests() > 0);
-  $('.tp-rent').classList.toggle('on', tentRentals() > 0);
+  $('.tp-house')?.classList.toggle('on', state.selected.size > 0);
+  $('.tp-own')?.classList.toggle('on', tentGuests() > 0);
+  $('.tp-rent')?.classList.toggle('on', tentRentals() > 0);
 
   $('#bar').hidden = !hasItems() || $('#step-pick').hidden;
   if (hasItems()) {
@@ -494,7 +494,6 @@ document.addEventListener('click', (e) => {
   }
 });
 // ราคาเริ่มต้นบ้านบนปุ่มลัด: คำนวณจากรายการบ้านด้านบน (แก้ราคาบ้านแล้วปุ่มนี้เปลี่ยนตาม)
-$('#tp-house-price').textContent = `เริ่ม ${baht(Math.min(...HOUSES.map((h) => h.price)))} บาท/คืน`;
 
 // ---------- ย่อแผนผังมุมสูง (วาดไว้กว้าง 800px) ให้พอดีความกว้างจอ ไม่เล็กกว่า 0.45 เท่า (เล็กกว่านั้นเลื่อนซ้ายขวาเอา) ----------
 // ย่อเหลือน้อยกว่า 0.7 เท่า → ใส่คลาส is-small ให้ตัวหนังสือบนแผนผังใหญ่ขึ้น อ่านออกบนมือถือ

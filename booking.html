@@ -24,7 +24,7 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Anuphan:wght@400;500;600&family=Chonburi&display=swap">
   <link rel="stylesheet" href="css/style.css?v=20261003h">
-  <link rel="stylesheet" href="css/booking.css?v=20261003j">
+  <link rel="stylesheet" href="css/booking.css?v=20261003k">
 </head>
 <body>
 
@@ -99,23 +99,6 @@
         <p class="nights" id="nights" aria-live="polite">เลือกวันเข้าพักก่อน แล้วกดเลือกบ้านที่ว่าง</p>
         <p class="hint full-note" id="full-note" hidden>ช่วงนี้มีคืนที่เต็มทุกหลัง (ลานกางเต็นท์ยังจองได้) ลองเลือกวันอื่น หรือจองเฉพาะเต็นท์</p>
         <p class="hint late-note" id="late-note" hidden></p>
-
-        <!-- ปุ่มลัด 3 แบบที่พัก: กดแล้วเลื่อนไปที่แผนผังบ้าน หรือการ์ดลานกางเต็นท์ (js/booking.js ดู data-jump)
-             ราคาเริ่มต้นของบ้านคำนวณจากรายการบ้านใน js/booking.js · ราคาเต็นท์ต้องตรงกับ TENT_PRICE / TENT_RENT -->
-        <nav class="type-pick" aria-label="เลือกแบบที่พัก">
-          <a href="#map" class="tp-house" data-jump="#map">
-            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 11 12 4l9 7M5 9.5V20h14V9.5M10 20v-5h4v5"/></svg>
-            <span>บ้านพักริมน้ำ</span><small id="tp-house-price">เริ่ม 1,300 บาท/คืน</small>
-          </a>
-          <a href="#tents" class="tp-own" data-jump="#tents" data-focus="#tent-guests">
-            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M2 20h20M3 20 12 4l9 16M9.5 20 12 15l2.5 5"/></svg>
-            <span>นำเต็นท์มาเอง</span><small>200 บาท/ท่าน/คืน</small>
-          </a>
-          <a href="#tents" class="tp-rent" data-jump="#tents" data-focus="#tent-rent">
-            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M2 20h20M3 20 12 4l9 16M7 20v-3.5h10V20M8.5 16.5v-1.5h3v1.5"/></svg>
-            <span>เช่าเต็นท์</span><small>1,300 บาท/หลัง · นอน 2 ท่าน</small>
-          </a>
-        </nav>
 
         <!-- แผนผังมุมสูง (ออกแบบใน Claude Design): บ้านเรียงแถวเดียวริมเขื่อน ซ้ายไปขวา Lagoon 1–2, Family 1–2, Studio
              ภาพวาดขนาด 800×640 แล้วย่อให้พอดีจอด้วย js/booking.js (จอเล็กเลื่อนซ้ายขวาได้) -->
@@ -396,7 +379,7 @@
   <!-- สร้างรูป QR พร้อมเพย์ -->
   <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcode-generator/1.4.4/qrcode.min.js" defer></script>
   <script src="js/main.js?v=20261003h" defer></script>
-  <script src="js/booking.js?v=20261003j" defer></script>
+  <script src="js/booking.js?v=20261003k" defer></script>
   <script src="js/lightbox.js" defer></script>
   <script src="js/nav.js?v=20261003d" defer></script>
 </body>
