@@ -24,7 +24,7 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Anuphan:wght@400;500;600&family=Chonburi&display=swap">
   <link rel="stylesheet" href="css/style.css?v=20261003f">
-  <link rel="stylesheet" href="css/booking.css?v=20261003f">
+  <link rel="stylesheet" href="css/booking.css?v=20261003g">
 </head>
 <body>
 
@@ -77,7 +77,28 @@
             <input type="date" id="checkout" required>
           </label>
         </div>
-        <p class="nights" id="nights" aria-live="polite">เลือกวันเข้าพักก่อน แล้วติ๊กเลือกบ้านที่ว่าง</p>
+
+        <!-- ปฏิทินวันว่าง: แตะวันแรก = เช็กอิน แตะวันถัดไป = เช็กเอาต์ (ซิงก์กับช่องวันที่ด้านบนทั้งสองทาง)
+             ตัวเลขใต้วันที่ = บ้านว่างกี่หลังในคืนนั้น นับจากการจองที่โหลดมา (js/booking.js สร้างวันในปฏิทินให้) -->
+        <div class="cal" id="cal">
+          <div class="cal-head">
+            <button type="button" class="cal-nav" id="cal-prev" aria-label="เดือนก่อนหน้า">‹</button>
+            <p class="cal-title" id="cal-title" aria-live="polite"></p>
+            <button type="button" class="cal-nav" id="cal-next" aria-label="เดือนถัดไป">›</button>
+          </div>
+          <div class="cal-months" id="cal-months"></div>
+          <ul class="cal-legend" aria-label="คำอธิบายสี">
+            <li><i class="all"></i>ว่างทุกหลัง</li>
+            <li><i class="some"></i>ว่างบางหลัง</li>
+            <li><i class="full"></i>เต็ม</li>
+            <li><i class="wknd"></i>ศุกร์–เสาร์</li>
+          </ul>
+          <p class="cal-status" id="cal-status" aria-live="polite"></p>
+          <p class="cal-note">ตัวเลขใต้วันที่ = บ้านว่างคืนนั้น/ทั้งหมด<br>ลานกางเต็นท์ไม่จำกัดจำนวน จองได้ทุกวัน</p>
+        </div>
+
+        <p class="nights" id="nights" aria-live="polite">เลือกวันเข้าพักก่อน แล้วกดเลือกบ้านที่ว่าง</p>
+        <p class="hint full-note" id="full-note" hidden>ช่วงนี้มีคืนที่เต็มทุกหลัง (ลานกางเต็นท์ยังจองได้) ลองเลือกวันอื่น หรือจองเฉพาะเต็นท์</p>
         <p class="hint late-note" id="late-note" hidden></p>
 
         <!-- ปุ่มลัด 3 แบบที่พัก: กดแล้วเลื่อนไปที่แผนผังบ้าน หรือการ์ดลานกางเต็นท์ (js/booking.js ดู data-jump)
@@ -191,7 +212,9 @@
         </section>
 
         <!-- สิ่งที่บ้านทุกหลังมีเหมือนกัน -->
-        <div class="house-all">
+        <!-- สิ่งที่บ้านทุกหลังมีเหมือนกัน (ย่อไว้ กดเพื่อดู) -->
+        <details class="house-all">
+          <summary>สิ่งอำนวยความสะดวกทุกหลัง</summary>
           <p class="house-all-title">บ้านทุกหลังอยู่แนวเดียวกัน ติดริมเขื่อน และมี</p>
           <ul class="house-feats">
             <li><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 2v20M4.9 6.5l14.2 11M19.1 6.5 4.9 17.5M9 3.5l3 2.5 3-2.5M9 20.5l3-2.5 3 2.5"/></svg>แอร์</li>
@@ -204,8 +227,9 @@
           </ul>
           <p class="house-all-note">ต้องการเพิ่มคนหรือเสริมเตียง สอบถามได้ที่ LINE หรือโทร 081-930-4969</p>
           <p class="house-all-note">มากันหลายคน? เลือกบ้านได้หลายหลัง และ<a href="#tents" data-jump="#tents">เพิ่มเต็นท์ได้ที่การ์ดลานกางเต็นท์ด้านบน (จองเฉพาะเต็นท์ก็ได้)</a></p>
-        </div>
+        </details>
 
+        <!-- รายการบ้านแบบย่อ (js/booking.js สร้างให้จากรายการบ้าน) · กด "ดูรายละเอียด" เพื่อดูรูปและข้อมูลเต็ม -->
         <div class="houses" id="houses"></div>
       </section>
 
@@ -369,7 +393,7 @@
   <!-- สร้างรูป QR พร้อมเพย์ -->
   <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcode-generator/1.4.4/qrcode.min.js" defer></script>
   <script src="js/main.js?v=20261003f" defer></script>
-  <script src="js/booking.js?v=20261003f" defer></script>
+  <script src="js/booking.js?v=20261003g" defer></script>
   <script src="js/lightbox.js" defer></script>
   <script src="js/nav.js?v=20261003d" defer></script>
 </body>

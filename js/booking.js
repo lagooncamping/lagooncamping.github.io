@@ -165,26 +165,66 @@ const itemNames = () => [
   tentRentals() ? `เช่าเต็นท์ ${tentRentals()} หลัง` : '',
 ].filter(Boolean);
 
-// ---------- สร้างการ์ดบ้าน ----------
+// ---------- สร้างรายการบ้าน (แบบย่อ 1 แถวต่อหลัง) ----------
+// แถว = รูปเล็ก + ชื่อ + พักได้กี่ท่าน · เตียง + ราคา + สถานะ + ปุ่ม "เลือก"
+// กด "ดูรายละเอียด" → กางรูปหลายรูป (ปัดซ้ายขวา) และข้อมูลเต็มของหลังนั้น (กางได้ทีละหลัง)
+const bedInfo = (h) => (h.features || []).find((f) => !/ห้องน้ำ/.test(f)) || '';
 housesEl.innerHTML = HOUSES.map((h) => `
   <article class="house" id="house-${h.id}" data-house="${h.id}">
-    <div class="slides" role="region" tabindex="0" aria-label="รูป ${h.name} ปัดซ้ายขวาเพื่อดูรูปถัดไป">
-      ${h.photos.map((p) => `<img src="${p.src}" alt="${p.alt}" loading="lazy">`).join('')}
+    <div class="house-row">
+      <img class="house-thumb" src="${h.photos[0].src}" alt="${h.photos[0].alt}" loading="lazy">
+      <div class="house-info">
+        <div class="house-head"><h3>${h.name}</h3><span class="status"></span></div>
+        <p class="house-meta">พักได้ ${h.guests} ท่าน${bedInfo(h) ? ` · ${bedInfo(h)}` : ''}</p>
+        <p class="house-price"><b>${baht(h.price)}</b> บาท/คืน</p>
+      </div>
+      <div class="house-actions">
+        <button class="more" type="button" aria-expanded="false" aria-controls="more-${h.id}">ดูรายละเอียด</button>
+        <button class="pick" type="button" data-pick="${h.id}" aria-pressed="false" aria-label="เลือก ${h.name}">เลือก</button>
+      </div>
     </div>
-    <div class="slide-nav">
-      <button type="button" data-step="-1" aria-label="รูปก่อนหน้า">‹</button>
-      <span class="dots">${h.photos.map((_, i) => `<i class="${i === 0 ? 'on' : ''}"></i>`).join('')}</span>
-      <button type="button" data-step="1" aria-label="รูปถัดไป">›</button>
+    <div class="house-more" id="more-${h.id}" hidden>
+      <div class="slides" role="region" tabindex="0" aria-label="รูป ${h.name} ปัดซ้ายขวาเพื่อดูรูปถัดไป">
+        ${h.photos.map((p) => `<img src="${p.src}" alt="${p.alt}" loading="lazy">`).join('')}
+      </div>
+      <div class="slide-nav">
+        <button type="button" data-step="-1" aria-label="รูปก่อนหน้า">‹</button>
+        <span class="dots">${h.photos.map((_, i) => `<i class="${i === 0 ? 'on' : ''}"></i>`).join('')}</span>
+        <button type="button" data-step="1" aria-label="รูปถัดไป">›</button>
+      </div>
+      <p class="house-type">${h.type}</p>
+      <ul class="house-feats">
+        <li>${ICON.guests}พักได้ ${h.guests} ท่าน</li>
+        ${(h.features || []).map((f) => `<li>${/ห้องน้ำ/.test(f) ? ICON.bath : ICON.bed}${f}</li>`).join('')}
+      </ul>
     </div>
-    <div class="house-head"><h3>${h.name}</h3><span class="status"></span></div>
-    <p class="house-type">${h.type}</p>
-    <ul class="house-feats">
-      <li>${ICON.guests}พักได้ ${h.guests} ท่าน</li>
-      ${(h.features || []).map((f) => `<li>${/ห้องน้ำ/.test(f) ? ICON.bath : ICON.bed}${f}</li>`).join('')}
-    </ul>
-    <p class="house-price"><b>${baht(h.price)}</b> บาท/คืน</p>
-    <label class="pick"><input type="checkbox" value="${h.id}" aria-label="เลือก ${h.name}"><span>เลือกบ้านหลังนี้</span></label>
   </article>`).join('');
+
+// กาง/ย่อรายละเอียดบ้าน (กางหลังใหม่ → หลังอื่นย่อเก็บ ให้หน้าไม่ยาวเกิน)
+function expandHouse(id, open = true) {
+  housesEl.querySelectorAll('.house').forEach((card) => {
+    const on = open && card.dataset.house === id;
+    card.querySelector('.house-more').hidden = !on;
+    card.querySelector('.more').setAttribute('aria-expanded', String(on));
+    card.querySelector('.more').textContent = on ? 'ซ่อนรายละเอียด' : 'ดูรายละเอียด';
+    card.classList.toggle('is-open', on);
+  });
+}
+housesEl.addEventListener('click', (e) => {
+  const more = e.target.closest('.more');
+  if (more) {
+    const id = more.closest('.house').dataset.house;
+    expandHouse(id, more.getAttribute('aria-expanded') !== 'true');
+    return;
+  }
+  // ปุ่ม "เลือก" / "✓ เลือกแล้ว"
+  const pick = e.target.closest('[data-pick]');
+  if (pick && !pick.disabled) {
+    const id = pick.dataset.pick;
+    state.selected.has(id) ? state.selected.delete(id) : state.selected.add(id);
+    render();
+  }
+});
 
 // ปุ่มเลื่อนรูป + จุดบอกตำแหน่งรูป
 housesEl.querySelectorAll('.house').forEach((card) => {
@@ -210,10 +250,13 @@ function render() {
 
     const card = $(`#house-${h.id}`);
     card.classList.toggle('is-booked', booked);
+    card.classList.toggle('is-picked', picked);
     card.querySelector('.status').textContent = !dated ? '' : booked ? 'ถูกจองแล้ว' : 'ว่าง';
-    const box = card.querySelector('input');
-    box.checked = picked;
-    box.disabled = !dated || booked;
+    const btn = card.querySelector('.pick');
+    btn.setAttribute('aria-pressed', String(picked));
+    btn.textContent = picked ? '✓ เลือกแล้ว' : 'เลือก';
+    btn.disabled = !dated || booked;
+    btn.setAttribute('aria-label', `${picked ? 'เลือกแล้ว' : 'เลือก'} ${h.name}${booked ? ' (ถูกจองแล้ว)' : ''}`);
 
     const marker = document.querySelector(`.m[data-house="${h.id}"]`);
     marker.classList.toggle('is-booked', booked);
@@ -228,7 +271,8 @@ function render() {
   $('#nights').innerHTML = state.loading ? 'กำลังเช็กวันว่าง…'
     : state.loadError ? `เช็กวันว่างไม่สำเร็จ กรุณาลองใหม่ หรือโทรจอง ${PHONE} <button type="button" class="retry" data-retry>ลองอีกครั้ง</button>`
     : dated ? `${thaiDate(state.checkin)} – ${thaiDate(state.checkout)} · <b>${nights()} คืน</b>`
-    : (state.checkin && state.checkout ? 'วันเช็กเอาต์ต้องหลังวันเช็กอิน' : 'เลือกวันเข้าพักก่อน แล้วติ๊กเลือกบ้านที่ว่าง');
+    : (state.checkin && state.checkout ? 'วันเช็กเอาต์ต้องหลังวันเช็กอิน' : 'เลือกวันเข้าพักก่อน แล้วกดเลือกบ้านที่ว่าง');
+  renderCal();
 
   // ปุ่มลัด 3 แบบที่พัก + ลานเต็นท์บนแผนผัง: ขึ้นสถานะ "เลือกแล้ว" ตามที่เลือกอยู่
   const tentsOn = tentGuests() > 0 || tentRentals() > 0;
@@ -294,21 +338,132 @@ checkinEl.addEventListener('change', () => {
     if (!state.checkout || state.checkout <= state.checkin) {
       state.checkout = checkoutEl.value = addDays(state.checkin, 1);
     }
+    showMonthOf(state.checkin);
   }
+  calNext = 'in';
   render();
 });
-checkoutEl.addEventListener('change', () => { state.checkout = checkoutEl.value; render(); });
+checkoutEl.addEventListener('change', () => { state.checkout = checkoutEl.value; calNext = 'in'; render(); });
 
-// ---------- ติ๊กเลือกบ้าน ----------
-housesEl.addEventListener('change', (e) => {
-  if (e.target.type !== 'checkbox') return;
-  e.target.checked ? state.selected.add(e.target.value) : state.selected.delete(e.target.value);
+// ---------- ปฏิทินวันว่าง (ใต้ช่องเช็กอิน/เช็กเอาต์) ----------
+// 1 ช่อง = 1 คืน (วันที่นั้น → วันถัดไป) · ตัวเลขใต้วันที่ = บ้านที่ยังว่างคืนนั้น นับจากการจองที่โหลดมา (BOOKINGS)
+// ลานกางเต็นท์ไม่จำกัดจำนวน จึงนับเฉพาะบ้าน · มือถือโชว์ทีละ 1 เดือน จอกว้างโชว์ 2 เดือน
+// แตะวันแรก = เช็กอิน แล้วแตะวันที่หลังกว่า = เช็กเอาต์ (แตะวันที่ก่อนหรือเท่าวันเช็กอิน = เปลี่ยนวันเช็กอินใหม่)
+const TH_MONTHS = ['มกราคม', 'กุมภาพันธ์', 'มีนาคม', 'เมษายน', 'พฤษภาคม', 'มิถุนายน', 'กรกฎาคม', 'สิงหาคม', 'กันยายน', 'ตุลาคม', 'พฤศจิกายน', 'ธันวาคม'];
+const TH_MONTHS_SHORT = ['ม.ค.', 'ก.พ.', 'มี.ค.', 'เม.ย.', 'พ.ค.', 'มิ.ย.', 'ก.ค.', 'ส.ค.', 'ก.ย.', 'ต.ค.', 'พ.ย.', 'ธ.ค.'];
+const TH_DOW = ['อา.', 'จ.', 'อ.', 'พ.', 'พฤ.', 'ศ.', 'ส.'];
+const CAL_MAX_AHEAD = 12;          // เลื่อนดูล่วงหน้าได้ 12 เดือน
+const calEl = $('#cal-months');
+const calWide = window.matchMedia('(min-width: 720px)');
+const firstMonth = firstDay.slice(0, 7); // 'YYYY-MM' เดือนแรกที่จองได้ (ย้อนไปเดือนก่อนหน้าไม่ได้)
+let calOffset = 0;   // เดือนแรกที่โชว์ = firstMonth + calOffset
+let calNext = 'in';  // แตะครั้งถัดไปเป็นวันเช็กอิน ('in') หรือวันเช็กเอาต์ ('out')
+let calFocus = '';   // วันที่ที่กดปุ่ม Tab แล้วเข้ามาที่ปฏิทินจะโฟกัส (ลูกศรเลื่อนไปวันอื่น)
+
+const monthAdd = (ym, n) => { const [y, m] = ym.split('-').map(Number); const d = new Date(y, m - 1 + n, 1); return `${d.getFullYear()}-${pad(d.getMonth() + 1)}`; };
+const monthDiff = (a, b) => { const [ay, am] = a.split('-').map(Number); const [by, bm] = b.split('-').map(Number); return (by - ay) * 12 + (bm - am); };
+const calCount = () => (calWide.matches ? 2 : 1);
+const calMonths = () => Array.from({ length: calCount() }, (_, i) => monthAdd(firstMonth, calOffset + i));
+const thaiMonth = (ym) => `${TH_MONTHS[Number(ym.slice(5)) - 1]} ${Number(ym.slice(0, 4)) + 543}`;
+const shortThai = (iso) => { const d = new Date(iso + 'T00:00:00'); return `${TH_DOW[d.getDay()]} ${d.getDate()} ${TH_MONTHS_SHORT[d.getMonth()]}`; };
+// บ้านว่างกี่หลังในคืนวันที่ iso (ยังโหลดไม่เสร็จ/โหลดไม่สำเร็จ = null ไม่โชว์ตัวเลข)
+const freeOn = (iso) => (state.loading || state.loadError ? null : HOUSES.filter((h) => !isBooked(h.id, iso, addDays(iso, 1))).length);
+// เลื่อนปฏิทินให้เห็นเดือนของวันที่ iso (ถ้ายังไม่เห็น)
+function showMonthOf(iso) {
+  const ym = iso.slice(0, 7);
+  if (calMonths().includes(ym)) return;
+  calOffset = Math.min(CAL_MAX_AHEAD, Math.max(0, monthDiff(firstMonth, ym)));
+}
+
+function monthHTML(ym) {
+  const [y, m] = ym.split('-').map(Number);
+  const startDow = new Date(y, m - 1, 1).getDay();
+  const days = new Date(y, m, 0).getDate();
+  const total = HOUSES.length;
+  const cells = TH_DOW.map((d) => `<span class="cal-dow" aria-hidden="true">${d}</span>`);
+  for (let i = 0; i < startDow; i++) cells.push('<span class="cal-pad" aria-hidden="true"></span>');
+  for (let day = 1; day <= days; day++) {
+    const iso = `${ym}-${pad(day)}`;
+    const dow = (startDow + day - 1) % 7;
+    const past = iso < firstDay;
+    const free = past ? null : freeOn(iso);
+    const lvl = free === null ? '' : free === 0 ? 'full' : free === total ? 'all' : 'some';
+    const isIn = iso === state.checkin;
+    const isOut = hasDates() && iso === state.checkout;
+    const inRange = hasDates() && iso > state.checkin && iso < state.checkout;
+    const cls = ['cal-day', lvl && `is-${lvl}`, (dow === 5 || dow === 6) && 'is-wknd', isIn && 'is-start', isOut && 'is-end', inRange && 'in-range', iso === today && 'is-today'].filter(Boolean).join(' ');
+    const label = [
+      shortThai(iso),
+      past ? 'จองทางเว็บไม่ได้' : free === null ? '' : free === 0 ? 'เต็มทุกหลัง' : `ว่าง ${free} จาก ${total} หลัง`,
+      isIn ? 'วันเช็กอิน' : '', isOut ? 'วันเช็กเอาต์' : '', inRange ? 'อยู่ในช่วงที่เลือก' : '',
+    ].filter(Boolean).join(' ');
+    const mark = free === null ? '' : `<span class="cal-free" aria-hidden="true">${free === 0 ? 'เต็ม' : `${free}/${total}`}</span>`;
+    cells.push(`<button type="button" class="${cls}" data-date="${iso}" aria-label="${label}" aria-pressed="${isIn || isOut}" tabindex="${iso === calFocus ? 0 : -1}"${past ? ' disabled' : ''}><span class="cal-num">${day}</span>${mark}</button>`);
+  }
+  return `<div class="cal-month" role="group" aria-label="${thaiMonth(ym)}"><p class="cal-mname" aria-hidden="true">${thaiMonth(ym)}</p><div class="cal-grid">${cells.join('')}</div></div>`;
+}
+
+function renderCal() {
+  const months = calMonths();
+  const shown = (iso) => iso && iso >= firstDay && months.includes(iso.slice(0, 7));
+  // วันที่ที่รับโฟกัสจากปุ่ม Tab: วันที่เพิ่งกด/เลื่อนด้วยลูกศร → วันเช็กอิน → วันแรกที่จองได้ของเดือนที่โชว์
+  if (!shown(calFocus)) calFocus = shown(state.checkin) ? state.checkin : (months[0] === firstMonth ? firstDay : `${months[0]}-01`);
+  calEl.innerHTML = months.map(monthHTML).join('');
+  calEl.classList.toggle('two', months.length > 1);
+  $('#cal-title').textContent = months.map(thaiMonth).join(' – ');
+  $('#cal-prev').disabled = calOffset <= 0;
+  $('#cal-next').disabled = calOffset >= CAL_MAX_AHEAD;
+  $('#cal-status').textContent = state.loading ? 'กำลังโหลดวันว่าง…'
+    : state.loadError ? 'โหลดวันว่างไม่สำเร็จ ยังเลือกวันได้ตามปกติ'
+    : calNext === 'out' ? 'แตะวันเช็กเอาต์ในปฏิทิน' : 'แตะวันที่เพื่อเลือกวันเช็กอิน';
+  // มีคืนในช่วงที่เลือกที่บ้านเต็มทุกหลัง → บอกให้รู้ (บ้านที่ถูกจองยังขึ้น "ถูกจองแล้ว" ตามเดิม)
+  let full = false;
+  if (hasDates()) for (let d = state.checkin; d < state.checkout && !full; d = addDays(d, 1)) full = freeOn(d) === 0;
+  $('#full-note').hidden = !full;
+}
+
+calEl.addEventListener('click', (e) => {
+  const b = e.target.closest('[data-date]');
+  if (!b || b.disabled) return;
+  const d = b.dataset.date;
+  if (calNext === 'out' && d > state.checkin) {
+    state.checkout = d;
+    calNext = 'in';
+  } else {
+    state.checkin = d;
+    // วันเช็กเอาต์เดิมใช้ไม่ได้แล้ว → ตั้งเป็นอีก 1 คืนไว้ก่อน (แตะวันถัดไปเพื่อเปลี่ยน)
+    if (!state.checkout || state.checkout <= d) state.checkout = addDays(d, 1);
+    calNext = 'out';
+  }
+  checkinEl.value = state.checkin;
+  checkoutEl.value = state.checkout;
+  checkoutEl.min = addDays(state.checkin, 1);
+  calFocus = d;
   render();
+  calEl.querySelector(`[data-date="${d}"]`)?.focus({ preventScroll: true });
 });
+// ลูกศรซ้าย/ขวา = วันก่อน/ถัดไป · ขึ้น/ลง = สัปดาห์ก่อน/ถัดไป (เลื่อนเดือนให้เองถ้าเลยเดือนที่โชว์)
+calEl.addEventListener('keydown', (e) => {
+  const b = e.target.closest('[data-date]');
+  const step = { ArrowLeft: -1, ArrowRight: 1, ArrowUp: -7, ArrowDown: 7 }[e.key];
+  if (!b || !step) return;
+  const d = addDays(b.dataset.date, step);
+  if (d < firstDay || monthDiff(firstMonth, d.slice(0, 7)) > CAL_MAX_AHEAD + calCount() - 1) return;
+  e.preventDefault();
+  if (!calMonths().includes(d.slice(0, 7))) calOffset = Math.min(CAL_MAX_AHEAD, Math.max(0, calOffset + Math.sign(step)));
+  calFocus = d;
+  renderCal();
+  calEl.querySelector(`[data-date="${d}"]`)?.focus();
+});
+$('#cal-prev').addEventListener('click', () => { calOffset = Math.max(0, calOffset - 1); renderCal(); });
+$('#cal-next').addEventListener('click', () => { calOffset = Math.min(CAL_MAX_AHEAD, calOffset + 1); renderCal(); });
+calWide.addEventListener('change', renderCal);
+showMonthOf(state.checkin);
 
-// ---------- กดบ้านบนแผนผัง → เลื่อนไปที่การ์ดบ้านหลังนั้น ----------
+// ---------- กดบ้านบนแผนผัง → เลื่อนไปที่แถวบ้านหลังนั้น และกางรูป/รายละเอียดให้ ----------
 document.querySelectorAll('.m').forEach((marker) => {
   const open = () => {
+    expandHouse(marker.dataset.house);
     const card = $(`#house-${marker.dataset.house}`);
     card.scrollIntoView({ behavior: 'smooth', block: 'start' });
     card.classList.add('flash');
@@ -362,6 +517,7 @@ fitAerial();
 // ---------- มาจากลิงก์ในหน้าราคา/หน้าแรก (เช่น booking.html#house-family-1 หรือ booking.html#tents) → เลื่อนไปที่การ์ดนั้น ----------
 const linked = (location.hash.startsWith('#house-') || location.hash === '#tents') && document.getElementById(location.hash.slice(1));
 if (linked) {
+  if (linked.classList.contains('house')) expandHouse(linked.dataset.house); // ลิงก์ไปบ้าน → กางรูปและรายละเอียดหลังนั้นให้เลย
   const jump = () => linked.scrollIntoView({ behavior: 'instant', block: 'start' });
   jump();
   window.addEventListener('load', jump, { once: true }); // เลื่อนซ้ำหลังโหลดเสร็จ เผื่อหน้ายังขยับอยู่

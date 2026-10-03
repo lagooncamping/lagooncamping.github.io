@@ -54,6 +54,67 @@ body:has(.book-bar:not([hidden])) { padding-bottom: var(--bar-h, 110px); }
 /* ---------- เลือกวัน ---------- */
 .dates { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px; max-width: 520px; }
 .nights { margin: 12px 0 40px; font-size: .95rem; }
+.full-note { margin: -32px 0 40px; font-size: .88rem; color: #9a5a12; }
+@media (prefers-color-scheme: dark) { .full-note { color: var(--sun); } }
+
+/* ---------- ปฏิทินวันว่าง ----------
+   จอ 360px: พื้นที่ ~328px ÷ 7 ช่อง = ~46px ต่อวัน · ช่องสูง 44px กดง่าย · จอกว้าง 720px+ โชว์ 2 เดือนคู่กัน */
+.cal { max-width: 720px; margin: 16px 0 0; padding: 12px; border: 1px solid var(--line); border-radius: var(--radius-sm, 12px); background: var(--surface); }
+.cal-head { display: flex; align-items: center; justify-content: space-between; gap: 8px; margin-bottom: 2px; }
+.cal-title { margin: 0; font-weight: 600; text-align: center; }
+.cal-nav {
+  width: 44px; height: 44px; flex: none; border-radius: 50%; border: 1px solid var(--line); background: transparent;
+  color: var(--ink); font: inherit; font-size: 1.3rem; line-height: 1; cursor: pointer;
+}
+.cal-nav:hover:not(:disabled) { border-color: var(--ink); }
+.cal-nav:disabled { opacity: .35; cursor: default; }
+.cal-months { display: grid; gap: 20px; }
+.cal-months.two { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+.cal-mname { display: none; margin: 0 0 4px; font-weight: 600; text-align: center; font-size: .92rem; }
+.cal-months.two .cal-mname { display: block; }
+.cal-grid { display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)); gap: 2px 0; }
+.cal-dow { text-align: center; font-size: .75rem; color: var(--muted); padding: 0 0 2px; }
+.cal-dow:nth-child(6), .cal-dow:nth-child(7) { color: var(--clay); }
+.cal-day {
+  position: relative; min-width: 0; min-height: 42px; padding: 1px 0; margin: 0;
+  display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 0;
+  border: 0; border-radius: 8px; background: transparent; color: var(--ink); font: inherit; line-height: 1.15; cursor: pointer;
+  font-variant-numeric: tabular-nums;
+}
+.cal-day.is-wknd { background: color-mix(in srgb, var(--sun) 14%, transparent); }
+.cal-day:hover:not(:disabled) { box-shadow: inset 0 0 0 1.5px var(--forest); }
+.cal-day:focus-visible { outline: 3px solid var(--sun); outline-offset: 0; z-index: 1; }
+.cal-day:disabled { color: var(--muted); opacity: .45; cursor: default; background: transparent; }
+.cal-num { font-size: .95rem; font-weight: 500; }
+.cal-day.is-today .cal-num { text-decoration: underline; text-underline-offset: 3px; }
+.cal-free { font-size: .66rem; font-weight: 600; letter-spacing: -.01em; }
+/* สีจำนวนบ้านว่าง: เขียว = ว่างทุกหลัง · ส้ม = ว่างบางหลัง · เทา = เต็ม */
+.cal-day.is-all .cal-free { color: #2e7a45; }
+.cal-day.is-some .cal-free { color: #a35a00; }
+.cal-day.is-full .cal-free { color: var(--muted); }
+.cal-day.is-full .cal-num { color: var(--muted); text-decoration: line-through; }
+@media (prefers-color-scheme: dark) {
+  .cal-day.is-all .cal-free { color: #8fd19e; }
+  .cal-day.is-some .cal-free { color: #f2b66d; }
+}
+/* ช่วงที่เลือก: คืนระหว่างกลางเป็นแถบสีอ่อน · วันเช็กอิน/เช็กเอาต์เป็นสีเขียวเข้ม */
+.cal-day.in-range { background: color-mix(in srgb, var(--forest) 18%, transparent); border-radius: 0; }
+.cal-day.is-start, .cal-day.is-end { background: var(--forest); color: var(--bg); }
+.cal-day.is-start .cal-free, .cal-day.is-end .cal-free, .cal-day.is-start .cal-num, .cal-day.is-end .cal-num { color: var(--bg); }
+.cal-day.is-start:has(~ .in-range, ~ .is-end) { border-radius: 8px 0 0 8px; }
+.cal-day.in-range + .is-end { border-radius: 0 8px 8px 0; }
+.cal-legend { display: flex; flex-wrap: wrap; gap: 4px 14px; list-style: none; margin: 10px 0 0; padding: 0; font-size: .78rem; color: var(--muted); }
+.cal-legend li { display: flex; align-items: center; gap: 6px; }
+.cal-legend i { width: 10px; height: 10px; border-radius: 50%; }
+.cal-legend .all { background: #2e7a45; }
+.cal-legend .some { background: #a35a00; }
+.cal-legend .full { background: var(--muted); }
+.cal-legend .wknd { border-radius: 3px; background: color-mix(in srgb, var(--sun) 35%, transparent); }
+@media (prefers-color-scheme: dark) { .cal-legend .all { background: #8fd19e; } .cal-legend .some { background: #f2b66d; } }
+.cal-status { margin: 6px 0 0; font-size: .85rem; color: var(--forest); font-weight: 500; }
+.cal-status:empty { display: none; }
+.cal-note { margin: 4px 0 0; font-size: .8rem; color: var(--muted); }
+@media (max-width: 420px) { .cal { padding: 10px 8px; } }
 .nights b { font-weight: 500; }
 .retry {
   margin: 6px 0 0 8px; min-height: 44px; padding: 4px 16px; border-radius: 999px; cursor: pointer;
@@ -168,12 +229,31 @@ body:has(.book-bar:not([hidden])) { padding-bottom: var(--bar-h, 110px); }
 .legend .sel { background: var(--forest); }
 .legend .bk { background: var(--line); border: 1.5px dashed var(--muted); }
 
-/* ---------- การ์ดบ้าน ---------- */
-.houses { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 48px 24px; }
-.house { min-width: 0; scroll-margin-top: 120px; border-radius: var(--radius-sm, 12px); transition: box-shadow .3s ease; }
+/* ---------- รายการบ้าน (แถวย่อ: รูปเล็ก + ชื่อ/ราคา + ปุ่มเลือก · กด "ดูรายละเอียด" กางรูปและข้อมูล) ---------- */
+.houses { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(100%, 340px), 1fr)); gap: 10px 16px; align-items: start; }
+.house {
+  min-width: 0; scroll-margin-top: 120px; padding: 10px 12px; border: 1px solid var(--line); border-radius: var(--radius-sm, 12px);
+  background: var(--surface); transition: box-shadow .3s ease, border-color .2s;
+}
 .house:hover, .tent-card:hover { box-shadow: var(--shadow, 0 10px 30px rgba(20,30,20,.12)); }
 .house.flash { box-shadow: 0 0 0 3px var(--forest); }
-.house.is-booked .slides { opacity: .45; }
+.house.is-picked { border-color: var(--forest); background: color-mix(in srgb, var(--forest) 7%, var(--surface)); }
+.house.is-booked .house-thumb, .house.is-booked .slides { opacity: .45; }
+/* รูปเล็กอยู่ซ้าย สูง 2 แถว · ขวาบน = ชื่อ/ข้อมูล/ราคา · ขวาล่าง = ปุ่ม "ดูรายละเอียด" + "เลือก" */
+.house-row { display: grid; grid-template-columns: 64px minmax(0, 1fr); gap: 4px 12px; }
+.house-thumb { grid-row: 1 / span 2; width: 64px; height: 64px; object-fit: cover; border-radius: 10px; display: block; background: var(--line); }
+.house-info { min-width: 0; }
+.house-meta { margin: 0; font-size: .85rem; color: var(--muted); line-height: 1.4; }
+.house-actions { grid-column: 2; display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 4px 8px; }
+.more {
+  min-height: 44px; padding: 6px 0; border: 0; background: transparent; color: var(--forest);
+  font: inherit; font-size: .85rem; font-weight: 500; cursor: pointer; text-decoration: underline; text-underline-offset: 3px;
+}
+.more::after { content: " ▾"; text-decoration: none; display: inline-block; margin-left: 4px; transition: transform .2s; }
+.more[aria-expanded="true"]::after { transform: rotate(180deg); }
+.more:focus-visible, .pick:focus-visible { outline: 2px solid var(--sun); outline-offset: 2px; }
+.house-more { margin-top: 10px; padding-top: 12px; border-top: 1px solid var(--line); }
+.house-more .house-feats { margin-bottom: 0; }
 
 .slides {
   display: flex; overflow-x: auto; scroll-snap-type: x mandatory;
@@ -192,8 +272,8 @@ body:has(.book-bar:not([hidden])) { padding-bottom: var(--bar-h, 110px); }
 .dots i { width: 6px; height: 6px; border-radius: 50%; background: var(--line); transition: background .2s; }
 .dots i.on { background: var(--ink); }
 
-.house-head { display: flex; justify-content: space-between; align-items: baseline; gap: 12px; }
-.house h3 { font-size: 1.25rem; font-weight: 500; }
+.house-head { display: flex; flex-wrap: wrap; justify-content: space-between; align-items: baseline; gap: 2px 8px; }
+.house h3 { font-size: 1.05rem; font-weight: 600; margin: 0; line-height: 1.3; min-width: 0; }
 .status { font-size: .8rem; color: var(--muted); white-space: nowrap; }
 .house.is-booked .status { color: var(--ink); background: var(--line); padding: 0 10px; border-radius: 999px; }
 .house-type { color: var(--muted); font-size: .92rem; margin: 2px 0 6px; }
@@ -211,20 +291,31 @@ body:has(.book-bar:not([hidden])) { padding-bottom: var(--bar-h, 110px); }
 .qty input { width: 3.2em; height: 44px; text-align: center; font: inherit; font-size: 1.1rem; font-weight: 600; border: 1px solid var(--line); border-radius: var(--radius-sm, 12px); background: var(--bg); color: var(--ink); -moz-appearance: textfield; }
 .qty input::-webkit-inner-spin-button, .qty input::-webkit-outer-spin-button { -webkit-appearance: none; margin: 0; }
 .qty span { color: var(--muted); font-size: .9rem; min-width: 2.2em; }
-.house-all { margin: 0 0 24px; padding: 18px 20px; border-radius: var(--radius); background: color-mix(in srgb, var(--forest) 6%, transparent); }
-.house-all-title { margin: 0 0 10px; font-weight: 600; }
+/* กล่อง "สิ่งอำนวยความสะดวกทุกหลัง" (ย่อไว้ กดหัวข้อเพื่อกาง) */
+.house-all { margin: 0 0 16px; padding: 0 16px; border-radius: var(--radius-sm, 12px); background: color-mix(in srgb, var(--forest) 6%, transparent); }
+.house-all summary {
+  display: flex; align-items: center; justify-content: space-between; gap: 12px; min-height: 48px;
+  font-weight: 600; cursor: pointer; list-style: none;
+}
+.house-all summary::-webkit-details-marker { display: none; }
+.house-all summary::after { content: "▾"; color: var(--forest); transition: transform .2s; }
+.house-all[open] summary::after { transform: rotate(180deg); }
+.house-all summary:focus-visible { outline: 2px solid var(--sun); outline-offset: 2px; border-radius: 8px; }
+.house-all[open] { padding-bottom: 16px; }
+.house-all-title { margin: 0 0 10px; font-size: .92rem; color: var(--muted); }
 .house-all .house-feats { margin: 0; }
 .house-all-note { margin: 12px 0 0; font-size: .88rem; color: var(--muted); }
-.house-price { margin: 0 0 16px; }
-.house-price b { font-weight: 500; font-size: 1.15rem; font-variant-numeric: tabular-nums; }
+.house-price { margin: 0; font-size: .85rem; line-height: 1.4; color: var(--muted); }
+.house-price b { font-weight: 600; font-size: 1.05rem; color: var(--ink); font-variant-numeric: tabular-nums; }
 
+/* ปุ่ม "เลือก" / "✓ เลือกแล้ว" (สูง 48px กดง่ายบนมือถือ) */
 .pick {
-  display: flex; align-items: center; gap: 10px;
-  padding: 12px 14px; border: 1px solid var(--line); border-radius: var(--radius-sm, 12px); cursor: pointer;
+  flex: none; min-width: 104px; min-height: 48px; padding: 8px 14px; border-radius: 999px; cursor: pointer;
+  border: 1.5px solid var(--forest); background: transparent; color: var(--forest); font: inherit; font-weight: 600; font-size: .95rem;
 }
-.pick input { width: 20px; height: 20px; margin: 0; accent-color: var(--forest); }
-.pick:has(input:checked) { border-color: var(--forest); background: color-mix(in srgb, var(--forest) 8%, transparent); }
-.pick:has(input:disabled) { cursor: not-allowed; color: var(--muted); }
+.pick:hover:not(:disabled) { background: color-mix(in srgb, var(--forest) 10%, transparent); }
+.pick[aria-pressed="true"] { background: var(--forest); color: var(--bg); }
+.pick:disabled { cursor: not-allowed; border-style: dashed; border-color: var(--muted); color: var(--muted); opacity: .7; }
 
 /* ---------- แถบสรุปด้านล่าง ---------- */
 .book-bar {
