@@ -267,8 +267,17 @@ body:has(.book-bar:not([hidden])) { padding-bottom: var(--bar-h, 110px); }
 /* section.tent-card: ชนะกฎ section ใน style.css ที่ตัด padding บน-ล่างออก */
 section.tent-card { padding: 22px 22px 24px; }
 .tent-card > .house-type { margin-bottom: 14px; }
-/* ตัวเลือก 2 แบบเป็นกล่องคู่ (จอใหญ่วางข้างกัน · มือถือซ้อนกัน) */
-.tent-opts { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 14px; }
+/* ตัวเลือก 3 แบบ (นำมาเอง · เช่าหลังใหญ่ · เช่าหลังเล็ก)
+   มือถือ: ซ้อนกัน 1 คอลัมน์ · จอกลาง: "นำมาเอง" เต็มแถว + เต็นท์เช่า 2 ขนาดวางคู่กัน · จอใหญ่: 3 กล่องเรียงแถวเดียว */
+.tent-opts { display: grid; grid-template-columns: 1fr; gap: 14px; }
+@media (min-width: 600px) {
+  .tent-opts { grid-template-columns: 1fr 1fr; }
+  .tent-opts > .qty-row:first-child { grid-column: 1 / -1; }
+}
+@media (min-width: 940px) {
+  .tent-opts { grid-template-columns: repeat(3, 1fr); }
+  .tent-opts > .qty-row:first-child { grid-column: auto; }
+}
 .qty-row { display: flex; flex-direction: column; justify-content: space-between; gap: 14px; padding: 16px 18px; border: 1px solid var(--line); border-radius: var(--radius-sm, 12px); background: var(--bg); }
 .qty-row .opt-info b { display: block; font-size: 1.02rem; }
 .opt-price { margin: 4px 0 6px; font-size: 1.35rem; font-weight: 600; color: var(--forest); line-height: 1.2; }

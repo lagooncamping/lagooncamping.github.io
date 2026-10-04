@@ -136,10 +136,16 @@
               <button type="button" data-step="tentGuests" data-d="1" aria-label="เพิ่มคนนำเต็นท์มาเอง">+</button>
             </div>
             <div class="counter">
-              <span>เช่าเต็นท์ (หลัง)</span>
-              <button type="button" data-step="tentRentals" data-d="-1" aria-label="ลดเต็นท์เช่า">−</button>
-              <input type="number" name="tentRentals" min="0" max="10" value="0" inputmode="numeric" aria-label="เช่าเต็นท์ (หลัง)">
-              <button type="button" data-step="tentRentals" data-d="1" aria-label="เพิ่มเต็นท์เช่า">+</button>
+              <span>เช่าเต็นท์หลังใหญ่ 1,300 (หลัง)</span>
+              <button type="button" data-step="tentRentals" data-d="-1" aria-label="ลดเต็นท์เช่าหลังใหญ่">−</button>
+              <input type="number" name="tentRentals" min="0" max="10" value="0" inputmode="numeric" aria-label="เช่าเต็นท์หลังใหญ่ (หลัง)">
+              <button type="button" data-step="tentRentals" data-d="1" aria-label="เพิ่มเต็นท์เช่าหลังใหญ่">+</button>
+            </div>
+            <div class="counter">
+              <span>เช่าเต็นท์หลังเล็ก 1,000 (หลัง)</span>
+              <button type="button" data-step="tentRentalsSmall" data-d="-1" aria-label="ลดเต็นท์เช่าหลังเล็ก">−</button>
+              <input type="number" name="tentRentalsSmall" min="0" max="10" value="0" inputmode="numeric" aria-label="เช่าเต็นท์หลังเล็ก (หลัง)">
+              <button type="button" data-step="tentRentalsSmall" data-d="1" aria-label="เพิ่มเต็นท์เช่าหลังเล็ก">+</button>
             </div>
           </fieldset>
           <div class="counter">
@@ -172,6 +178,6 @@
 
   <div class="toast" id="toast" role="status" aria-live="polite" hidden></div>
 
-  <script src="js/admin.js?v=20261003h"></script>
+  <script src="js/admin.js?v=20261004b"></script>
 </body>
 </html>

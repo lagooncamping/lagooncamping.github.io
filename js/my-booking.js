@@ -10,6 +10,7 @@
   const LINE_ID = '@477nvamb';
   const MAP_URL = 'https://goo.gl/maps/8mGhpGAEaRzAJNGq6';
   const CHECK_TIMES = 'เช็กอินได้ตั้งแต่ 11:00 น. และเช็กเอาต์ก่อน 12:00 น.'; // ต้องตรงกับ stay.html
+  const QUIET = 'งดใช้เสียงหลัง 22:00 น.'; // ข้อมูลรีสอร์ท
   const SAVED_PHONE_KEY = 'lagoon-my-phone';
   const PENDING_KEY = 'lagoon-booking'; // การจองรอชำระที่ js/booking.js จำไว้
   const STATUS = { PENDING: 'รอชำระเงิน', CONFIRMED: 'ยืนยันแล้ว', CANCELLED: 'ยกเลิก', EXPIRED: 'หมดเวลา' };
@@ -67,14 +68,15 @@
     return [
       p.guests ? `${p.guests} ท่านในบ้าน` : '',
       p.tentGuests ? `เต็นท์มาเอง ${p.tentGuests} ท่าน` : '',
-      p.tentRentals ? `เช่าเต็นท์ ${p.tentRentals} หลัง (2 ท่าน/หลัง)` : '',
-    ].filter(Boolean).join(' · ');
+      p.tentRentals ? `เช่าเต็นท์หลังใหญ่ ${p.tentRentals} หลัง` : '',
+      p.tentRentalsSmall ? `เช่าเต็นท์หลังเล็ก ${p.tentRentalsSmall} หลัง` : '',
+    ].filter(Boolean).join(' · ') + (p.tentRentals || p.tentRentalsSmall ? ' (2 ท่าน/หลัง)' : '');
   }
   function statusInfo(b) {
     switch (b.status) {
       case STATUS.CONFIRMED: return { cls: 'ok', label: 'ยืนยันแล้ว', active: true };
       case STATUS.PENDING: return { cls: 'wait', label: 'รอชำระเงิน', active: true };
-      case STATUS.CANCELLED: return { cls: 'off', label: 'ยกเลิก', active: false };
+      case STATUS.CANCELLED: return { cls: 'off', label: 'ยกเลิกแล้ว', active: false };
       case STATUS.EXPIRED: return { cls: 'off', label: 'หมดเวลาชำระ', active: false };
       default: return { cls: 'off', label: b.status || 'รอแอดมินตรวจสอบ', active: false };
     }
@@ -92,11 +94,9 @@
     if (b.balanceDue > 0) rows.push(['ชำระวันเช็กอิน', `${baht(b.balanceDue)} (เงินสดหรือโอนหน้าเคาน์เตอร์)`, true]);
     return rows;
   }
+  // ยกเลิกแล้วไม่คืนเงินทุกกรณี (4 ต.ค. 2569) — ขึ้นข้อความเฉพาะเมื่อเจ้าของคืนให้เป็นกรณีพิเศษแล้ว (ไม่บอกยอด)
   function refundText(b) {
-    if (!b.refund) return '';
-    return b.refund === 'done'
-      ? `คืนเงิน 50% แล้ว (${baht(b.refundAmount)})`
-      : `ถ้าชำระเต็มจำนวนแล้ว จะได้รับเงินคืน 50% (${baht(b.refundAmount)}) แอดมินจะโอนคืนให้`;
+    return b.refund === 'done' ? 'คืนเงินแล้ว (กรณีพิเศษ)' : '';
   }
   function payNowText(b) {
     if (b.status !== STATUS.PENDING || !b.payNow) return '';
@@ -136,7 +136,7 @@
           : `<a class="v-alert-link" href="https://line.me/R/ti/p/${encodeURIComponent(LINE_ID)}" target="_blank" rel="noopener">ส่งสลิปทาง LINE →</a>`}</div>` : ''}
         <dl class="v-rows">${rowsOf(b).map(([k, v, strong]) => `<div class="v-row${strong ? ' v-strong' : ''}"><dt>${esc(k)}</dt><dd>${esc(v)}</dd></div>`).join('')}</dl>
         ${refund ? `<p class="v-note">${esc(refund)}</p>` : ''}
-        ${st.active ? `<p class="v-times">${esc(CHECK_TIMES)}</p>
+        ${st.active ? `<p class="v-times">${esc(CHECK_TIMES)} · ${esc(QUIET)}</p>
         <p class="v-links"><a href="${MAP_URL}" target="_blank" rel="noopener">แผนที่ / นำทาง</a><a href="${PHONE_TEL}">โทร ${PHONE}</a></p>` : ''}
       </div>
       <div class="v-tools">
@@ -273,6 +273,7 @@
       ...rowsOf(b).map(([k, v]) => `${k}: ${v}`),
       refundText(b),
       st.active ? CHECK_TIMES : '',
+      st.active ? QUIET : '',
       st.active ? `แผนที่: ${MAP_URL}` : '',
       `โทร: ${PHONE} · LINE ${LINE_ID}`,
     ].filter(Boolean).join('\n');
@@ -359,6 +360,7 @@
     if (st.active) {
       y += 12;
       text(CHECK_TIMES, '20px Anuphan, sans-serif', '#1f231f', { lh: 30 });
+      text(QUIET, '20px Anuphan, sans-serif', '#1f231f', { lh: 30 });
       text(`แผนที่ ${MAP_URL}`, '20px Anuphan, sans-serif', '#2f4a36', { lh: 30 });
       text(`โทร ${PHONE} · LINE ${LINE_ID}`, '20px Anuphan, sans-serif', '#2f4a36', { lh: 30 });
       y += 16;

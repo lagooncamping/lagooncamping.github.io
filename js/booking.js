@@ -15,8 +15,10 @@ const PROMPTPAY = '0909365562';
 const DEPOSIT_RATE = 0.5;
 const HOLD_HOURS = 6;
 const TENT_PRICE = 200;      // นำเต็นท์มาเอง บาท/ท่าน/คืน — ต้องตรงกับ Code.gs
-const TENT_RENT = 1300;      // เช่าเต็นท์ของรีสอร์ท บาท/หลัง/คืน (พร้อมเครื่องนอน 2 ชุด พัดลม ปลั๊ก) — ต้องตรงกับ Code.gs
-const TENT_RENT_SLEEPS = 2;  // เต็นท์เช่า 1 หลังนอนได้ 2 ท่าน
+const TENT_RENT = 1300;      // เช่าเต็นท์หลังใหญ่ บาท/หลัง/คืน (พร้อมเครื่องนอน 2 ชุด พัดลม ปลั๊ก) — ต้องตรงกับ Code.gs
+const TENT_RENT_SMALL = 1000; // เช่าเต็นท์หลังเล็ก บาท/หลัง/คืน (พร้อมเครื่องนอน 2 ชุด พัดลม ปลั๊ก) — ต้องตรงกับ Code.gs
+const TENT_RENT_SLEEPS = 2;  // เต็นท์เช่า 1 หลัง (ทั้งใหญ่และเล็ก) นอนได้ 2 ท่าน
+const EXTRA_PERSON = 300;    // เพิ่มคนในบ้าน คนละ 300 บาท (มีที่นอนปิกนิกเสริม) — แจ้งแอดมิน ไม่คิดในระบบจอง
 const SAME_DAY_CUTOFF = 18;  // หลัง 18:00 น. ปิดรับจองเข้าพักวันนี้ทางเว็บ — ต้องตรงกับ Code.gs
 
 // ---------- QR พร้อมเพย์ (มาตรฐาน EMVCo ที่ธนาคารไทยใช้) ----------
@@ -151,18 +153,29 @@ const housesEl = $('#houses');
 const hasDates = () => state.checkin && state.checkout && state.checkout > state.checkin;
 const nights = () => (hasDates() ? nightsBetween(state.checkin, state.checkout) : 0);
 const selectedHouses = () => HOUSES.filter((h) => state.selected.has(h.id));
-// เต็นท์ (การ์ด "ลานกางเต็นท์" ใต้รายการบ้าน): นำมาเอง = จำนวนคน, เช่าของรีสอร์ท = จำนวนหลัง
+// เต็นท์ (การ์ด "ลานกางเต็นท์"): นำมาเอง = จำนวนคน, เช่าของรีสอร์ท = จำนวนหลัง (หลังใหญ่ #tent-rent · หลังเล็ก #tent-rent-s)
 const qty = (sel, max) => Math.min(max, Math.max(0, Math.floor(Number($(sel).value)) || 0));
 const tentGuests = () => qty('#tent-guests', 30);
 const tentRentals = () => qty('#tent-rent', 10);
-const hasItems = () => state.selected.size > 0 || tentGuests() > 0 || tentRentals() > 0;
-const perNight = () => selectedHouses().reduce((sum, h) => sum + h.price, 0) + tentGuests() * TENT_PRICE + tentRentals() * TENT_RENT;
+const tentRentalsSmall = () => qty('#tent-rent-s', 10);
+const rentCount = () => tentRentals() + tentRentalsSmall(); // เต็นท์เช่าทั้งหมด (หลังละ 2 ท่าน)
+const hasItems = () => state.selected.size > 0 || tentGuests() > 0 || rentCount() > 0;
+const perNight = () => selectedHouses().reduce((sum, h) => sum + h.price, 0) + tentGuests() * TENT_PRICE
+  + tentRentals() * TENT_RENT + tentRentalsSmall() * TENT_RENT_SMALL;
 const total = () => perNight() * nights();
-// รายการที่เลือก เช่น ["Lagoon 1", "นำเต็นท์มาเอง 3 ท่าน", "เช่าเต็นท์ 1 หลัง"]
+// เต็นท์เช่าแบบสั้น เช่น "เช่าเต็นท์หลังใหญ่ 1 หลัง · หลังเล็ก 2 หลัง" / "เช่าเต็นท์หลังเล็ก 1 หลัง" (ไม่เช่า = '')
+const rentLabel = () => {
+  const big = tentRentals();
+  const small = tentRentalsSmall();
+  if (big && small) return `เช่าเต็นท์หลังใหญ่ ${big} หลัง · หลังเล็ก ${small} หลัง`;
+  if (big) return `เช่าเต็นท์หลังใหญ่ ${big} หลัง`;
+  return small ? `เช่าเต็นท์หลังเล็ก ${small} หลัง` : '';
+};
+// รายการที่เลือก เช่น ["Lagoon 1", "นำเต็นท์มาเอง 3 ท่าน", "เช่าเต็นท์หลังใหญ่ 1 หลัง · หลังเล็ก 1 หลัง"]
 const itemNames = () => [
   ...selectedHouses().map((h) => h.name),
   tentGuests() ? `นำเต็นท์มาเอง ${tentGuests()} ท่าน` : '',
-  tentRentals() ? `เช่าเต็นท์ ${tentRentals()} หลัง` : '',
+  rentLabel(),
 ].filter(Boolean);
 
 // ---------- สร้างรายการบ้าน (แบบย่อ 1 แถวต่อหลัง) ----------
@@ -275,11 +288,11 @@ function render() {
   renderCal();
 
   // ปุ่มลัด 3 แบบที่พัก + ลานเต็นท์บนแผนผัง: ขึ้นสถานะ "เลือกแล้ว" ตามที่เลือกอยู่
-  const tentsOn = tentGuests() > 0 || tentRentals() > 0;
+  const tentsOn = tentGuests() > 0 || rentCount() > 0;
   $('.tent-spot').classList.toggle('is-picked', tentsOn);
   $('.tp-house')?.classList.toggle('on', state.selected.size > 0);
   $('.tp-own')?.classList.toggle('on', tentGuests() > 0);
-  $('.tp-rent')?.classList.toggle('on', tentRentals() > 0);
+  $('.tp-rent')?.classList.toggle('on', rentCount() > 0);
 
   $('#bar').hidden = !hasItems() || $('#step-pick').hidden;
   if (hasItems()) {
@@ -308,7 +321,7 @@ document.querySelectorAll('[data-qty]').forEach((btn) => {
   });
 });
 // พิมพ์ตัวเลขเอง: คำนวณทันที และพอออกจากช่อง ปรับตัวเลขในช่องให้อยู่ระหว่าง 0 ถึงค่าสูงสุด
-['#tent-guests', '#tent-rent'].forEach((sel) => {
+['#tent-guests', '#tent-rent', '#tent-rent-s'].forEach((sel) => {
   const input = $(sel);
   input.addEventListener('input', render);
   input.addEventListener('change', () => {
@@ -564,10 +577,12 @@ function updateSummary() {
   const n = nights();
   const own = tentGuests();
   const rent = tentRentals();
+  const rentS = tentRentalsSmall();
   $('#summary').innerHTML = `
     ${state.selected.size ? `<dt>บ้าน</dt><dd>${selectedHouses().map((h) => h.name).join(', ')}</dd>` : ''}
     ${own ? `<dt>นำเต็นท์มาเอง</dt><dd>${own} ท่าน × ${baht(TENT_PRICE)} บาท × ${n} คืน = ${baht(own * TENT_PRICE * n)} บาท</dd>` : ''}
-    ${rent ? `<dt>เช่าเต็นท์</dt><dd>${rent} หลัง × ${baht(TENT_RENT)} บาท × ${n} คืน = ${baht(rent * TENT_RENT * n)} บาท</dd>` : ''}
+    ${rent ? `<dt>เช่าเต็นท์หลังใหญ่</dt><dd>${rent} หลัง × ${baht(TENT_RENT)} บาท × ${n} คืน = ${baht(rent * TENT_RENT * n)} บาท</dd>` : ''}
+    ${rentS ? `<dt>เช่าเต็นท์หลังเล็ก</dt><dd>${rentS} หลัง × ${baht(TENT_RENT_SMALL)} บาท × ${n} คืน = ${baht(rentS * TENT_RENT_SMALL * n)} บาท</dd>` : ''}
     <dt>เช็กอิน</dt><dd>${thaiDate(state.checkin)} (ตั้งแต่ 11:00)</dd>
     <dt>เช็กเอาต์</dt><dd>${thaiDate(state.checkout)} (ก่อน 12:00)</dd>
     <dt>รวม</dt><dd>${n} คืน · ${baht(total())} บาท</dd>`;
@@ -582,7 +597,7 @@ function prepDetails() {
   $('#guests-field').hidden = !withHouse;
   $('#guests-field input').required = withHouse;
   const capacity = selectedHouses().reduce((sum, h) => sum + h.guests, 0);
-  $('#capacity').textContent = withHouse ? `บ้านที่เลือกรองรับได้ ${capacity} ท่าน (มากกว่านี้ ทัก LINE ขอเสริมเตียง หรือย้อนกลับไปเพิ่มเต็นท์)` : '';
+  $('#capacity').textContent = withHouse ? `บ้านที่เลือกรองรับได้ ${capacity} ท่าน (มากกว่านี้ เพิ่มคนได้ คนละ ${EXTRA_PERSON} บาท มีที่นอนปิกนิกเสริม แจ้งทาง LINE หรือโทร ${PHONE} หรือย้อนกลับไปเพิ่มเต็นท์)` : '';
   updateSummary();
 }
 
@@ -617,15 +632,15 @@ $('#details-form').addEventListener('submit', async (e) => {
   const houses = selectedHouses();
   if (!hasItems()) { go('pick'); return; }
 
-  // คนเกินที่บ้านรับได้: ยังไม่มีราคาเสริมเตียง ให้ทักแอดมินก่อน (หรือเลือกบ้าน/เต็นท์เพิ่ม)
+  // คนเกินที่บ้านรับได้: เพิ่มคนได้คนละ 300 บาท (ที่นอนปิกนิกเสริม) แต่ต้องแจ้งแอดมิน — จองทางเว็บได้ไม่เกินที่บ้านรับได้
   const capacity = houses.reduce((sum, h) => sum + h.guests, 0);
   if (houses.length && Number(data.guests) > capacity) {
-    errorEl.innerHTML = `บ้านที่เลือกพักได้สูงสุด ${capacity} ท่าน ถ้ามา ${Number(data.guests)} ท่าน กรุณาย้อนกลับไปเลือกบ้านหรือเต็นท์เพิ่ม หรือทัก <a href="https://line.me/R/ti/p/${LINE_ID}" target="_blank" rel="noopener">LINE ${LINE_ID}</a> / โทร ${PHONE} เพื่อขอเสริมเตียง`;
+    errorEl.innerHTML = `บ้านที่เลือกพักได้สูงสุด ${capacity} ท่าน ถ้ามา ${Number(data.guests)} ท่าน เพิ่มคนได้ คนละ ${EXTRA_PERSON} บาท (มีที่นอนปิกนิกเสริม) กรุณาแจ้งทาง <a href="https://line.me/R/ti/p/${LINE_ID}" target="_blank" rel="noopener">LINE ${LINE_ID}</a> หรือโทร ${PHONE} (จองทางเว็บได้ไม่เกิน ${capacity} ท่าน) หรือย้อนกลับไปเลือกบ้านหรือเต็นท์เพิ่ม`;
     return;
   }
-  // จำนวนคนในบ้าน (จองแค่เต็นท์ = 0) · คนทั้งหมด = ในบ้าน + นำเต็นท์มาเอง + เช่าเต็นท์ (หลังละ 2 ท่าน)
+  // จำนวนคนในบ้าน (จองแค่เต็นท์ = 0) · คนทั้งหมด = ในบ้าน + นำเต็นท์มาเอง + เช่าเต็นท์ใหญ่/เล็ก (หลังละ 2 ท่าน)
   const houseGuests = houses.length ? Number(data.guests) : 0;
-  const allGuests = houseGuests + tentGuests() + tentRentals() * TENT_RENT_SLEEPS;
+  const allGuests = houseGuests + tentGuests() + rentCount() * TENT_RENT_SLEEPS;
 
   // ยอดและเวลาชำระ: ถ้าต่อ Google Sheets จะใช้ตัวเลขที่ Google คำนวณ (ด้านล่าง)
   const payType = data.payType === 'full' ? 'full' : 'deposit';
@@ -648,6 +663,7 @@ $('#details-form').addEventListener('submit', async (e) => {
           guests: houseGuests,
           tentGuests: tentGuests(),
           tentRentals: tentRentals(),
+          tentRentalsSmall: tentRentalsSmall(),
           name: data.name.trim(),
           phone: data.phone.trim(),
           note: data.note.trim(),
@@ -685,7 +701,8 @@ $('#details-form').addEventListener('submit', async (e) => {
   const summary = [
     houses.length ? `บ้าน: ${houses.map((h) => h.name).join(', ')} (${houseGuests} ท่าน)` : '',
     tentGuests() ? `นำเต็นท์มาเอง: ${tentGuests()} ท่าน` : '',
-    tentRentals() ? `เช่าเต็นท์: ${tentRentals()} หลัง` : '',
+    tentRentals() ? `เช่าเต็นท์หลังใหญ่: ${tentRentals()} หลัง` : '',
+    tentRentalsSmall() ? `เช่าเต็นท์หลังเล็ก: ${tentRentalsSmall()} หลัง` : '',
     `เช็กอิน: ${thaiDate(state.checkin)}`,
     `เช็กเอาต์: ${thaiDate(state.checkout)}`,
     `${nights()} คืน · รวม ${allGuests} ท่าน`,
@@ -705,7 +722,7 @@ $('#details-form').addEventListener('submit', async (e) => {
     body,
   ].filter((line) => line !== null).join('\n');
   const lineUrl = (body) => `https://line.me/R/oaMessage/${encodeURIComponent(LINE_ID)}/?${encodeURIComponent(lineMessage(body))}`;
-  // รายการแบบย่อ (ไม่มีชื่อ/เบอร์) เช่น "Lagoon 1, เช่าเต็นท์ 1 หลัง · ศ. 3 ต.ค. 2569 – ส. 4 ต.ค. 2569 (1 คืน)"
+  // รายการแบบย่อ (ไม่มีชื่อ/เบอร์) เช่น "Lagoon 1, เช่าเต็นท์หลังเล็ก 1 หลัง · ศ. 3 ต.ค. 2569 – ส. 4 ต.ค. 2569 (1 คืน)"
   const shortSummary = `${itemNames().join(', ')} · ${thaiDate(state.checkin)} – ${thaiDate(state.checkout)} (${nights()} คืน)`;
 
   // จำไว้ในหน้านี้ด้วย เพื่อให้บ้านขึ้นว่า "ถูกจองแล้ว" ทันที
@@ -721,6 +738,7 @@ $('#details-form').addEventListener('submit', async (e) => {
   state.selected.clear();
   $('#tent-guests').value = 0;
   $('#tent-rent').value = 0;
+  $('#tent-rent-s').value = 0;
   form.reset();
   render();
   go('done');
@@ -747,9 +765,8 @@ function showPayment(p) {
   $('#pay-rest').textContent = `${baht(p.total - p.due)} บาท — ชำระวันเช็กอิน (เงินสดหรือโอนหน้าเคาน์เตอร์)`;
   document.querySelectorAll('.pay-rest-row').forEach((el) => { el.hidden = full; });
   $('#pay-deadline').textContent = deadlineThai(p.deadline);
-  $('#pay-refund').textContent = full
-    ? `ชำระเต็มจำนวน: หากยกเลิกหรือไม่มาเข้าพัก รับเงินคืน 50% ของยอดจอง (${baht(Math.floor(p.total / 2))} บาท) แอดมินจะโอนคืนให้`
-    : 'มัดจำ 50%: หากยกเลิกหรือไม่มาเข้าพัก ไม่คืนเงินมัดจำ';
+  // เงื่อนไขยกเลิก (4 ต.ค. 2569): ไม่คืนมัดจำทุกกรณี (ตามไฟล์ข้อมูลกลาง; ชำระเต็มจำนวนรอเจ้าของยืนยัน) ยกเว้นเหตุฉุกเฉิน ทางลานพิจารณาเป็นรายกรณี — ห้ามสัญญาว่าจะคืน
+  $('#pay-refund').textContent = `${full ? 'ชำระเต็มจำนวน: ไม่ต้องจ่ายเพิ่มวันเช็กอิน · ' : ''}หากยกเลิกหรือไม่มาเข้าพัก ไม่คืนมัดจำทุกกรณี (ยกเว้นเหตุฉุกเฉิน ทางลานจะพิจารณาเป็นรายกรณี) · งดใช้เสียงหลัง 22:00 น.`;
   const qrBox = $('#pay-qr');
   const qr = makeQr(p.due);
   if (qr) {

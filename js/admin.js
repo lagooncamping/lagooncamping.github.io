@@ -83,7 +83,9 @@ const houseIds = () => HOUSE_ORDER.filter((h) => state.data && state.data.houses
 const houseName = (id) => (state.data && state.data.houses[id] ? state.data.houses[id].name : id);
 // การจองที่ยังล็อกบ้านอยู่
 const isActive = (b) => b.status === ST.CONFIRMED || b.status === ST.PENDING;
-const people = (b) => (Number(b.guests) || 0) + (Number(b.tent) || 0) + (Number(b.rent) || 0) * 2;
+// เต็นท์เช่า: rent = หลังใหญ่ · rentSmall = หลังเล็ก (หลังละ 2 ท่านทั้งคู่ · ระบบเก่ายังไม่ส่ง rentSmall = 0)
+const rentAll = (b) => (Number(b.rent) || 0) + (Number(b.rentSmall) || 0);
+const people = (b) => (Number(b.guests) || 0) + (Number(b.tent) || 0) + rentAll(b) * 2;
 const byId = (id) => bookings().find((b) => b.id === id);
 
 // ---------- เรียก Google Apps Script ----------
@@ -221,12 +223,14 @@ function statusClass(b) {
 function itemsText(b) {
   const parts = b.houseNames.length ? [b.houseNames.join(', ')] : [];
   if (b.tent) parts.push(`เต็นท์มาเอง ${b.tent} ท่าน`);
-  if (b.rent) parts.push(`เช่าเต็นท์ ${b.rent} หลัง`);
+  if (b.rent) parts.push(`เช่าเต็นท์หลังใหญ่ ${b.rent} หลัง`);
+  if (b.rentSmall) parts.push(`เช่าเต็นท์หลังเล็ก ${b.rentSmall} หลัง`);
   return parts.join(' + ') || 'ลานกางเต็นท์';
 }
 // ยอดที่ยังต้องเก็บ = ยอดรวม − ที่จ่ายมาแล้ว
 const remaining = (b) => Math.max(0, (Number(b.total) || 0) - (Number(b.due) || 0));
-const refundAmount = (b) => Math.floor((Number(b.total) || 0) / 2);
+// ยกเลิกแล้วไม่คืนมัดจำทุกกรณี — คืนได้เฉพาะเหตุฉุกเฉินที่เจ้าของตัดสินใจเอง ระบบไม่คำนวณยอดคืน
+const paidSomething = (b) => (b.payType === PAY_FULL || /มัดจำ/.test(b.payType || '')) && Number(b.due) > 0;
 // เงินที่ยังต้องเก็บจากแขก (เหมือนบรรทัด "ยังต้องเก็บอีก" บนการ์ด)
 const owed = (b) => (!b.blocked && b.status === ST.CONFIRMED && b.balance === BAL.UNPAID ? remaining(b) : 0);
 
@@ -238,6 +242,8 @@ const SHOP = {
   phone: '081-930-4969',
   map: 'https://goo.gl/maps/8mGhpGAEaRzAJNGq6',
   times: 'เช็กอินได้ตั้งแต่ 11:00 น. และเช็กเอาต์ก่อน 12:00 น.', // stay.html
+  noRefund: 'หากยกเลิก จะไม่มีการคืนมัดจำให้ ทุกกรณี', // แม่แบบที่แอดมินใช้อยู่ (ข้อมูลรีสอร์ท)
+  quiet: 'ขอความกรุณางดเสียงดังหลัง 22.00 น. นะคะ', // แม่แบบที่แอดมินใช้อยู่ (ข้อมูลรีสอร์ท)
   payLater: 'เงินสดหรือโอนหน้าเคาน์เตอร์',
 };
 const TH_DAY_FULL = ['อาทิตย์', 'จันทร์', 'อังคาร', 'พุธ', 'พฤหัสบดี', 'ศุกร์', 'เสาร์'];
@@ -281,16 +287,14 @@ function messageFor(b) {
   }
   if (b.status === ST.CONFIRMED) {
     return [`ยืนยันการจองแล้ว ✅`, `${name}`, '', ...stay, `ยอดรวม: ${baht(b.total)} บาท`, payLine, '',
-      SHOP.times, `แผนที่: ${SHOP.map}`, `สอบถาม โทร ${SHOP.phone}`, `ขอบคุณที่ใช้บริการ ${SHOP.name} 🙏`].join('\n');
+      SHOP.times, SHOP.noRefund, SHOP.quiet, `แผนที่: ${SHOP.map}`, `สอบถาม โทร ${SHOP.phone}`, `ขอบคุณที่ใช้บริการ ${SHOP.name} 🙏`].join('\n');
   }
   if (b.status === ST.CANCELLED) {
     const lines = [`สวัสดี${name}`, `ยกเลิกการจองเรียบร้อยแล้ว`, `รหัสการจอง: ${b.id}`,
       `ที่พัก: ${itemsText(b)}`, `วันที่: ${msgDate(b.checkin)} – ${msgDate(b.checkout)}`];
-    if (b.payType === PAY_FULL) {
-      lines.push(b.refund === REFUND_DONE
-        ? `โอนเงินคืน 50% ของยอดจอง ${baht(refundAmount(b))} บาท เรียบร้อยแล้ว`
-        : `ได้รับเงินคืน 50% ของยอดจอง = ${baht(refundAmount(b))} บาท (แอดมินโอนคืนให้)`);
-    }
+    // ไม่สัญญาว่าจะคืนเงิน · คืนกรณีฉุกเฉินเฉพาะที่แอดมินกด "คืนเงินแล้ว" (เจ้าของตัดสินใจ)
+    if (b.refund === REFUND_DONE) lines.push('โอนเงินคืนให้เรียบร้อยแล้ว (กรณีพิเศษ)');
+    else if (paidSomething(b)) lines.push(`ตามเงื่อนไขการจอง ไม่คืน${b.payType === PAY_FULL ? 'เงิน' : 'มัดจำ'}`);
     lines.push(`ขอบคุณที่ติดต่อ ${SHOP.name} 🙏`);
     return lines.join('\n');
   }
@@ -308,11 +312,8 @@ function moneyHtml(b) {
     }
   } else if (b.status === ST.CANCELLED) {
     lines.push(`ยอดรวม ${baht(b.total)} บาท · ${esc(b.payType || '-')}`);
-    if (b.payType === PAY_FULL) {
-      lines.push(b.refund === REFUND_DONE ? `<b class="ok">✓ โอนคืนแล้ว ${baht(refundAmount(b))} บาท</b>` : `<b class="warn">ต้องโอนคืน 50% = ${baht(refundAmount(b))} บาท</b>`);
-    } else if (b.payType) {
-      lines.push('มัดจำไม่คืน');
-    }
+    if (b.refund === REFUND_DONE) lines.push('<b class="ok">✓ คืนเงินแล้ว (กรณีฉุกเฉิน)</b>');
+    else if (paidSomething(b)) lines.push('ไม่คืนมัดจำ (ตามเงื่อนไข) · เหตุฉุกเฉินให้เจ้าของตัดสินใจ');
   } else if (b.status === ST.EXPIRED) {
     lines.push(`ไม่ได้โอนภายในเวลา · ยอดที่ต้องโอน ${baht(b.due)} บาท (${esc(b.payType || '-')})`);
   } else {
@@ -342,13 +343,11 @@ function actionsFor(b) {
     } else if (b.balance === BAL.CASH || b.balance === BAL.TRANSFER) {
       a.push(['unpaid', 'แก้: ยังไม่ได้รับเงิน', 'เปลี่ยนกลับเป็น “ยังไม่ได้รับเงินส่วนที่เหลือ” ใช่ไหม?', 'link']);
     }
-    const refundNote = b.payType === PAY_FULL ? ` ลูกค้าจ่ายเต็มจำนวน ต้องโอนคืน 50% = ${baht(refundAmount(b))} บาท` : '';
-    a.push(['cancel', 'ยกเลิกการจอง', `ยกเลิกการจองนี้ใช่ไหม?${refundNote}`, 'danger']);
+    a.push(['cancel', 'ยกเลิกการจอง', 'ยกเลิกการจองนี้ใช่ไหม? (ตามเงื่อนไข ไม่คืนเงิน ยกเว้นเหตุฉุกเฉินที่เจ้าของอนุมัติ)', 'danger']);
   } else if (b.status === ST.CANCELLED) {
-    if (b.payType === PAY_FULL) {
-      if (b.refund === REFUND_DONE) a.push(['unrefund', 'แก้: ยังไม่ได้โอนคืน', 'เปลี่ยนกลับเป็น “ยังไม่ได้โอนคืน” ใช่ไหม?', 'link']);
-      else a.push(['refund', `โอนคืนแล้ว ${baht(refundAmount(b))} บาท`, `โอนคืนลูกค้า ${baht(refundAmount(b))} บาทแล้ว ใช่ไหม?`, 'primary']);
-    }
+    // คืนเงินเป็นข้อยกเว้น (เหตุฉุกเฉิน เจ้าของตัดสินใจ) — ไม่มียอดคืนอัตโนมัติ
+    if (b.refund === REFUND_DONE) a.push(['unrefund', 'แก้: ยังไม่ได้คืนเงิน', 'เปลี่ยนกลับเป็น “ยังไม่ได้คืนเงิน” ใช่ไหม?', 'link']);
+    else if (paidSomething(b)) a.push(['refund', 'คืนเงินแล้ว (กรณีฉุกเฉิน)', 'บันทึกว่าโอนคืนลูกค้าแล้ว (เหตุฉุกเฉิน เจ้าของอนุมัติแล้ว) ใช่ไหม?', 'link']);
     a.push(['reopen', 'ยกเลิกผิด? เปิดการจองนี้อีกครั้ง', 'เปิดการจองนี้กลับมาเป็น “ยืนยันแล้ว” ใช่ไหม?', 'link']);
   }
   return a;
@@ -358,7 +357,7 @@ function card(b) {
   const cls = statusClass(b);
   const pill = cls === 'blocked' ? 'ปิดบ้าน' : (b.status || 'ไม่มีสถานะ');
   const phone = String(b.phone || '').replace(/[^\d+]/g, '');
-  const who = b.blocked ? '' : `<p class="who"><b>${esc(b.name || '-')}</b>${people(b) ? ` · ${people(b)} ท่าน` : ''}${b.guests && (b.tent || b.rent) ? ` (ในบ้าน ${b.guests})` : ''}</p>`;
+  const who = b.blocked ? '' : `<p class="who"><b>${esc(b.name || '-')}</b>${people(b) ? ` · ${people(b)} ท่าน` : ''}${b.guests && (b.tent || rentAll(b)) ? ` (ในบ้าน ${b.guests})` : ''}</p>`;
   return `
   <article class="bk st-${cls}" id="b-${esc(b.id)}" data-id="${esc(b.id)}">
     <div class="bk-top"><span class="pill">${esc(pill)}</span>${b.lineLinked && !b.blocked ? '<span class="line-badge" title="ลูกค้าทัก LINE พร้อมเลขการจองแล้ว กดยืนยันแล้วระบบส่งใบยืนยันเข้า LINE ให้">LINE ✓</span>' : ''}<span class="bk-id">${esc(b.id)}</span></div>
@@ -392,8 +391,8 @@ const ACTIONS = {
   cash: ['setBalance', { value: 'CASH' }, 'บันทึกรับเงินสดแล้ว'],
   transfer: ['setBalance', { value: 'TRANSFER' }, 'บันทึกรับโอนแล้ว'],
   unpaid: ['setBalance', { value: 'UNPAID' }, 'แก้เป็นยังไม่ได้รับเงินแล้ว'],
-  refund: ['setRefund', { done: true }, 'บันทึกโอนคืนแล้ว'],
-  unrefund: ['setRefund', { done: false }, 'แก้เป็นยังไม่ได้โอนคืนแล้ว'],
+  refund: ['setRefund', { done: true }, 'บันทึกคืนเงินแล้ว (กรณีฉุกเฉิน)'],
+  unrefund: ['setRefund', { done: false }, 'แก้เป็นยังไม่ได้คืนเงินแล้ว'],
 };
 document.addEventListener('click', async (e) => {
   const el = e.target.closest('[data-act], [data-yes], [data-no]');
@@ -485,12 +484,13 @@ function renderToday() {
   // เตรียมงาน
   const arriveHouses = new Set(arrive.flatMap((b) => b.houses));
   const clean = [...new Set(leave.flatMap((b) => b.houses))];
-  const rentTonight = tonight.reduce((s, b) => s + (Number(b.rent) || 0), 0);
-  const rentNew = arrive.reduce((s, b) => s + (Number(b.rent) || 0), 0);
+  const rentTonight = tonight.reduce((s, b) => s + rentAll(b), 0);
+  const rentNew = arrive.reduce((s, b) => s + rentAll(b), 0);
+  const rentSmallTonight = tonight.reduce((s, b) => s + (Number(b.rentSmall) || 0), 0);
   const ownTent = arrive.reduce((s, b) => s + (Number(b.tent) || 0), 0);
   const blocks = bookings().filter((b) => b.blocked && b.status === ST.CONFIRMED && b.checkin === t);
   const prep = clean.map((h) => `🧹 ทำความสะอาด <b>${esc(houseName(h))}</b> (แขกออกวันนี้)${arriveHouses.has(h) ? ' <b class="warn">⚠️ ต้องเสร็จก่อนแขกเข้า</b>' : ''}`);
-  if (rentTonight) prep.push(`⛺ เต็นท์เช่าคืนนี้ <b>${rentTonight} หลัง</b>${rentNew ? ` (ต้องกางใหม่วันนี้ ${rentNew} หลัง)` : ' (กางไว้แล้ว)'}`);
+  if (rentTonight) prep.push(`⛺ เต็นท์เช่าคืนนี้ <b>${rentTonight} หลัง</b>${rentSmallTonight ? ` (ใหญ่ ${rentTonight - rentSmallTonight} · เล็ก ${rentSmallTonight})` : ''}${rentNew ? ` (ต้องกางใหม่วันนี้ ${rentNew} หลัง)` : ' (กางไว้แล้ว)'}`);
   if (ownTent) prep.push(`🏕️ แขกนำเต็นท์มาเอง เข้าวันนี้ <b>${ownTent} ท่าน</b>`);
   blocks.forEach((b) => prep.push(`🔒 ปิดบ้านวันนี้: <b>${esc(b.houseNames.join(', '))}</b>${b.note ? ` (${esc(b.note)})` : ''}`));
 
@@ -661,7 +661,8 @@ function estimate() {
   const n = isISO(F('checkin').value) && isISO(F('checkout').value) ? nightsBetween(F('checkin').value, F('checkout').value) : 0;
   if (!state.data || n <= 0) return { n, total: 0 };
   const per = [...state.addHouses].reduce((s, h) => s + state.data.houses[h].price, 0)
-    + intVal('tentGuests') * state.data.tentPrice + intVal('tentRentals') * state.data.tentRent;
+    + intVal('tentGuests') * state.data.tentPrice + intVal('tentRentals') * state.data.tentRent
+    + intVal('tentRentalsSmall') * (state.data.tentRentSmall || 1000); // 1000 = ราคาเต็นท์เล็ก (เผื่อ Code.gs ยังเป็นเวอร์ชันเก่า)
   return { n, total: per * n };
 }
 function updateEstimate() {
@@ -684,7 +685,7 @@ bindPicks('#add-houses', state.addHouses, updateEstimate);
   if (n === 'checkin' && isISO(F('checkin').value) && !(F('checkout').value > F('checkin').value)) F('checkout').value = addDays(F('checkin').value, 1);
   refreshAdd();
 }));
-addForm.addEventListener('input', (e) => { if (['tentGuests', 'tentRentals', 'total', 'paid'].includes(e.target.name)) updateEstimate(); });
+addForm.addEventListener('input', (e) => { if (['tentGuests', 'tentRentals', 'tentRentalsSmall', 'total', 'paid'].includes(e.target.name)) updateEstimate(); });
 addForm.addEventListener('change', (e) => { if (e.target.name === 'paid') updateEstimate(); });
 // ปุ่ม − / +
 addForm.addEventListener('click', (e) => {
@@ -705,7 +706,7 @@ addForm.addEventListener('submit', async (e) => {
   const name = F('name').value.trim();
   if (!isISO(checkin) || !isISO(checkout) || checkout <= checkin) { errEl.textContent = 'วันออกต้องหลังวันเข้า'; return; }
   if (checkout <= state.today) { errEl.textContent = 'วันออกต้องหลังวันนี้'; return; }
-  if (!houses.length && !intVal('tentGuests') && !intVal('tentRentals')) { errEl.textContent = ERRORS.bad_house; return; }
+  if (!houses.length && !intVal('tentGuests') && !intVal('tentRentals') && !intVal('tentRentalsSmall')) { errEl.textContent = ERRORS.bad_house; return; }
   if (!name) { errEl.textContent = ERRORS.bad_name; F('name').focus(); return; }
   const busy = houses.filter((h) => takenBetween(checkin, checkout)[h]);
   if (busy.length) { errEl.textContent = `${busy.map(houseName).join(', ')} ไม่ว่างในวันที่เลือก`; return; }
@@ -720,6 +721,7 @@ addForm.addEventListener('submit', async (e) => {
     guests: houses.length ? intVal('guests') : 0,
     tentGuests: intVal('tentGuests'),
     tentRentals: intVal('tentRentals'),
+    tentRentalsSmall: intVal('tentRentalsSmall'),
     name,
     phone: F('phone').value.trim(),
     note: F('note').value.trim(),

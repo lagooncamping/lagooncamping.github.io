@@ -22,6 +22,8 @@
  * - LINE ลูกค้า: ส่งข้อความที่มีเลขการจอง (เช่น ข้อความส่งสลิป) → บอทตอบใบยืนยันการจอง และจำ LINE ของลูกค้าไว้
  *   ในคอลัมน์ 'LINE ลูกค้า' · แอดมินกดยืนยันการจองในหลังบ้าน → ส่งใบยืนยันเข้า LINE ลูกค้าให้เอง (1 ข้อความ)
  *   ชีตเก่าที่ยังไม่มีคอลัมน์ 'LINE ลูกค้า' ใช้ได้เลย (ระบบเพิ่มให้) หรือกด Run setup() อีกครั้งก็ได้
+ * - เต็นท์เช่ามี 2 ขนาด (4 ต.ค. 2569): หลังใหญ่ = คอลัมน์ 'เช่าเต็นท์ (หลัง)' เดิม · หลังเล็ก = คอลัมน์ใหม่ 'เช่าเต็นท์เล็ก (หลัง)' (ช่องที่ 22)
+ *   ชีตเก่าที่ยังไม่มีคอลัมน์นี้ใช้ได้เลย (อ่านเป็น 0) · มีคนจองเต็นท์เล็กครั้งแรก ระบบเพิ่มคอลัมน์+หัวให้เอง
  *   แก้ไฟล์นี้แล้วต้อง Deploy > Manage deployments > แก้ (ดินสอ) > Version: New version > Deploy ทุกครั้ง
  */
 
@@ -34,14 +36,17 @@ const STATUS = { PENDING: 'รอชำระเงิน', CONFIRMED: 'ยื�
 // อีเมลที่จะได้รับแจ้งเตือนเมื่อมีการจองใหม่ (เว้นว่าง = ไม่ส่ง)
 const NOTIFY_EMAIL = 'lagooncampingresort@gmail.com';
 
-// เงื่อนไขการชำระ (ตามที่เจ้าของกำหนด 2 ต.ค. 2026)
-// ลูกค้าเลือกเอง: มัดจำ 50% (ยกเลิก/ไม่มา ไม่คืนเงิน · ที่เหลือจ่ายวันเช็กอิน เงินสดหรือโอนหน้าเคาน์เตอร์)
-// หรือ เต็มจำนวน (ยกเลิก/ไม่มา คืน 50% ของยอดจอง — แอดมินโอนคืนเอง)
+// เงื่อนไขการชำระ (ตามที่เจ้าของกำหนด 2 ต.ค. 2026 · แก้เรื่องยกเลิก 4 ต.ค. 2026)
+// ลูกค้าเลือกเอง: มัดจำ 50% (ที่เหลือจ่ายวันเช็กอิน เงินสดหรือโอนหน้าเคาน์เตอร์) หรือ เต็มจำนวน (ไม่ต้องจ่ายเพิ่มวันเช็กอิน)
+// ยกเลิก/ไม่มา: ไม่คืนมัดจำทุกกรณี ยกเว้นเหตุฉุกเฉิน ทางลานพิจารณาเป็นรายกรณี
+//   → ระบบไม่คำนวณยอดคืนเอง · ถ้าเจ้าของตัดสินใจคืน แอดมินกด "คืนเงินแล้ว (กรณีฉุกเฉิน)" ในหลังบ้าน
 const DEPOSIT_RATE = 0.5; // มัดจำ 50%
 const HOLD_HOURS = 6;     // ต้องชำระภายใน 6 ชั่วโมง ไม่งั้นบ้านหลุด
 const PAY_TYPES = { deposit: 'มัดจำ 50%', full: 'เต็มจำนวน' };
 const TENT_PRICE = 200;  // นำเต็นท์มาเอง บาท/ท่าน/คืน — ต้องตรงกับ js/booking.js
-const TENT_RENT = 1300;  // เช่าเต็นท์ของรีสอร์ท บาท/หลัง/คืน (นอน 2 ท่าน พร้อมเครื่องนอน 2 ชุด พัดลม ปลั๊ก) — ต้องตรงกับ js/booking.js
+const TENT_RENT = 1300;  // เช่าเต็นท์หลังใหญ่ บาท/หลัง/คืน (นอน 2 ท่าน พร้อมเครื่องนอน 2 ชุด พัดลม ปลั๊ก) — ต้องตรงกับ js/booking.js
+const TENT_RENT_SMALL = 1000; // เช่าเต็นท์หลังเล็ก บาท/หลัง/คืน (นอน 2 ท่าน พร้อมเครื่องนอน 2 ชุด พัดลม ปลั๊ก) — ต้องตรงกับ js/booking.js
+const TENT_RENT_SLEEPS = 2;   // เต็นท์เช่า 1 หลัง (ทั้งใหญ่และเล็ก) นอนได้ 2 ท่าน
 // จองเฉพาะเต็นท์ (ไม่มีบ้าน) บันทึกเป็น 1 แถว รหัสบ้าน 'tent' (ไม่ล็อกบ้านหลังไหน)
 const TENT_ROW = { id: 'tent', name: 'ลานกางเต็นท์' };
 const SAME_DAY_CUTOFF = 18; // หลัง 18:00 น. ไม่รับจองเข้าพักวันนี้ทางเว็บ (ให้โทรจอง) — ต้องตรงกับ js/booking.js
@@ -63,14 +68,15 @@ function isHouse_(id) {
 
 const HEADERS = ['เวลาที่จอง', 'รหัสการจอง', 'รหัสบ้าน', 'บ้าน', 'เช็กอิน', 'เช็กเอาต์', 'คืน', 'ผู้เข้าพัก',
   'ชื่อ', 'เบอร์โทร', 'หมายเหตุ', 'ยอดรวม (บาท)', 'สถานะ', 'ยอดที่ต้องชำระ (บาท)', 'ชำระภายใน', 'แบบชำระ',
-  'ชำระส่วนที่เหลือ', 'คืนเงิน', 'กางเต็นท์เอง (ท่าน)', 'เช่าเต็นท์ (หลัง)', 'LINE ลูกค้า'];
-const COL = { house: 3, checkin: 5, checkout: 6, status: 13, deadline: 15, balance: 17, refund: 18, line: 21 }; // ลำดับคอลัมน์ (เริ่มที่ 1)
+  'ชำระส่วนที่เหลือ', 'คืนเงิน', 'กางเต็นท์เอง (ท่าน)', 'เช่าเต็นท์ (หลัง)', 'LINE ลูกค้า', 'เช่าเต็นท์เล็ก (หลัง)'];
+const COL = { house: 3, checkin: 5, checkout: 6, status: 13, deadline: 15, balance: 17, refund: 18, line: 21, rentSmall: 22 }; // ลำดับคอลัมน์ (เริ่มที่ 1)
+// คอลัมน์ 'เช่าเต็นท์ (หลัง)' (ช่องที่ 20) = เต็นท์เช่าหลังใหญ่ · 'เช่าเต็นท์เล็ก (หลัง)' (ช่องที่ 22) = หลังเล็ก (เพิ่ม 4 ต.ค. 2569)
 // คอลัมน์ 'LINE ลูกค้า' (ช่องที่ 21) = LINE userId ของลูกค้าที่ทักมาพร้อมเลขการจอง (ระบบเติมเอง ห้ามแก้/ห้ามแชร์)
 // ใช้ส่งใบยืนยันเข้า LINE ลูกค้าตอนแอดมินกดยืนยัน · ชีตเก่าที่ยังไม่มีคอลัมน์นี้ใช้ได้ (ระบบเพิ่มหัวคอลัมน์ให้ตอนต้องใช้)
 
 // ช่องให้แอดมินเลือก
 // - ชำระส่วนที่เหลือ: แบบมัดจำ 50% จ่ายที่เหลือวันเช็กอิน (เงินสด หรือ โอนหน้าเคาน์เตอร์)
-// - คืนเงิน: แบบเต็มจำนวนที่ยกเลิกหรือไม่มาพัก แอดมินโอนคืน 50% แล้วเลือก "คืนเงินแล้ว"
+// - คืนเงิน: ปกติไม่คืน · เฉพาะกรณีฉุกเฉินที่เจ้าของตัดสินใจคืนเอง แอดมินโอนแล้วเลือก "คืนเงินแล้ว"
 const BALANCE = { UNPAID: 'ยังไม่ชำระ', CASH: 'เงินสด', TRANSFER: 'โอนหน้าเคาน์เตอร์' };
 const REFUND = { DONE: 'คืนเงินแล้ว' };
 
@@ -195,7 +201,8 @@ function doPost(e) {
   const nights = nights_(d.checkin, d.checkout);
   const tent = Math.floor(Number(d.tentGuests) || 0);
   const rent = Math.floor(Number(d.tentRentals) || 0);
-  const total = (d.houses.reduce((sum, h) => sum + HOUSES[h].price, 0) + tent * TENT_PRICE + rent * TENT_RENT) * nights;
+  const rentSmall = Math.floor(Number(d.tentRentalsSmall) || 0);
+  const total = (d.houses.reduce((sum, h) => sum + HOUSES[h].price, 0) + tent * TENT_PRICE + rent * TENT_RENT + rentSmall * TENT_RENT_SMALL) * nights;
   const payType = d.payType === 'full' ? 'full' : 'deposit';
   const due = payType === 'full' ? total : Math.ceil(total * DEPOSIT_RATE);
 
@@ -214,12 +221,13 @@ function doPost(e) {
     id = 'LG' + Utilities.formatDate(now, TZ, 'yyMMdd') + '-' + Math.floor(1000 + Math.random() * 9000);
     deadline = Utilities.formatDate(new Date(now.getTime() + HOLD_HOURS * 3600000), TZ, 'yyyy-MM-dd HH:mm');
     // 1 แถวต่อบ้าน · จองแค่เต็นท์ = 1 แถวรหัส 'tent'
+    const extra = smallCols_(sh, rentSmall);
     const items = d.houses.length ? d.houses.map((h) => ({ id: h, name: HOUSES[h].name })) : [TENT_ROW];
     const rows = items.map((h) => [
       Utilities.formatDate(now, TZ, 'yyyy-MM-dd HH:mm'), id, h.id, h.name, d.checkin, d.checkout, nights,
       Number(d.guests), safe_(d.name), safe_(d.phone), safe_(d.note), total, STATUS.PENDING, due, deadline,
       PAY_TYPES[payType], payType === 'deposit' ? BALANCE.UNPAID : '', '', tent || '', rent || '',
-    ]);
+    ].concat(extra));
     sh.getRange(sh.getLastRow() + 1, 1, rows.length, rows[0].length).setValues(rows);
   } finally {
     try {
@@ -250,12 +258,22 @@ function readCols_(sh) {
   return Math.max(1, Math.min(HEADERS.length, max));
 }
 
-// ชีตมีคอลัมน์ไม่ครบ HEADERS → เพิ่มคอลัมน์ท้ายตาราง · หัวคอลัมน์ 'LINE ลูกค้า' ยังว่าง → เขียนให้
+// ชีตมีคอลัมน์ไม่ครบ HEADERS → เพิ่มคอลัมน์ท้ายตาราง · หัวคอลัมน์ที่เพิ่มทีหลัง ('LINE ลูกค้า', 'เช่าเต็นท์เล็ก (หลัง)') ยังว่าง → เขียนให้
 function ensureCols_(sh) {
   const max = typeof sh.getMaxColumns === 'function' ? sh.getMaxColumns() : HEADERS.length;
   if (max < HEADERS.length) sh.insertColumnsAfter(max, HEADERS.length - max);
-  const head = sh.getRange(1, COL.line);
-  if (String(head.getValue() || '').trim() === '') head.setValue(HEADERS[COL.line - 1]);
+  [COL.line, COL.rentSmall].forEach((c) => {
+    const head = sh.getRange(1, c);
+    if (String(head.getValue() || '').trim() === '') head.setValue(HEADERS[c - 1]);
+  });
+}
+
+// ช่องท้ายแถวใหม่สำหรับเต็นท์เล็ก: ไม่มีเต็นท์เล็ก = ไม่เขียนเพิ่ม (แถว 20 ช่องเหมือนเดิม ชีตเก่าไม่ต้องเพิ่มคอลัมน์)
+// มีเต็นท์เล็ก = เพิ่มคอลัมน์ถ้ายังไม่มี แล้วเขียนช่อง 21 ('LINE ลูกค้า' ว่างไว้ ระบบเติมทีหลัง) + ช่อง 22 (จำนวนหลัง)
+function smallCols_(sh, rentSmall) {
+  if (!rentSmall) return [];
+  ensureCols_(sh);
+  return ['', rentSmall];
 }
 
 function json_(obj) {
@@ -334,9 +352,11 @@ function validate_(d) {
   if (d.houses.some((h) => !isHouse_(h))) return 'bad_house';
   const tent = Number(d.tentGuests || 0);
   const rent = Number(d.tentRentals || 0);
+  const rentSmall = Number(d.tentRentalsSmall || 0);
   if (!(Number.isInteger(tent) && tent >= 0 && tent <= 30)) return 'bad_tent';
   if (!(Number.isInteger(rent) && rent >= 0 && rent <= 10)) return 'bad_tent';
-  if (!d.houses.length && !tent && !rent) return 'bad_house'; // ต้องมีบ้านหรือเต็นท์อย่างน้อย 1 อย่าง
+  if (!(Number.isInteger(rentSmall) && rentSmall >= 0 && rentSmall <= 10)) return 'bad_tent';
+  if (!d.houses.length && !tent && !rent && !rentSmall) return 'bad_house'; // ต้องมีบ้านหรือเต็นท์อย่างน้อย 1 อย่าง
   if (!isDate(d.checkin) || !isDate(d.checkout) || d.checkout <= d.checkin || d.checkin < todayISO_()) return 'bad_dates';
   if (d.checkin === todayISO_() && Number(Utilities.formatDate(new Date(), TZ, 'H')) >= SAME_DAY_CUTOFF) return 'too_late';
   if (nights_(d.checkin, d.checkout) > 30) return 'too_long';
@@ -351,20 +371,33 @@ function validate_(d) {
   return '';
 }
 
-// สิ่งที่จอง เช่น "Lagoon 1, Lagoon 2 + เต็นท์มาเอง 3 ท่าน + เช่าเต็นท์ 1 หลัง"
+// เต็นท์เช่า เช่น ["เช่าเต็นท์หลังใหญ่ 1 หลัง", "เช่าเต็นท์หลังเล็ก 2 หลัง"] (ไม่มี = [])
+function rentParts_(big, small) {
+  const out = [];
+  if (Number(big)) out.push('เช่าเต็นท์หลังใหญ่ ' + Number(big) + ' หลัง');
+  if (Number(small)) out.push('เช่าเต็นท์หลังเล็ก ' + Number(small) + ' หลัง');
+  return out;
+}
+
+// เต็นท์เช่าแบบมีวงเล็บนอนกี่ท่าน เช่น "เช่าเต็นท์หลังใหญ่ 1 หลัง · เช่าเต็นท์หลังเล็ก 1 หลัง (2 ท่าน/หลัง)" (ไม่มี = '')
+function rentText_(big, small) {
+  const parts = rentParts_(big, small);
+  return parts.length ? parts.join(' · ') + ' (' + TENT_RENT_SLEEPS + ' ท่าน/หลัง)' : '';
+}
+
+// สิ่งที่จอง เช่น "Lagoon 1, Lagoon 2 + เต็นท์มาเอง 3 ท่าน + เช่าเต็นท์หลังใหญ่ 1 หลัง + เช่าเต็นท์หลังเล็ก 1 หลัง"
 function itemsText_(d) {
   const parts = d.houses.map((h) => HOUSES[h].name);
   if (Number(d.tentGuests)) parts.push('นำเต็นท์มาเอง ' + Number(d.tentGuests) + ' ท่าน');
-  if (Number(d.tentRentals)) parts.push('เช่าเต็นท์ ' + Number(d.tentRentals) + ' หลัง');
-  return parts.join(' + ');
+  return parts.concat(rentParts_(d.tentRentals, d.tentRentalsSmall)).join(' + ');
 }
 
-// จำนวนคน เช่น "4 ท่านในบ้าน · เต็นท์มาเอง 3 ท่าน · เช่าเต็นท์ 1 หลัง"
+// จำนวนคน เช่น "4 ท่านในบ้าน · เต็นท์มาเอง 3 ท่าน · เช่าเต็นท์หลังใหญ่ 1 หลัง (2 ท่าน/หลัง)"
 function guestsText_(d) {
   return [
     Number(d.guests) ? Number(d.guests) + ' ท่านในบ้าน' : '',
     Number(d.tentGuests) ? 'เต็นท์มาเอง ' + Number(d.tentGuests) + ' ท่าน' : '',
-    Number(d.tentRentals) ? 'เช่าเต็นท์ ' + Number(d.tentRentals) + ' หลัง (2 ท่าน/หลัง)' : '',
+    rentText_(d.tentRentals, d.tentRentalsSmall),
   ].filter(Boolean).join(' · ');
 }
 
@@ -555,7 +588,8 @@ function bookingGroups_() {
     const key = String(r[1]).trim() || 'row' + i; // แถวที่แอดมินพิมพ์เองอาจไม่มีรหัส
     const g = groups[key] || (groups[key] = {
       houses: [], from: iso_(r[COL.checkin - 1]), to: iso_(r[COL.checkout - 1]),
-      guests: r[7], tent: Number(r[18]) || 0, rent: Number(r[19]) || 0, name: String(r[8]), phone: String(r[9]), note: String(r[10] || ''), status,
+      guests: r[7], tent: Number(r[18]) || 0, rent: Number(r[19]) || 0, rentSmall: Number(r[COL.rentSmall - 1]) || 0,
+      name: String(r[8]), phone: String(r[9]), note: String(r[10] || ''), status,
       blocked: /^BLK/.test(key), // ปิดบ้านจากหลังบ้าน (ซ่อม/ไม่รับจอง) ไม่ใช่แขก
     });
     const hid = houseId_(r[COL.house - 1]) || houseId_(r[3]);
@@ -565,11 +599,11 @@ function bookingGroups_() {
   return Object.values(groups).sort((a, b) => (a.from < b.from ? -1 : a.from > b.from ? 1 : 0));
 }
 
-// จำนวนคนทั้งหมดของการจอง = คนในบ้าน + เต็นท์มาเอง + เช่าเต็นท์ × 2
+// จำนวนคนทั้งหมดของการจอง = คนในบ้าน + เต็นท์มาเอง + เช่าเต็นท์ (ใหญ่+เล็ก) × 2
 // (จองเฉพาะเต็นท์ที่แอดมินพิมพ์เองโดยไม่ใส่ช่องเต็นท์ ใช้ช่องผู้เข้าพักแทน)
 function groupPeople_(g) {
   const inHouse = Number(g.guests) || 0;
-  const tents = g.tent + g.rent * 2;
+  const tents = g.tent + (g.rent + (g.rentSmall || 0)) * TENT_RENT_SLEEPS;
   if (!g.houses.length) return tents || inHouse;
   return inHouse + tents;
 }
@@ -579,7 +613,8 @@ function bookingText_(g) {
   const people = [
     g.houses.length ? (Number(g.guests) || 0) + ' ท่านในบ้าน' : 'ไม่มีบ้าน',
     g.tent ? '⛺ มาเอง ' + g.tent + ' ท่าน' : '',
-    g.rent ? '⛺ เช่า ' + g.rent + ' หลัง' : '',
+    g.rent ? '⛺ เช่าหลังใหญ่ ' + g.rent + ' หลัง' : '',
+    g.rentSmall ? '⛺ เช่าหลังเล็ก ' + g.rentSmall + ' หลัง' : '',
   ].filter(Boolean).join(' · ');
   return [
     g.houses.length ? '🏠 ' + g.houses.join(', ') : '⛺ ' + TENT_ROW.name + ' (ไม่มีบ้าน)',
@@ -608,12 +643,11 @@ function nightText_(day) {
   const houses = guests.reduce((sum, g) => sum + g.houses.length, 0);
   const tent = list.reduce((sum, g) => sum + g.tent, 0);
   const rent = list.reduce((sum, g) => sum + g.rent, 0);
+  const rentSmall = list.reduce((sum, g) => sum + (g.rentSmall || 0), 0);
   const summary = [
     'บ้าน ' + houses + ' หลัง',
     tent ? 'เต็นท์มาเอง ' + tent + ' ท่าน' : '',
-    rent ? 'เช่าเต็นท์ ' + rent + ' หลัง' : '',
-    'รวม ' + people + ' ท่าน',
-  ].filter(Boolean).join(' · ');
+  ].concat(rentParts_(rent, rentSmall), ['รวม ' + people + ' ท่าน']).filter(Boolean).join(' · ');
   return head + '\n' + summary + '\n\n' + list.map(bookingText_).join('\n\n');
 }
 
@@ -798,7 +832,8 @@ function adminList_() {
         guests: Number(r[7]) || 0, name: String(r[8] || ''), phone: String(r[9] || ''), note: String(r[10] || ''),
         total: Number(r[11]) || 0, status, due: Number(r[13]) || 0, deadline: stamp_(r[COL.deadline - 1]),
         payType: String(r[15] || ''), balance: String(r[COL.balance - 1] || ''), refund: String(r[COL.refund - 1] || ''),
-        tent: Number(r[18]) || 0, rent: Number(r[19]) || 0, createdAt: stamp_(r[0]), blocked: /^BLK/.test(id),
+        tent: Number(r[18]) || 0, rent: Number(r[19]) || 0, rentSmall: Number(r[COL.rentSmall - 1]) || 0,
+        createdAt: stamp_(r[0]), blocked: /^BLK/.test(id),
         lineLinked: String(r[COL.line - 1] || '').trim() !== '', // ลูกค้าทัก LINE พร้อมเลขการจองแล้ว (ไม่ส่ง userId)
         show: !isISO || checkout >= since,
       };
@@ -812,7 +847,7 @@ function adminList_() {
   const bookings = order.map((id) => groups[id]).filter((g) => g.show)
     .sort((a, b) => (a.checkin < b.checkin ? -1 : a.checkin > b.checkin ? 1 : 0));
   bookings.forEach((g) => delete g.show);
-  return { ok: true, today, now, houses: HOUSES, tentPrice: TENT_PRICE, tentRent: TENT_RENT, depositRate: DEPOSIT_RATE, bookings };
+  return { ok: true, today, now, houses: HOUSES, tentPrice: TENT_PRICE, tentRent: TENT_RENT, tentRentSmall: TENT_RENT_SMALL, depositRate: DEPOSIT_RATE, bookings };
 }
 
 // รับได้ทั้งชื่อย่อ (CONFIRMED) และคำไทย (ยืนยันแล้ว)
@@ -874,7 +909,7 @@ function adminSetBalance_(d) {
   return adminSetCol_(d.id, COL.balance, value);
 }
 
-/** setRefund { id, done: true/false } */
+/** setRefund { id, done: true/false } — คืนเงินกรณีฉุกเฉิน (เจ้าของตัดสินใจเอง ระบบไม่คำนวณยอดคืน) */
 function adminSetRefund_(d) {
   return adminSetCol_(d.id, COL.refund, d.done === true ? REFUND.DONE : '');
 }
@@ -890,7 +925,7 @@ function adminSetCol_(id, col, value) {
 }
 
 /** addBooking (block=false): จองทางโทรศัพท์/LINE/walk-in → ยืนยันแล้วทันที ไม่ส่ง LINE (ประหยัดโควตา 200 ข้อความ/เดือน)
- *    { houses[], checkin, checkout, guests, name, phone, note, tentGuests, tentRentals, total?, paid: none|deposit|full }
+ *    { houses[], checkin, checkout, guests, name, phone, note, tentGuests, tentRentals, tentRentalsSmall, total?, paid: none|deposit|full }
  *  block (block=true): ปิดบ้าน (ซ่อม/ไม่รับจอง) { houses[], from, to, reason } — เปิดคืน = setStatus CANCELLED */
 function adminAdd_(d, block) {
   const isDate = (s) => typeof s === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(s);
@@ -906,6 +941,7 @@ function adminAdd_(d, block) {
 
   let tent = 0;
   let rent = 0;
+  let rentSmall = 0;
   let guests = 0;
   let name = 'ปิดบ้าน';
   let phone = '';
@@ -919,9 +955,11 @@ function adminAdd_(d, block) {
   } else {
     tent = Number(d.tentGuests || 0);
     rent = Number(d.tentRentals || 0);
+    rentSmall = Number(d.tentRentalsSmall || 0);
     if (!(Number.isInteger(tent) && tent >= 0 && tent <= 30)) return { ok: false, error: 'bad_tent' };
     if (!(Number.isInteger(rent) && rent >= 0 && rent <= 10)) return { ok: false, error: 'bad_tent' };
-    if (!houses.length && !tent && !rent) return { ok: false, error: 'bad_house' };
+    if (!(Number.isInteger(rentSmall) && rentSmall >= 0 && rentSmall <= 10)) return { ok: false, error: 'bad_tent' };
+    if (!houses.length && !tent && !rent && !rentSmall) return { ok: false, error: 'bad_house' };
     guests = Number(d.guests || 0);
     if (!(Number.isInteger(guests) && guests >= 0 && guests <= 30)) return { ok: false, error: 'bad_guests' };
     name = String(d.name == null ? '' : d.name).trim();
@@ -936,7 +974,7 @@ function adminAdd_(d, block) {
       total = Number(d.total);
       if (!(Number.isInteger(total) && total >= 0 && total <= 10000000)) return { ok: false, error: 'bad_total' };
     } else {
-      total = (houses.reduce((sum, h) => sum + HOUSES[h].price, 0) + tent * TENT_PRICE + rent * TENT_RENT) * nights;
+      total = (houses.reduce((sum, h) => sum + HOUSES[h].price, 0) + tent * TENT_PRICE + rent * TENT_RENT + rentSmall * TENT_RENT_SMALL) * nights;
     }
   }
   // ยอดที่จ่ายมาแล้ว: ยังไม่จ่าย = 0 · มัดจำ = 50% · จ่ายครบ = ยอดรวม
@@ -954,11 +992,12 @@ function adminAdd_(d, block) {
       id = (block ? 'BLK' : 'LG') + Utilities.formatDate(now, TZ, 'yyMMdd') + '-' + Math.floor(1000 + Math.random() * 9000);
     } while (ids.has(id));
     const items = houses.length ? houses.map((h) => ({ id: h, name: HOUSES[h].name })) : [TENT_ROW];
+    const extra = smallCols_(sh, rentSmall);
     const rows = items.map((h) => [
       Utilities.formatDate(now, TZ, 'yyyy-MM-dd HH:mm'), id, h.id, h.name, checkin, checkout, nights,
       guests, safe_(name), safe_(phone), safe_(note), total, STATUS.CONFIRMED, due, '',
       block ? '' : ADMIN_PAID[paid], !block && paid !== 'full' ? BALANCE.UNPAID : '', '', tent || '', rent || '',
-    ]);
+    ].concat(extra));
     sh.getRange(sh.getLastRow() + 1, 1, rows.length, rows[0].length).setValues(rows);
     return { ok: true, id, total, due };
   });
@@ -1098,15 +1137,16 @@ function voucherOf_(rows, now) {
   });
   const tent = Number(r[18]) || 0;
   const rent = Number(r[19]) || 0;
+  const rentSmall = Number(r[COL.rentSmall - 1]) || 0;
   const items = houses.slice();
   if (tent) items.push('นำเต็นท์มาเอง ' + tent + ' ท่าน');
-  if (rent) items.push('เช่าเต็นท์ ' + rent + ' หลัง');
+  rentParts_(rent, rentSmall).forEach((x) => items.push(x));
   if (!items.length) items.push(TENT_ROW.name);
 
   const b = {
     id: String(r[1] == null ? '' : r[1]).trim(), // แถวที่พิมพ์เองในชีตไม่มีรหัส = '' (ไม่ส่งเลขแถว)
     items, checkin, checkout, nights: nights_(checkin, checkout),
-    people: { guests: Number(r[7]) || 0, tentGuests: tent, tentRentals: rent },
+    people: { guests: Number(r[7]) || 0, tentGuests: tent, tentRentals: rent, tentRentalsSmall: rentSmall },
     total, payType, paid, balanceDue, status,
     nameMasked: maskName_(r[8]),
   };
@@ -1114,10 +1154,8 @@ function voucherOf_(rows, now) {
     b.deadline = stamp_(r[COL.deadline - 1]);
     b.payNow = due;
   }
-  if (status === STATUS.CANCELLED && payType === 'full') {
-    b.refund = String(r[COL.refund - 1] || '').trim() === REFUND.DONE ? 'done' : 'pending';
-    b.refundAmount = Math.floor(total / 2);
-  }
+  // ยกเลิกแล้วไม่คืนเงินทุกกรณี — ถ้าเจ้าของคืนให้เป็นกรณีฉุกเฉิน (ช่องคืนเงิน = คืนเงินแล้ว) บอกว่าคืนแล้ว ไม่บอกยอด
+  if (status === STATUS.CANCELLED && String(r[COL.refund - 1] || '').trim() === REFUND.DONE) b.refund = 'done';
   return b;
 }
 
@@ -1132,6 +1170,8 @@ const SITE_URL = 'https://lagooncamping.github.io';
 const MAP_URL = 'https://goo.gl/maps/8mGhpGAEaRzAJNGq6';
 const PROMPTPAY_TEXT = '090-936-5562'; // ต้องตรงกับ PROMPTPAY ใน js/booking.js
 const CHECK_TIMES = 'เช็กอินได้ตั้งแต่ 11:00 น. และเช็กเอาต์ก่อน 12:00 น.'; // ต้องตรงกับ stay.html
+const QUIET_TEXT = 'ขอความกรุณางดใช้เสียงหลัง 22:00 น.'; // งดใช้เสียงหลัง 22:00 น. (ข้อมูลรีสอร์ท)
+const CANCEL_TEXT = 'หากยกเลิก จะไม่มีการคืนมัดจำให้ทุกกรณี (ยกเว้นเหตุฉุกเฉิน ทางลานจะพิจารณาเป็นรายกรณี)'; // ต้องตรงกับ booking.html
 
 // เลขการจองในข้อความ (LG + ปีเดือนวัน 6 หลัก + ขีด + 4 หลัก) ไม่มี = ''
 function bookingIdIn_(text) {
@@ -1215,7 +1255,7 @@ function voucherText_(b, slipSent) {
   const people = [
     p.guests ? p.guests + ' ท่านในบ้าน' : '',
     p.tentGuests ? 'เต็นท์มาเอง ' + p.tentGuests + ' ท่าน' : '',
-    p.tentRentals ? 'เช่าเต็นท์ ' + p.tentRentals + ' หลัง (2 ท่าน/หลัง)' : '',
+    rentText_(p.tentRentals, p.tentRentalsSmall),
   ].filter(Boolean).join(' · ');
   const lines = ['📋 ใบยืนยันการจอง The Lagoon', 'รหัส ' + b.id, labels[b.status] || 'ℹ️ ' + (b.status || 'รอแอดมินตรวจสอบ')];
   if (b.status === STATUS.PENDING) {
@@ -1232,10 +1272,11 @@ function voucherText_(b, slipSent) {
   if (people) lines.push('👥 ' + people);
   if (b.total) lines.push('💰 ยอดรวม ' + baht(b.total) + (b.paid ? ' · ชำระแล้ว ' + baht(b.paid) : ''));
   if (b.balanceDue) lines.push('💵 ชำระวันเช็กอิน ' + baht(b.balanceDue) + ' (เงินสดหรือโอนหน้าเคาน์เตอร์)');
-  if (b.refund === 'done') lines.push('↩️ คืนเงิน 50% แล้ว (' + baht(b.refundAmount) + ')');
-  else if (b.refund) lines.push('↩️ ถ้าชำระเต็มจำนวนแล้ว จะได้รับเงินคืน 50% (' + baht(b.refundAmount) + ') แอดมินจะโอนคืนให้');
+  if (b.refund === 'done') lines.push('↩️ คืนเงินแล้ว (กรณีพิเศษ)');
   if (active) {
     lines.push('🕚 ' + CHECK_TIMES);
+    lines.push('🔇 ' + QUIET_TEXT);
+    lines.push('ℹ️ ' + CANCEL_TEXT);
     lines.push('📍 แผนที่ ' + MAP_URL);
     lines.push('');
     lines.push('แสดงข้อความนี้กับเจ้าหน้าที่ตอนเช็กอิน');
