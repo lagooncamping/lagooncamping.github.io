@@ -283,12 +283,12 @@
             <label class="paytype-opt">
               <input type="radio" name="payType" value="deposit" required>
               <span><b>มัดจำ 50%</b> <span class="paytype-amount" data-amount="deposit"></span>
-                <small>ส่วนที่เหลือจ่ายวันเช็กอิน (เงินสดหรือโอนหน้าเคาน์เตอร์)</small></span>
+                <small>ส่วนที่เหลือจ่ายวันเช็กอิน (เงินสดหรือโอนหน้าเคาน์เตอร์) · ยกเลิกไม่คืนมัดจำ</small></span>
             </label>
             <label class="paytype-opt">
               <input type="radio" name="payType" value="full" required>
               <span><b>ชำระเต็มจำนวน</b> <span class="paytype-amount" data-amount="full"></span>
-                <small>จ่ายครบตอนจอง ไม่ต้องจ่ายเพิ่มวันเช็กอิน</small></span>
+                <small>จ่ายครบตอนจอง ไม่ต้องจ่ายเพิ่มวันเช็กอิน · ยกเลิกได้รับคืน 50% (ส่วนที่เกินมัดจำ)</small></span>
             </label>
           </fieldset>
 
@@ -299,7 +299,7 @@
               <li>ชำระผ่านพร้อมเพย์ <b>ภายใน 6 ชั่วโมง</b>หลังจอง ไม่เช่นนั้นการจองจะถูกยกเลิกอัตโนมัติ</li>
               <li>ชำระแล้ว แจ้งแอดมินเพื่อขอเลื่อนวันเข้าพักได้</li>
               <li><b>มัดจำ 50%:</b> ส่วนที่เหลือชำระวันเช็กอิน เป็นเงินสดหรือโอนหน้าเคาน์เตอร์ · <b>ชำระเต็มจำนวน:</b> ไม่ต้องจ่ายเพิ่มวันเช็กอิน</li>
-              <li><b>ยกเลิกหรือไม่มาเข้าพัก ไม่คืนมัดจำทุกกรณี</b> ยกเว้นเหตุฉุกเฉิน ทางลานจะพิจารณาเป็นรายกรณี</li>
+              <li><b>ยกเลิกหรือไม่มาเข้าพัก: ไม่คืนมัดจำ 50% ทุกกรณี</b> (ยกเว้นเหตุฉุกเฉิน ทางลานจะพิจารณาเป็นรายกรณี) · ถ้าชำระเต็มจำนวน ได้รับเงินคืนส่วนที่เกินมัดจำ (50% ของยอดจอง) แอดมินโอนคืนให้</li>
               <li>งดใช้เสียงหลัง 22:00 น.</li>
             </ul>
           </div>
@@ -418,7 +418,7 @@
   <!-- สร้างรูป QR พร้อมเพย์ -->
   <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcode-generator/1.4.4/qrcode.min.js" defer></script>
   <script src="js/main.js?v=20261003h" defer></script>
-  <script src="js/booking.js?v=20261004b" defer></script>
+  <script src="js/booking.js?v=20261004c" defer></script>
   <script src="js/lightbox.js" defer></script>
   <script src="js/nav.js?v=20261003n" defer></script>
 </body>

@@ -229,9 +229,13 @@ function itemsText(b) {
 }
 // ยอดที่ยังต้องเก็บ = ยอดรวม − ที่จ่ายมาแล้ว
 const remaining = (b) => Math.max(0, (Number(b.total) || 0) - (Number(b.due) || 0));
-// ยกเลิกแล้วไม่คืนมัดจำทุกกรณี — คืนได้เฉพาะเหตุฉุกเฉินที่เจ้าของตัดสินใจเอง ระบบไม่คำนวณยอดคืน
+// ยกเลิกแล้วไม่คืนมัดจำ 50% ทุกกรณี (เจ้าของยืนยัน 4 ต.ค. 2569)
+// - ชำระเต็มจำนวน (มีมัดจำ 50% อยู่ในนั้น) → โอนคืนส่วนที่เกินมัดจำ = 50% ของยอดจอง
+// - มัดจำ 50% → ไม่คืน · คืนได้เฉพาะเหตุฉุกเฉินที่เจ้าของตัดสินใจเอง (ไม่มียอดอัตโนมัติ)
 const paidSomething = (b) => (b.payType === PAY_FULL || /มัดจำ/.test(b.payType || '')) && Number(b.due) > 0;
 // เงินที่ยังต้องเก็บจากแขก (เหมือนบรรทัด "ยังต้องเก็บอีก" บนการ์ด)
+const refundAmount = (b) => Math.floor((Number(b.total) || 0) / 2);
+const fullRefund = (b) => b.payType === PAY_FULL && paidSomething(b);
 const owed = (b) => (!b.blocked && b.status === ST.CONFIRMED && b.balance === BAL.UNPAID ? remaining(b) : 0);
 
 // ---------- ข้อความส่งลูกค้าทาง LINE ----------
@@ -292,9 +296,13 @@ function messageFor(b) {
   if (b.status === ST.CANCELLED) {
     const lines = [`สวัสดี${name}`, `ยกเลิกการจองเรียบร้อยแล้ว`, `รหัสการจอง: ${b.id}`,
       `ที่พัก: ${itemsText(b)}`, `วันที่: ${msgDate(b.checkin)} – ${msgDate(b.checkout)}`];
-    // ไม่สัญญาว่าจะคืนเงิน · คืนกรณีฉุกเฉินเฉพาะที่แอดมินกด "คืนเงินแล้ว" (เจ้าของตัดสินใจ)
-    if (b.refund === REFUND_DONE) lines.push('โอนเงินคืนให้เรียบร้อยแล้ว (กรณีพิเศษ)');
-    else if (paidSomething(b)) lines.push(`ตามเงื่อนไขการจอง ไม่คืน${b.payType === PAY_FULL ? 'เงิน' : 'มัดจำ'}`);
+    // ชำระเต็มจำนวน → คืน 50% ของยอดจอง · มัดจำ → ไม่คืน (เว้นแต่กรณีฉุกเฉินที่แอดมินกด "คืนเงินแล้ว")
+    if (fullRefund(b)) {
+      lines.push(b.refund === REFUND_DONE
+        ? `โอนเงินคืน 50% ของยอดจอง ${baht(refundAmount(b))} บาท เรียบร้อยแล้ว`
+        : `ได้รับเงินคืน 50% ของยอดจอง = ${baht(refundAmount(b))} บาท (แอดมินโอนคืนให้)`);
+    } else if (b.refund === REFUND_DONE) lines.push('โอนเงินคืนให้เรียบร้อยแล้ว (กรณีพิเศษ)');
+    else if (paidSomething(b)) lines.push('ตามเงื่อนไขการจอง ไม่คืนมัดจำ');
     lines.push(`ขอบคุณที่ติดต่อ ${SHOP.name} 🙏`);
     return lines.join('\n');
   }
@@ -312,7 +320,9 @@ function moneyHtml(b) {
     }
   } else if (b.status === ST.CANCELLED) {
     lines.push(`ยอดรวม ${baht(b.total)} บาท · ${esc(b.payType || '-')}`);
-    if (b.refund === REFUND_DONE) lines.push('<b class="ok">✓ คืนเงินแล้ว (กรณีฉุกเฉิน)</b>');
+    if (fullRefund(b)) {
+      lines.push(b.refund === REFUND_DONE ? `<b class="ok">✓ โอนคืนแล้ว ${baht(refundAmount(b))} บาท</b>` : `<b class="warn">ต้องโอนคืน 50% = ${baht(refundAmount(b))} บาท</b>`);
+    } else if (b.refund === REFUND_DONE) lines.push('<b class="ok">✓ คืนเงินแล้ว (กรณีฉุกเฉิน)</b>');
     else if (paidSomething(b)) lines.push('ไม่คืนมัดจำ (ตามเงื่อนไข) · เหตุฉุกเฉินให้เจ้าของตัดสินใจ');
   } else if (b.status === ST.EXPIRED) {
     lines.push(`ไม่ได้โอนภายในเวลา · ยอดที่ต้องโอน ${baht(b.due)} บาท (${esc(b.payType || '-')})`);
@@ -343,10 +353,15 @@ function actionsFor(b) {
     } else if (b.balance === BAL.CASH || b.balance === BAL.TRANSFER) {
       a.push(['unpaid', 'แก้: ยังไม่ได้รับเงิน', 'เปลี่ยนกลับเป็น “ยังไม่ได้รับเงินส่วนที่เหลือ” ใช่ไหม?', 'link']);
     }
-    a.push(['cancel', 'ยกเลิกการจอง', 'ยกเลิกการจองนี้ใช่ไหม? (ตามเงื่อนไข ไม่คืนเงิน ยกเว้นเหตุฉุกเฉินที่เจ้าของอนุมัติ)', 'danger']);
+    a.push(['cancel', 'ยกเลิกการจอง', fullRefund(b)
+      ? `ยกเลิกการจองนี้ใช่ไหม? ลูกค้าจ่ายเต็มจำนวน ต้องโอนคืน 50% = ${baht(refundAmount(b))} บาท`
+      : 'ยกเลิกการจองนี้ใช่ไหม? (ตามเงื่อนไข ไม่คืนมัดจำ ยกเว้นเหตุฉุกเฉินที่เจ้าของอนุมัติ)', 'danger']);
   } else if (b.status === ST.CANCELLED) {
-    // คืนเงินเป็นข้อยกเว้น (เหตุฉุกเฉิน เจ้าของตัดสินใจ) — ไม่มียอดคืนอัตโนมัติ
-    if (b.refund === REFUND_DONE) a.push(['unrefund', 'แก้: ยังไม่ได้คืนเงิน', 'เปลี่ยนกลับเป็น “ยังไม่ได้คืนเงิน” ใช่ไหม?', 'link']);
+    // ชำระเต็มจำนวน → โอนคืน 50% ของยอดจอง · มัดจำ → คืนเฉพาะเหตุฉุกเฉิน (เจ้าของตัดสินใจ ไม่มียอดอัตโนมัติ)
+    if (fullRefund(b)) {
+      if (b.refund === REFUND_DONE) a.push(['unrefund', 'แก้: ยังไม่ได้โอนคืน', 'เปลี่ยนกลับเป็น “ยังไม่ได้โอนคืน” ใช่ไหม?', 'link']);
+      else a.push(['refund', `โอนคืนแล้ว ${baht(refundAmount(b))} บาท`, `โอนคืนลูกค้า 50% = ${baht(refundAmount(b))} บาทแล้ว ใช่ไหม?`, 'primary']);
+    } else if (b.refund === REFUND_DONE) a.push(['unrefund', 'แก้: ยังไม่ได้คืนเงิน', 'เปลี่ยนกลับเป็น “ยังไม่ได้คืนเงิน” ใช่ไหม?', 'link']);
     else if (paidSomething(b)) a.push(['refund', 'คืนเงินแล้ว (กรณีฉุกเฉิน)', 'บันทึกว่าโอนคืนลูกค้าแล้ว (เหตุฉุกเฉิน เจ้าของอนุมัติแล้ว) ใช่ไหม?', 'link']);
     a.push(['reopen', 'ยกเลิกผิด? เปิดการจองนี้อีกครั้ง', 'เปิดการจองนี้กลับมาเป็น “ยืนยันแล้ว” ใช่ไหม?', 'link']);
   }
@@ -391,7 +406,7 @@ const ACTIONS = {
   cash: ['setBalance', { value: 'CASH' }, 'บันทึกรับเงินสดแล้ว'],
   transfer: ['setBalance', { value: 'TRANSFER' }, 'บันทึกรับโอนแล้ว'],
   unpaid: ['setBalance', { value: 'UNPAID' }, 'แก้เป็นยังไม่ได้รับเงินแล้ว'],
-  refund: ['setRefund', { done: true }, 'บันทึกคืนเงินแล้ว (กรณีฉุกเฉิน)'],
+  refund: ['setRefund', { done: true }, 'บันทึกคืนเงินแล้ว'],
   unrefund: ['setRefund', { done: false }, 'แก้เป็นยังไม่ได้คืนเงินแล้ว'],
 };
 document.addEventListener('click', async (e) => {

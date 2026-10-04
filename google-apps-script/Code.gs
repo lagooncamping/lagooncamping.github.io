@@ -38,8 +38,9 @@ const NOTIFY_EMAIL = 'lagooncampingresort@gmail.com';
 
 // เงื่อนไขการชำระ (ตามที่เจ้าของกำหนด 2 ต.ค. 2026 · แก้เรื่องยกเลิก 4 ต.ค. 2026)
 // ลูกค้าเลือกเอง: มัดจำ 50% (ที่เหลือจ่ายวันเช็กอิน เงินสดหรือโอนหน้าเคาน์เตอร์) หรือ เต็มจำนวน (ไม่ต้องจ่ายเพิ่มวันเช็กอิน)
-// ยกเลิก/ไม่มา: ไม่คืนมัดจำทุกกรณี ยกเว้นเหตุฉุกเฉิน ทางลานพิจารณาเป็นรายกรณี
-//   → ระบบไม่คำนวณยอดคืนเอง · ถ้าเจ้าของตัดสินใจคืน แอดมินกด "คืนเงินแล้ว (กรณีฉุกเฉิน)" ในหลังบ้าน
+// ยกเลิก/ไม่มา: ไม่คืนมัดจำ 50% ทุกกรณี (ยกเว้นเหตุฉุกเฉิน ทางลานพิจารณาเป็นรายกรณี)
+//   → ชำระเต็มจำนวน (มีมัดจำ 50% อยู่ในนั้น): คืนส่วนที่เกินมัดจำ = 50% ของยอดจอง แอดมินโอนคืนแล้วกด "โอนคืนแล้ว" ในหลังบ้าน
+//   → มัดจำ 50%: ไม่คืน · เหตุฉุกเฉินที่เจ้าของตัดสินใจคืน แอดมินกด "คืนเงินแล้ว (กรณีฉุกเฉิน)"
 const DEPOSIT_RATE = 0.5; // มัดจำ 50%
 const HOLD_HOURS = 6;     // ต้องชำระภายใน 6 ชั่วโมง ไม่งั้นบ้านหลุด
 const PAY_TYPES = { deposit: 'มัดจำ 50%', full: 'เต็มจำนวน' };
@@ -76,7 +77,8 @@ const COL = { house: 3, checkin: 5, checkout: 6, status: 13, deadline: 15, balan
 
 // ช่องให้แอดมินเลือก
 // - ชำระส่วนที่เหลือ: แบบมัดจำ 50% จ่ายที่เหลือวันเช็กอิน (เงินสด หรือ โอนหน้าเคาน์เตอร์)
-// - คืนเงิน: ปกติไม่คืน · เฉพาะกรณีฉุกเฉินที่เจ้าของตัดสินใจคืนเอง แอดมินโอนแล้วเลือก "คืนเงินแล้ว"
+// - คืนเงิน: ชำระเต็มจำนวนที่ยกเลิก/ไม่มา แอดมินโอนคืน 50% ของยอดจองแล้วเลือก "คืนเงินแล้ว"
+//   แบบมัดจำ 50% ไม่คืน · เฉพาะกรณีฉุกเฉินที่เจ้าของตัดสินใจคืนเอง แอดมินโอนแล้วเลือก "คืนเงินแล้ว"
 const BALANCE = { UNPAID: 'ยังไม่ชำระ', CASH: 'เงินสด', TRANSFER: 'โอนหน้าเคาน์เตอร์' };
 const REFUND = { DONE: 'คืนเงินแล้ว' };
 
@@ -909,7 +911,7 @@ function adminSetBalance_(d) {
   return adminSetCol_(d.id, COL.balance, value);
 }
 
-/** setRefund { id, done: true/false } — คืนเงินกรณีฉุกเฉิน (เจ้าของตัดสินใจเอง ระบบไม่คำนวณยอดคืน) */
+/** setRefund { id, done: true/false } — โอนคืน 50% (ชำระเต็มจำนวน) หรือคืนเงินกรณีฉุกเฉิน (มัดจำ เจ้าของตัดสินใจเอง) */
 function adminSetRefund_(d) {
   return adminSetCol_(d.id, COL.refund, d.done === true ? REFUND.DONE : '');
 }
@@ -1154,8 +1156,17 @@ function voucherOf_(rows, now) {
     b.deadline = stamp_(r[COL.deadline - 1]);
     b.payNow = due;
   }
-  // ยกเลิกแล้วไม่คืนเงินทุกกรณี — ถ้าเจ้าของคืนให้เป็นกรณีฉุกเฉิน (ช่องคืนเงิน = คืนเงินแล้ว) บอกว่าคืนแล้ว ไม่บอกยอด
-  if (status === STATUS.CANCELLED && String(r[COL.refund - 1] || '').trim() === REFUND.DONE) b.refund = 'done';
+  // ยกเลิกแล้ว: ไม่คืนมัดจำ 50% ทุกกรณี · ชำระเต็มจำนวน → คืนส่วนที่เกินมัดจำ = 50% ของยอดจอง (รอโอน/โอนแล้ว)
+  // มัดจำ 50% → ไม่มียอดคืน · ถ้าเจ้าของคืนให้เป็นกรณีฉุกเฉิน (ช่องคืนเงิน = คืนเงินแล้ว) บอกว่าคืนแล้ว ไม่บอกยอด
+  if (status === STATUS.CANCELLED) {
+    const refundDone = String(r[COL.refund - 1] || '').trim() === REFUND.DONE;
+    if (payType === 'full') {
+      b.refund = refundDone ? 'done' : 'pending';
+      b.refundAmount = Math.floor(total / 2);
+    } else if (refundDone) {
+      b.refund = 'done';
+    }
+  }
   return b;
 }
 
@@ -1171,7 +1182,7 @@ const MAP_URL = 'https://goo.gl/maps/8mGhpGAEaRzAJNGq6';
 const PROMPTPAY_TEXT = '090-936-5562'; // ต้องตรงกับ PROMPTPAY ใน js/booking.js
 const CHECK_TIMES = 'เช็กอินได้ตั้งแต่ 11:00 น. และเช็กเอาต์ก่อน 12:00 น.'; // ต้องตรงกับ stay.html
 const QUIET_TEXT = 'ขอความกรุณางดใช้เสียงหลัง 22:00 น.'; // งดใช้เสียงหลัง 22:00 น. (ข้อมูลรีสอร์ท)
-const CANCEL_TEXT = 'หากยกเลิก จะไม่มีการคืนมัดจำให้ทุกกรณี (ยกเว้นเหตุฉุกเฉิน ทางลานจะพิจารณาเป็นรายกรณี)'; // ต้องตรงกับ booking.html
+const CANCEL_TEXT = 'หากยกเลิก ไม่คืนมัดจำ 50% ทุกกรณี (ชำระเต็มจำนวนได้รับคืน 50%)'; // ต้องตรงกับ booking.html
 
 // เลขการจองในข้อความ (LG + ปีเดือนวัน 6 หลัก + ขีด + 4 หลัก) ไม่มี = ''
 function bookingIdIn_(text) {
@@ -1272,7 +1283,11 @@ function voucherText_(b, slipSent) {
   if (people) lines.push('👥 ' + people);
   if (b.total) lines.push('💰 ยอดรวม ' + baht(b.total) + (b.paid ? ' · ชำระแล้ว ' + baht(b.paid) : ''));
   if (b.balanceDue) lines.push('💵 ชำระวันเช็กอิน ' + baht(b.balanceDue) + ' (เงินสดหรือโอนหน้าเคาน์เตอร์)');
-  if (b.refund === 'done') lines.push('↩️ คืนเงินแล้ว (กรณีพิเศษ)');
+  if (b.refundAmount) {
+    lines.push(b.refund === 'done'
+      ? '↩️ คืนเงิน 50% (' + baht(b.refundAmount) + ') แล้ว'
+      : '↩️ จะได้รับเงินคืน 50% (' + baht(b.refundAmount) + ') แอดมินโอนคืนให้');
+  } else if (b.refund === 'done') lines.push('↩️ คืนเงินแล้ว (กรณีพิเศษ)');
   if (active) {
     lines.push('🕚 ' + CHECK_TIMES);
     lines.push('🔇 ' + QUIET_TEXT);
