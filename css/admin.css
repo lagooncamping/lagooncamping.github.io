@@ -161,6 +161,12 @@ body.admin { font-size: 18px; line-height: 1.6; padding-bottom: 96px; }
   border-color: var(--blocked) !important; color: var(--blk-ink);
 }
 @media (prefers-color-scheme: dark) { .admin .c-booked { color: #0f1a12; } }
+/* แถวเต็นท์ใต้บ้าน: ตัวเลขต่อคืน (ว่าง = ไม่มี) */
+.cal td.c-num { height: 34px; text-align: center; font-size: 1rem; font-weight: 700; color: var(--ok-ink); background: var(--bg); border-radius: 6px; }
+.cal th[scope=row] small { font-weight: 400; color: var(--muted); }
+.cal tr.c-sep > * { border-top: 2px solid var(--line); }
+/* ปุ่มคัดลอกในรายการ "พรุ่งนี้" */
+.tm-bk .msg-acts { margin-top: 6px; }
 #cal-detail:not(:empty) { margin-top: 16px; scroll-margin-top: 140px; }
 
 .block-box { margin-top: 20px; border: 2px solid var(--blocked); border-radius: var(--radius-sm); background: var(--surface); }

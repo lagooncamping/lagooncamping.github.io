@@ -111,6 +111,70 @@
   }
   const isPast = (b) => b.checkout < today;
 
+  // ---------- นับวันถึงวันเข้าพัก + ลงปฏิทิน (ไม่ใส่ชื่อ/เบอร์ลูกค้าในลิงก์) ----------
+  const RESORT = 'The Lagoon Camping Resort';
+  const ADDRESS = 'ต.ช้างข้าม อ.นายายอาม จ.จันทบุรี'; // ตรงกับท้ายเว็บ
+  // เวลาเช็กอิน/เช็กเอาต์ อ่านจาก CHECK_TIMES (แก้ที่เดียว) → ['11:00', '12:00']
+  const [IN_HM, OUT_HM] = (CHECK_TIMES.match(/\d{1,2}:\d{2}/g) || ['11:00', '12:00']);
+  const isoUTC = (iso) => { const [y, m, d] = String(iso).split('-').map(Number); return Date.UTC(y, m - 1, d); };
+  // จำนวนวันจาก "วันนี้" (เวลาไทย) ถึงวันเข้าพัก
+  const daysUntil = (iso, from = today) => Math.round((isoUTC(iso) - isoUTC(from)) / 86400000);
+  function countdownText(b, from = today) {
+    const n = daysUntil(b.checkin, from);
+    if (n > 1) return `อีก ${n} วันถึงวันเข้าพัก`;
+    if (n === 1) return 'พรุ่งนี้เข้าพักแล้ว';
+    if (n === 0) return 'เข้าพักวันนี้';
+    return b.checkout >= from ? 'อยู่ระหว่างเข้าพัก' : '';
+  }
+  // '2026-10-18' + '11:00' (เวลาไทย +07:00) → '20261018T040000Z'
+  function utcStamp(iso, hm) {
+    const [h, mi] = hm.split(':').map(Number);
+    return new Date(isoUTC(iso) + ((h - 7) * 60 + mi) * 60000).toISOString().replace(/[-:]/g, '').replace(/\.\d{3}/, '');
+  }
+  const stayLabel = (b) => (b.items || []).join(', ');
+  function calInfo(b) {
+    const items = stayLabel(b);
+    return {
+      title: `เข้าพัก ${RESORT}`,
+      start: utcStamp(b.checkin, IN_HM),
+      end: utcStamp(b.checkout, OUT_HM),
+      location: `${RESORT} ${ADDRESS}`,
+      details: [items ? `ที่พัก: ${items}` : '', CHECK_TIMES, `แผนที่: ${MAP_URL}`, `โทร ${PHONE} · LINE ${LINE_ID}`].filter(Boolean).join('\n'),
+    };
+  }
+  function googleCalUrl(b) {
+    const c = calInfo(b);
+    const q = new URLSearchParams({ action: 'TEMPLATE', text: c.title, dates: `${c.start}/${c.end}`, details: c.details, location: c.location });
+    return `https://calendar.google.com/calendar/render?${q.toString()}`;
+  }
+  // ข้อความในไฟล์ .ics: ต้อง escape \ ; , และขึ้นบรรทัดใหม่เป็น \n · บรรทัดยาวเกิน 75 ไบต์ต้องพับ
+  const icsEsc = (s) => String(s).replace(/\\/g, '\\\\').replace(/;/g, '\\;').replace(/,/g, '\\,').replace(/\r?\n/g, '\\n');
+  function icsFold(line) {
+    const out = [];
+    let cur = '';
+    let bytes = 0;
+    for (const ch of line) {
+      const n = new TextEncoder().encode(ch).length;
+      if (bytes + n > (out.length ? 74 : 75)) { out.push(cur); cur = ''; bytes = 0; }
+      cur += ch;
+      bytes += n;
+    }
+    out.push(cur);
+    return out.join('\r\n ');
+  }
+  function icsText(b, now = new Date()) {
+    const c = calInfo(b);
+    const stamp = now.toISOString().replace(/[-:]/g, '').replace(/\.\d{3}/, '');
+    const uid = `${b.id || `${b.checkin}-${b.checkout}`}@lagooncamping.github.io`;
+    const desc = (b.id ? `รหัสการจอง: ${b.id}\n` : '') + c.details;
+    return [
+      'BEGIN:VCALENDAR', 'VERSION:2.0', 'PRODID:-//The Lagoon Camping Resort//my-booking//TH', 'CALSCALE:GREGORIAN', 'METHOD:PUBLISH',
+      'BEGIN:VEVENT', `UID:${uid}`, `DTSTAMP:${stamp}`, `DTSTART:${c.start}`, `DTEND:${c.end}`,
+      `SUMMARY:${icsEsc(c.title)}`, `LOCATION:${icsEsc(c.location)}`, `DESCRIPTION:${icsEsc(desc)}`, `URL:${MAP_URL}`,
+      'END:VEVENT', 'END:VCALENDAR',
+    ].map(icsFold).join('\r\n') + '\r\n';
+  }
+
   // การจองรอชำระที่จำไว้ในเครื่องนี้ (จากหน้าจอง) → ลิงก์ไปหน้า QR ได้
   function savedPendingId() {
     try {
@@ -127,6 +191,8 @@
     const pendingSaved = b.status === STATUS.PENDING && b.id && b.id === savedPendingId();
     const pay = payNowText(b);
     const refund = refundText(b);
+    const upcoming = st.active && !isPast(b); // ยังไม่ยกเลิก และยังเข้าพักไม่จบ
+    const countdown = upcoming ? countdownText(b) : '';
     return `
     <article class="voucher v-${st.cls}" data-i="${i}" aria-labelledby="v-id-${i}">
       <header class="v-head">
@@ -137,6 +203,7 @@
         <p class="v-id-label">รหัสการจอง</p>
         <p class="v-id" id="v-id-${i}">${b.id ? esc(b.id) : 'ไม่มีรหัส (จองทางโทรศัพท์)'}</p>
         <p class="v-tags"><span class="v-pill">${esc(st.label)}</span>${isPast(b) && st.active ? '<span class="v-past">ผ่านไปแล้ว</span>' : ''}</p>
+        ${countdown ? `<p class="v-countdown">${esc(countdown)}</p>` : ''}
         ${pay ? `<div class="v-alert"><p>${esc(pay)}</p>${pendingSaved
           ? '<a class="v-alert-link" href="booking.html#pay">ดู QR / ส่งสลิป →</a>'
           : `<a class="v-alert-link" href="https://line.me/R/ti/p/${encodeURIComponent(LINE_ID)}" target="_blank" rel="noopener">ส่งสลิปทาง LINE →</a>`}</div>` : ''}
@@ -144,6 +211,10 @@
         ${refund ? `<p class="v-note">${esc(refund)}</p>` : ''}
         ${st.active ? `<p class="v-times">${esc(CHECK_TIMES)} · ${esc(QUIET)}</p>
         <p class="v-links"><a href="${MAP_URL}" target="_blank" rel="noopener">แผนที่ / นำทาง</a><a href="${PHONE_TEL}">โทร ${PHONE}</a></p>` : ''}
+        ${upcoming && b.checkin && b.checkout ? `<p class="v-cal">
+          <a class="v-cal-btn" href="${esc(googleCalUrl(b))}" target="_blank" rel="noopener">เพิ่มลง Google Calendar</a>
+          <button class="v-cal-btn" type="button" data-ics>บันทึกลงปฏิทิน (.ics)</button>
+        </p>` : ''}
       </div>
       <div class="v-tools">
         <button class="v-tool" type="button" data-save>บันทึกเป็นรูป</button>
@@ -413,12 +484,28 @@
   }
 
   results.addEventListener('click', async (e) => {
-    const el = e.target.closest('[data-save], [data-copy]');
+    const el = e.target.closest('[data-save], [data-copy], [data-ics]');
     if (!el) return;
     const card = el.closest('.voucher');
     const b = shown[Number(card.dataset.i)];
     const msg = card.querySelector('.v-msg');
     if (!b) return;
+    if (el.hasAttribute('data-ics')) {
+      try {
+        const url = URL.createObjectURL(new Blob([icsText(b)], { type: 'text/calendar;charset=utf-8' }));
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `lagoon-${b.id || b.checkin}.ics`;
+        document.body.append(a);
+        a.click();
+        a.remove();
+        setTimeout(() => URL.revokeObjectURL(url), 10000);
+        msg.textContent = 'บันทึกไฟล์ปฏิทินแล้ว กดเปิดไฟล์เพื่อเพิ่มลงปฏิทินในเครื่อง';
+      } catch (err) {
+        msg.textContent = 'บันทึกไฟล์ปฏิทินไม่สำเร็จ — ลองปุ่ม "เพิ่มลง Google Calendar" แทน';
+      }
+      return;
+    }
     if (el.hasAttribute('data-save')) {
       el.disabled = true;
       try {
@@ -461,5 +548,8 @@
   });
 
   // ให้ทดสอบได้ในคอนโซล (ไม่มีผลกับการใช้งาน)
-  window.lagoonMyBooking = { normPhone, phoneProblem, thaiDate, voucherCanvas: (i) => voucherCanvas(shown[i]) };
+  window.lagoonMyBooking = {
+    normPhone, phoneProblem, thaiDate, daysUntil, countdownText, googleCalUrl, icsText, showResults,
+    voucherCanvas: (i) => voucherCanvas(shown[i]),
+  };
 })();

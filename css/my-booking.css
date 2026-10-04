@@ -84,6 +84,15 @@
 .v-times { margin: 12px 0 0; padding: 10px 12px; border-radius: var(--radius-sm); background: color-mix(in srgb, var(--forest) 10%, transparent); font-weight: 500; }
 .v-links { margin: 6px 0 0; display: flex; flex-wrap: wrap; gap: 0 20px; }
 .v-links a { display: inline-flex; align-items: center; min-height: 44px; font-weight: 500; }
+/* นับวันถึงวันเข้าพัก + ปุ่มลงปฏิทิน (ไม่อยู่ในรูปที่บันทึก เพราะรูปวาดใหม่จากข้อมูล) */
+.v-countdown { margin: 10px 0 0; text-align: center; font-weight: 600; color: var(--forest); }
+.v-cal { margin: 4px 0 8px; display: flex; flex-wrap: wrap; gap: 8px; }
+.v-cal-btn {
+  flex: 1 1 150px; display: inline-flex; align-items: center; justify-content: center; min-height: 44px; padding: 6px 12px;
+  font: inherit; font-size: .9rem; font-weight: 500; text-align: center; text-decoration: none; cursor: pointer;
+  color: var(--forest); background: color-mix(in srgb, var(--forest) 8%, transparent); border: 1px solid var(--line); border-radius: var(--radius-sm);
+}
+.v-cal-btn:hover { background: color-mix(in srgb, var(--forest) 14%, transparent); }
 .v-tools { display: flex; gap: 10px; flex-wrap: wrap; padding: 8px 20px 0; }
 .v-tool {
   flex: 1 1 120px; min-height: 48px; padding: 8px 14px; font: inherit; font-weight: 600; cursor: pointer;
@@ -99,6 +108,6 @@
 .voucher:not(:has(.v-hint)) { padding-bottom: 18px; }
 
 @media print {
-  .mb-form, .v-tools, .v-msg, .site-footer, .dock, .line-float, .nav { display: none !important; }
+  .mb-form, .v-tools, .v-cal, .v-msg, .site-footer, .dock, .line-float, .nav { display: none !important; }
   .voucher { break-inside: avoid; }
 }
