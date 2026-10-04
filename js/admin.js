@@ -257,6 +257,9 @@ function msgDate(iso) {
   const t = utc(iso);
   return `${TH_DAY_FULL[t.getUTCDay()]} ${t.getUTCDate()} ${TH_M[t.getUTCMonth()]} ${t.getUTCFullYear() + 543}`;
 }
+// ยืนยันแล้ว + เข้าพักพรุ่งนี้ → ใช้ข้อความเตือนก่อนมา
+const isReminder = (b) => !!b && !b.blocked && b.status === ST.CONFIRMED && b.checkin === addDays(state.today, 1);
+const msgLabel = (b) => (isReminder(b) ? '📋 คัดลอกข้อความเตือนก่อนมา' : '📋 คัดลอกข้อความส่งลูกค้า');
 function messageFor(b) {
   if (!b || b.blocked) return '';
   const name = b.name ? `คุณ${b.name}` : 'คุณลูกค้า';
@@ -288,6 +291,11 @@ function messageFor(b) {
     if (due) lines.push(`ยอดที่ต้องชำระวันนี้ ${baht(due)} บาท (${SHOP.payLater})`);
     lines.push(`แผนที่: ${SHOP.map}`, `หาทางไม่เจอ โทร ${SHOP.phone}`);
     return lines.join('\n');
+  }
+  // เตือนก่อนมา 1 วัน (เข้าพักพรุ่งนี้)
+  if (isReminder(b)) {
+    return [`สวัสดี${name} 🙏`, `พรุ่งนี้พบกันที่ ${SHOP.name} นะคะ`, '', ...stay, payLine, '',
+      SHOP.times, SHOP.quiet, `แผนที่: ${SHOP.map}`, `หาทางไม่เจอ โทร ${SHOP.phone}`].join('\n');
   }
   if (b.status === ST.CONFIRMED) {
     return [`ยืนยันการจองแล้ว ✅`, `${name}`, '', ...stay, `ยอดรวม: ${baht(b.total)} บาท`, payLine, '',
@@ -368,6 +376,15 @@ function actionsFor(b) {
   return a;
 }
 
+// ปุ่มคัดลอก/ดูข้อความ (ใช้ทั้งในการ์ด และรายการ "พรุ่งนี้")
+function msgButtons(b) {
+  if (!messageFor(b)) return '';
+  return `<div class="msg-acts">
+      <button type="button" class="msg-copy" data-msg-copy>${msgLabel(b)}</button>
+      <button type="button" class="link" data-msg-view aria-expanded="false">ดูข้อความ</button>
+    </div>
+    <div class="msg-box" hidden><textarea readonly rows="8" aria-label="ข้อความส่งลูกค้า"></textarea></div>`;
+}
 function card(b) {
   const cls = statusClass(b);
   const pill = cls === 'blocked' ? 'ปิดบ้าน' : (b.status || 'ไม่มีสถานะ');
@@ -382,11 +399,7 @@ function card(b) {
     ${b.note ? `<p class="bk-note">📝 ${esc(b.note)}</p>` : ''}
     ${moneyHtml(b)}
     ${phone.length >= 9 && !b.blocked ? `<a class="btn-call" href="tel:${esc(phone)}">📞 โทร ${esc(b.phone)}</a>` : (b.phone ? `<p>📞 ${esc(b.phone)}</p>` : '')}
-    ${messageFor(b) ? `<div class="msg-acts">
-      <button type="button" class="msg-copy" data-msg-copy>📋 คัดลอกข้อความส่งลูกค้า</button>
-      <button type="button" class="link" data-msg-view aria-expanded="false">ดูข้อความ</button>
-    </div>
-    <div class="msg-box" hidden><textarea readonly rows="8" aria-label="ข้อความส่งลูกค้า"></textarea></div>` : ''}
+    ${msgButtons(b)}
     <div class="acts">${actionsFor(b).map(([act, label, ask, kind]) =>
       `<button type="button" class="${kind}" data-act="${act}" data-ask="${esc(ask)}">${esc(label)}</button>`).join('')}</div>
     <div class="ask" hidden>
@@ -461,7 +474,7 @@ function showMsg(c, text, open) {
 }
 document.addEventListener('click', (e) => {
   const el = e.target.closest('[data-msg-copy], [data-msg-view]');
-  const c = el && el.closest('.bk');
+  const c = el && el.closest('.bk, .tm-bk');
   if (!c) return;
   const text = messageFor(byId(c.dataset.id));
   if (!text) return;
@@ -511,8 +524,9 @@ function renderToday() {
 
   // พรุ่งนี้
   const tm = addDays(t, 1);
-  const row = (b) => `<li><b>${esc(itemsText(b))}</b> · ${esc(b.name || '-')}${people(b) ? ` · ${people(b)} ท่าน` : ''}${b.status === ST.PENDING ? ' <span class="warn">(รอชำระ)</span>' : ''}</li>`;
-  const list = (arr, empty) => (arr.length ? `<ul class="mini">${arr.map(row).join('')}</ul>` : `<p class="muted">${empty}</p>`);
+  // คนเข้าพักพรุ่งนี้มีปุ่มคัดลอกข้อความเตือนก่อนมา (รอชำระ = ข้อความทวงโอน)
+  const row = (b, copy) => `<li${copy ? ` class="tm-bk" data-id="${esc(b.id)}"` : ''}><b>${esc(itemsText(b))}</b> · ${esc(b.name || '-')}${people(b) ? ` · ${people(b)} ท่าน` : ''}${b.status === ST.PENDING ? ' <span class="warn">(รอชำระ)</span>' : ''}${copy ? msgButtons(b) : ''}</li>`;
+  const list = (arr, empty, copy = false) => (arr.length ? `<ul class="mini">${arr.map((b) => row(b, copy)).join('')}</ul>` : `<p class="muted">${empty}</p>`);
   const inTm = act.filter((b) => b.checkin === tm);
   const outTm = act.filter((b) => b.checkout === tm);
 
@@ -536,7 +550,7 @@ function renderToday() {
     <h2 class="sub">ออกวันนี้ (${leave.length})</h2>${cards(leave, 'ไม่มีคนออกวันนี้')}
     <div class="tomorrow">
       <h2>พรุ่งนี้ ${thDate(tm)}</h2>
-      <h3>เข้าพัก (${inTm.length})</h3>${list(inTm, 'ไม่มีคนเข้าพัก')}
+      <h3>เข้าพัก (${inTm.length})</h3>${list(inTm, 'ไม่มีคนเข้าพัก', true)}
       <h3>ออก (${outTm.length})</h3>${list(outTm, 'ไม่มีคนออก')}
     </div>`;
 }
@@ -597,7 +611,14 @@ function renderCalendar() {
     const start = b.checkin === d || d === state.today;
     return `<td><button type="button" class="c-${kind}" data-open="${esc(b.id)}" aria-label="${esc(label)} ${word}: ${esc(b.name)}">${start ? esc(b.blocked ? 'ปิด' : b.name) : ''}</button></td>`;
   }).join('')}</tr>`).join('');
-  $('#cal-scroll').innerHTML = `<table class="cal"><thead><tr><th class="corner">บ้าน</th>${head}</tr></thead><tbody>${rows}</tbody></table>`;
+  // แถวเต็นท์ใต้บ้าน: จำนวนต่อคืน (นับเฉพาะที่ยังไม่ยกเลิก เหมือนบ้าน · 0 = ว่างเปล่า)
+  const night = bookings().filter((b) => isActive(b) && !b.blocked);
+  const tentRow = (label, unit, count, cls = '') => `<tr class="${cls}"><th scope="row">${label} <small>(${unit})</small></th>${days.map((d) => {
+    const n = night.filter((b) => b.checkin <= d && b.checkout > d).reduce((s, b) => s + count(b), 0);
+    return `<td class="c-num"${n ? ` aria-label="${esc(`${label} ${thDate(d)} ${n} ${unit}`)}"` : ''}>${n || ''}</td>`;
+  }).join('')}</tr>`;
+  const tents = tentRow('เต็นท์เช่า', 'หลัง', rentAll, 'c-sep') + tentRow('เต็นท์มาเอง', 'ท่าน', (b) => Number(b.tent) || 0);
+  $('#cal-scroll').innerHTML = `<table class="cal"><thead><tr><th class="corner">บ้าน</th>${head}</tr></thead><tbody>${rows}${tents}</tbody></table>`;
   const blocks = bookings().filter((b) => b.blocked && b.status === ST.CONFIRMED && b.checkout > state.today);
   $('#blocks-body').innerHTML = cards(blocks, 'ไม่มีบ้านที่ปิดอยู่');
   const shown = $('#cal-detail').dataset.id;
