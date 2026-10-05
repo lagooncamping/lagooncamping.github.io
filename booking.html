@@ -24,7 +24,7 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Anuphan:wght@400;500;600&family=Chonburi&display=swap">
   <link rel="stylesheet" href="css/style.css?v=20261003n">
-  <link rel="stylesheet" href="css/booking.css?v=20261004b">
+  <link rel="stylesheet" href="css/booking.css?v=20261005a">
   <!-- เส้นทางหน้า (breadcrumb) สำหรับ Google -->
   <script type="application/ld+json">
 {
@@ -99,6 +99,8 @@
             <input type="date" id="checkout" required>
           </label>
         </div>
+        <!-- พิมพ์วันที่เองแล้วใช้ไม่ได้ (ย้อนหลัง / วันนี้หลัง 18:00 / เช็กเอาต์ไม่หลังเช็กอิน) → js/booking.js ขึ้นข้อความตรงนี้ -->
+        <p class="hint date-note" id="date-note" hidden></p>
 
         <!-- ปฏิทินวันว่าง: แตะวันแรก = เช็กอิน แตะวันถัดไป = เช็กเอาต์ (ซิงก์กับช่องวันที่ด้านบนทั้งสองทาง)
              ตัวเลขใต้วันที่ = บ้านว่างกี่หลังในคืนนั้น นับจากการจองที่โหลดมา (js/booking.js สร้างวันในปฏิทินให้) -->
@@ -268,7 +270,8 @@
             <input type="text" name="name" autocomplete="name" required>
           </label>
           <label class="field">เบอร์โทร
-            <input type="tel" name="phone" autocomplete="tel" inputmode="tel" pattern="0[0-9]{1,2}[\- ]?[0-9]{3}[\- ]?[0-9]{3,4}" placeholder="08X-XXX-XXXX" required>
+            <!-- เช็กเบอร์ใน js/booking.js (phoneProblem) กติกาเดียวกับระบบ: เบอร์ไทย 9–10 หลัก ขึ้นต้น 0 (+66 / เลขไทย ใช้ได้) -->
+            <input type="tel" name="phone" autocomplete="tel" inputmode="tel" placeholder="08X-XXX-XXXX" required>
           </label>
           <label class="field" id="guests-field">จำนวนคนพักในบ้าน (ท่าน)
             <input type="number" name="guests" min="1" max="30" value="2" required>
@@ -418,8 +421,8 @@
   <!-- สร้างรูป QR พร้อมเพย์ -->
   <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcode-generator/1.4.4/qrcode.min.js" defer></script>
   <script src="js/main.js?v=20261003h" defer></script>
-  <script src="js/booking.js?v=20261004c" defer></script>
-  <script src="js/lightbox.js" defer></script>
+  <script src="js/booking.js?v=20261005a" defer></script>
+  <script src="js/lightbox.js?v=20261003c" defer></script>
   <script src="js/nav.js?v=20261003n" defer></script>
 </body>
 </html>

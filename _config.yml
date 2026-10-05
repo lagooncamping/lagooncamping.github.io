@@ -1,0 +1,10 @@
+# ตั้งค่า GitHub Pages (Jekyll) — ไฟล์นี้ไม่ขึ้นเว็บ
+# exclude = ไฟล์/โฟลเดอร์สำหรับผู้พัฒนาเท่านั้น ไม่เผยแพร่บนเว็บ (เปิด /CLAUDE.html, /README.md ฯลฯ แล้วจะได้ 404)
+# ห้ามใส่หน้าเว็บ, img/, css/, js/, robots.txt, sitemap.xml, 404.html และ google9dbb5d960ac1843b.html (ไฟล์ยืนยัน Search Console) ในรายการนี้
+# ห้ามเพิ่มไฟล์ .nojekyll — ถ้ามี GitHub จะไม่อ่านไฟล์นี้ และไฟล์ .md จะเปิดได้จากเว็บอีก
+exclude:
+  - CLAUDE.md
+  - README.md
+  - SETUP-GOOGLE-SHEETS.md
+  - google-apps-script
+  - "Claude outputs"

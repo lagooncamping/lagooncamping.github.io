@@ -110,6 +110,34 @@ const bangkokStamp = (d) => new Intl.DateTimeFormat('sv-SE', { timeZone: 'Asia/B
 // 'yyyy-MM-dd HH:mm' (เวลาไทย) → เวลาจริงเป็นมิลลิวินาที (ผิดรูปแบบ = NaN)
 const bangkokTime = (s) => (/^\d{4}-\d{2}-\d{2} \d{2}:\d{2}$/.test(s || '') ? new Date(`${s.replace(' ', 'T')}:00+07:00`).getTime() : NaN);
 
+// ---------- เบอร์โทร: กติกาเดียวกับ normPhone ใน js/my-booking.js และ normPhone_ / validate_ ใน Code.gs ----------
+// เก็บแต่ตัวเลข · +66/66 นำหน้า → 0 · เลขไทย ๐–๙ ใช้ได้ · เบอร์ไทย = 0 + 8–9 หลัก (บ้าน 9 หลัก มือถือ 10 หลัก)
+const thaiDigits = (s) => String(s).replace(/[๐-๙]/g, (c) => String('๐๑๒๓๔๕๖๗๘๙'.indexOf(c)));
+function normPhone(v) {
+  let s = thaiDigits(v == null ? '' : v).replace(/\D/g, '');
+  if (/^660\d{8,9}$/.test(s)) s = s.slice(2);
+  else if (/^66\d{8,9}$/.test(s)) s = `0${s.slice(2)}`;
+  return /^0\d{8,9}$/.test(s) ? s : '';
+}
+// ข้อความผิดพลาดของช่องเบอร์โทร (ว่าง = ใช้ได้)
+function phoneProblem(raw) {
+  const v = thaiDigits(raw == null ? '' : raw).trim();
+  if (!v) return 'กรุณาใส่เบอร์โทร';
+  if (/[^\d\s+\-().]/.test(v)) return 'เบอร์โทรใส่ได้เฉพาะตัวเลข เช่น 081-234-5678';
+  if (normPhone(v)) return '';
+  const digits = v.replace(/\D/g, '');
+  if (digits.length < 9) return 'เบอร์โทรสั้นเกินไป (ต้องมี 9–10 หลัก) เช่น 081-234-5678';
+  if (digits.length > 12 || (digits.length > 10 && !/^66/.test(digits))) return 'เบอร์โทรยาวเกินไป (ต้องมี 9–10 หลัก) เช่น 081-234-5678';
+  return 'เบอร์โทรต้องขึ้นต้นด้วย 0 เช่น 081-234-5678';
+}
+// เบอร์ที่ส่งไป Google: พิมพ์มาแบบที่ระบบรับอยู่แล้ว (0 + 8–9 หลัก มีขีด/เว้นวรรคได้) → ส่งตามที่พิมพ์
+// แบบอื่น (+66, เลขไทย, วงเล็บ) → แปลงเป็น 0XX-XXX-XXXX (มีขีด ชีตจะไม่ตัด 0 ข้างหน้าทิ้ง)
+function phoneForServer(raw) {
+  const typed = String(raw).trim();
+  if (/^0[0-9]{8,9}$/.test(typed.replace(/[\s-]/g, ''))) return typed;
+  return normPhone(typed).replace(/^(\d{3})(\d{3})(\d+)$/, '$1-$2-$3');
+}
+
 // ---------- จำการจองที่รอชำระไว้ในเครื่องลูกค้า ----------
 // ลูกค้าสลับไปแอปธนาคารแล้วมือถือรีโหลดหน้า → เปิดหน้าชำระเงินกลับมาได้ (booking.html#pay)
 // เก็บเฉพาะรหัสการจอง ยอด เวลา และรายการแบบย่อ — ไม่เก็บชื่อ/เบอร์โทร · js/main.js อ่านคีย์เดียวกันเพื่อโชว์แถบเตือนหน้าอื่น
@@ -150,7 +178,19 @@ const checkinEl = $('#checkin');
 const checkoutEl = $('#checkout');
 const housesEl = $('#houses');
 
-const hasDates = () => state.checkin && state.checkout && state.checkout > state.checkin;
+// ปัญหาของวันที่ที่เลือก (ใช้ได้ = '') — บนคอมพิมพ์วันที่เองในช่องได้ (ข้าม min) จึงเช็กซ้ำด้วยกติกาเดียวกับปฏิทิน (firstDay)
+function dateProblem() {
+  const { checkin, checkout } = state;
+  if (!checkin || !checkout) return 'กรุณาเลือกวันเช็กอินและวันเช็กเอาต์';
+  if (checkin < firstDay) {
+    return checkin === today
+      ? `หลัง ${SAME_DAY_CUTOFF}:00 น. จองเข้าพักคืนนี้ทางเว็บไม่ได้ กรุณาเลือกวันเช็กอินตั้งแต่ ${thaiDate(firstDay)} (เข้าพักคืนนี้ โทร ${PHONE})`
+      : `เลือกวันที่ผ่านมาแล้วไม่ได้ กรุณาเลือกวันเช็กอินตั้งแต่ ${thaiDate(firstDay)}`;
+  }
+  if (checkout <= checkin) return 'วันเช็กเอาต์ต้องหลังวันเช็กอิน';
+  return '';
+}
+const hasDates = () => !dateProblem();
 const nights = () => (hasDates() ? nightsBetween(state.checkin, state.checkout) : 0);
 const selectedHouses = () => HOUSES.filter((h) => state.selected.has(h.id));
 // เต็นท์ (การ์ด "ลานกางเต็นท์"): นำมาเอง = จำนวนคน, เช่าของรีสอร์ท = จำนวนหลัง (หลังใหญ่ #tent-rent · หลังเล็ก #tent-rent-s)
@@ -284,7 +324,11 @@ function render() {
   $('#nights').innerHTML = state.loading ? 'กำลังเช็กวันว่าง…'
     : state.loadError ? `เช็กวันว่างไม่สำเร็จ กรุณาลองใหม่ หรือโทรจอง ${PHONE} <button type="button" class="retry" data-retry>ลองอีกครั้ง</button>`
     : dated ? `${thaiDate(state.checkin)} – ${thaiDate(state.checkout)} · <b>${nights()} คืน</b>`
-    : (state.checkin && state.checkout ? 'วันเช็กเอาต์ต้องหลังวันเช็กอิน' : 'เลือกวันเข้าพักก่อน แล้วกดเลือกบ้านที่ว่าง');
+    : (state.checkin && state.checkout ? dateProblem() : 'เลือกวันเข้าพักก่อน แล้วกดเลือกบ้านที่ว่าง');
+  // วันที่ใช้ไม่ได้ (พิมพ์ย้อนหลัง/วันนี้หลัง 18:00/เช็กเอาต์ไม่หลังเช็กอิน) → บอกใต้ช่องวันที่ด้วย
+  const dateNote = $('#date-note');
+  dateNote.textContent = state.checkin && state.checkout ? dateProblem() : '';
+  dateNote.hidden = !dateNote.textContent;
   renderCal();
 
   // ปุ่มลัด 3 แบบที่พัก + ลานเต็นท์บนแผนผัง: ขึ้นสถานะ "เลือกแล้ว" ตามที่เลือกอยู่
@@ -345,7 +389,9 @@ state.checkin = checkinEl.value = firstDay;
 state.checkout = checkoutEl.value = addDays(firstDay, 1);
 checkinEl.addEventListener('change', () => {
   state.checkin = checkinEl.value;
-  if (state.checkin) {
+  // พิมพ์วันที่ก่อนวันแรกที่จองได้ (ย้อนหลัง / วันนี้หลัง 18:00) → ไม่รับ: ขึ้นข้อความใต้ช่องวันที่ (dateProblem)
+  // เลือกบ้าน/ไปขั้นถัดไปไม่ได้จนกว่าจะแก้ · ไม่แก้ค่าในช่องให้เอง (ระหว่างพิมพ์ปี ค่าจะเป็นปีแปลกๆ ชั่วคราว)
+  if (state.checkin && state.checkin >= firstDay) {
     checkoutEl.min = addDays(state.checkin, 1);
     // ถ้ายังไม่เลือกวันออก หรือวันออกอยู่ก่อนวันเข้า ให้ตั้งเป็นอีก 1 คืน
     if (!state.checkout || state.checkout <= state.checkin) {
@@ -401,7 +447,7 @@ function monthHTML(ym) {
     const past = iso < firstDay;
     const free = past ? null : freeOn(iso);
     const lvl = free === null ? '' : free === 0 ? 'full' : free === total ? 'all' : 'some';
-    const isIn = iso === state.checkin;
+    const isIn = iso === state.checkin && !past; // พิมพ์วันย้อนหลังในช่อง → ไม่ไฮไลต์วันที่จองไม่ได้
     const isOut = hasDates() && iso === state.checkout;
     const inRange = hasDates() && iso > state.checkin && iso < state.checkout;
     const cls = ['cal-day', lvl && `is-${lvl}`, (dow === 5 || dow === 6) && 'is-wknd', isIn && 'is-start', isOut && 'is-end', inRange && 'in-range', iso === today && 'is-today'].filter(Boolean).join(' ');
@@ -593,16 +639,26 @@ function updateSummary() {
 // เตรียมหน้ากรอกข้อมูล: ช่องจำนวนคน + ข้อความความจุ + สรุปรายการและยอดเงิน
 function prepDetails() {
   // ช่อง "จำนวนคนพักในบ้าน" ใช้เฉพาะตอนจองบ้าน (จองแค่เต็นท์ จำนวนคนนับจากเต็นท์)
+  // จองแค่เต็นท์ → ปิดช่องนี้ด้วย (disabled = ไม่ถูกเช็กและไม่ถูกส่ง) ค่าที่ค้างจากตอนเลือกบ้าน เช่น 35 จะไม่ขวางการจอง
   const withHouse = state.selected.size > 0;
   $('#guests-field').hidden = !withHouse;
   $('#guests-field input').required = withHouse;
+  $('#guests-field input').disabled = !withHouse;
   const capacity = selectedHouses().reduce((sum, h) => sum + h.guests, 0);
   $('#capacity').textContent = withHouse ? `บ้านที่เลือกรองรับได้ ${capacity} ท่าน (มากกว่านี้ เพิ่มคนได้ คนละ ${EXTRA_PERSON} บาท มีที่นอนปิกนิกเสริม แจ้งทาง LINE หรือโทร ${PHONE} หรือย้อนกลับไปเพิ่มเต็นท์)` : '';
   updateSummary();
 }
 
 $('#to-details').addEventListener('click', () => {
-  if (!hasItems() || !hasDates()) return;
+  if (!hasItems()) return;
+  if (!hasDates()) {
+    // วันที่ยังใช้ไม่ได้ → เลื่อนขึ้นไปที่ช่องวันที่ ให้เห็นข้อความบอกเหตุผล (ไม่เงียบหาย)
+    render();
+    $('#date-note').textContent = dateProblem();
+    $('#date-note').hidden = false;
+    $('.dates').scrollIntoView({ behavior: 'smooth', block: 'center' });
+    return;
+  }
   prepDetails();
   go('details');
 });
@@ -622,13 +678,43 @@ const SERVER_ERRORS = {
   bad_note: 'หมายเหตุยาวเกินไป (ไม่เกิน 500 ตัวอักษร)',
   bad_house: 'กรุณาเลือกบ้านหรือเต็นท์อย่างน้อย 1 อย่าง',
 };
+// ข้อความภาษาไทยของช่องที่ยังไม่ถูกต้อง (ไม่ใช้ข้อความของเบราว์เซอร์ ซึ่งอาจเป็นภาษาอังกฤษ)
+function fieldProblem(el) {
+  if (el.name === 'phone') return phoneProblem(el.value);
+  const v = el.validity;
+  if (v.valid) return '';
+  if (el.name === 'name') return 'กรุณากรอกชื่อผู้จอง';
+  if (el.name === 'guests') return v.valueMissing ? 'กรุณาใส่จำนวนคนพักในบ้าน' : `จำนวนคนพักในบ้านใส่ได้ ${el.min}–${el.max} ท่าน`;
+  if (el.name === 'payType') return 'กรุณาเลือกแบบชำระเงิน (มัดจำ 50% หรือชำระเต็มจำนวน)';
+  if (el.name === 'agree') return 'กรุณาติ๊กยอมรับเงื่อนไขการจองก่อนกดยืนยัน';
+  if (el.name === 'note') return 'หมายเหตุยาวเกินไป (ไม่เกิน 500 ตัวอักษร)';
+  return 'กรุณากรอกข้อมูลให้ครบถ้วน';
+}
+// เช็กฟอร์มก่อนส่ง: ช่องแรกที่ยังไม่ถูกต้อง → ข้อความภาษาไทยเหนือปุ่มยืนยันเสมอ + ฟองข้อความที่ช่องนั้น (ถ้ามองเห็นช่อง)
+// ช่องที่ถูกซ่อนแต่ยังผิดอยู่ ก็ยังขึ้นข้อความ ไม่เงียบหายเหมือนก่อน
+function formOk(form, errorEl) {
+  const fields = [...form.elements].filter((el) => el.willValidate);
+  fields.forEach((el) => el.setCustomValidity(''));
+  const bad = fields.find((el) => fieldProblem(el));
+  if (!bad) return true;
+  const msg = fieldProblem(bad);
+  errorEl.textContent = msg;
+  bad.setCustomValidity(msg);
+  if (!bad.closest('[hidden]')) bad.reportValidity(); // เลื่อนไปที่ช่องนั้น + ฟองข้อความภาษาไทย
+  return false;
+}
+// แก้ช่องแล้ว → ล้างข้อความเดิม
+$('#details-form').addEventListener('input', (e) => {
+  if (e.target.setCustomValidity) e.target.setCustomValidity('');
+});
 $('#details-form').addEventListener('submit', async (e) => {
   e.preventDefault();
   const form = e.target;
   const errorEl = $('#form-error');
   errorEl.textContent = '';
-  if (!form.reportValidity()) return;
+  if (!formOk(form, errorEl)) return;
   const data = Object.fromEntries(new FormData(form));
+  const phone = phoneForServer(data.phone);
   const houses = selectedHouses();
   if (!hasItems()) { go('pick'); return; }
 
@@ -665,7 +751,7 @@ $('#details-form').addEventListener('submit', async (e) => {
           tentRentals: tentRentals(),
           tentRentalsSmall: tentRentalsSmall(),
           name: data.name.trim(),
-          phone: data.phone.trim(),
+          phone,
           note: data.note.trim(),
           payType,
           website: data.hp_extra, // ช่องลับกันบอท (ในหน้าเว็บชื่อ hp_extra แต่ส่งไป Google ในชื่อ website เหมือนเดิม)
@@ -708,7 +794,7 @@ $('#details-form').addEventListener('submit', async (e) => {
     `${nights()} คืน · รวม ${allGuests} ท่าน`,
     `ยอดรวม: ${baht(bookingTotal)} บาท`,
     `ชื่อ: ${data.name.trim()}`,
-    `เบอร์: ${data.phone.trim()}`,
+    `เบอร์: ${phone}`,
     data.note.trim() ? `หมายเหตุ: ${data.note.trim()}` : '',
   ].filter(Boolean).join('\n');
   const payLabel = payLabelOf(payType);
