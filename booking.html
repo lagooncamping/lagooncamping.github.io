@@ -23,8 +23,8 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Anuphan:wght@400;500;600&family=Chonburi&display=swap">
-  <link rel="stylesheet" href="css/style.css?v=20261003n">
-  <link rel="stylesheet" href="css/booking.css?v=20261005a">
+  <link rel="stylesheet" href="css/style.css?v=20261005b">
+  <link rel="stylesheet" href="css/booking.css?v=20261005b">
   <!-- เส้นทางหน้า (breadcrumb) สำหรับ Google -->
   <script type="application/ld+json">
 {
@@ -66,8 +66,20 @@
     </div>
   </nav>
 
-  <main class="book">
+  <!-- ปิดจองออนไลน์ชั่วคราว (5 ต.ค. 2569): คลาส booking-closed ซ่อนขั้นตอนจองทั้งหมด เหลือแค่กล่อง closed-note ด้านล่าง
+       วิธีเปิดจองออนไลน์อีกครั้ง: ลบคำว่า booking-closed ออกจากบรรทัดนี้ (กล่อง closed-note จะหายไปเอง) -->
+  <main class="book booking-closed">
     <div class="wrap">
+      <!-- กล่องแจ้ง "ตอนนี้จองผ่านแชต Facebook" — โชว์เฉพาะตอนปิดจองออนไลน์ (ดู css/booking.css ส่วน closed-note) -->
+      <section class="closed-note" aria-labelledby="closed-h">
+        <span class="eyebrow">จองที่พัก</span>
+        <h1 id="closed-h">ตอนนี้รับจองผ่านแชต Facebook</h1>
+        <p>ระบบจองออนไลน์บนเว็บยังไม่เปิดใช้งาน ทักแชตเพจ The Lagoon Camping Resort แจ้งวันที่เข้าพักและจำนวนคน แอดมินจะเช็กวันว่างและตอบกลับในแชต</p>
+        <div class="btns">
+          <a class="btn btn-primary" href="https://www.facebook.com/TheLagoonCampingResort" target="_blank" rel="noopener">ทักแชตเพจ Facebook</a>
+          <a class="btn btn-ghost" href="prices.html">ดูที่พักและราคา</a>
+        </div>
+      </section>
       <!-- ลบกล่องนี้ออกเมื่อต่อ Google Sheets แล้ว -->
       <p class="demo-note">โหมดทดลอง: แผนผัง รูป และการจองที่ขึ้นว่า "ถูกจองแล้ว" เป็นข้อมูลตัวอย่าง ยังไม่บันทึกการจองจริง</p>
       <!-- มีการจองที่ยังไม่ได้ชำระในเครื่องนี้ (js/booking.js โชว์/ซ่อนให้ · ข้อมูลจำไว้ใน localStorage คีย์ lagoon-booking) -->

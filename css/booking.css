@@ -19,6 +19,18 @@ body:has(.book-bar:not([hidden])) { padding-bottom: var(--bar-h, 110px); }
   padding: 8px 12px; margin: 0 0 32px;
 }
 
+/* ---------- ปิดจองออนไลน์ชั่วคราว: <main class="book booking-closed"> ----------
+   ซ่อนทุกขั้นตอนการจอง + แถบสรุปด้านล่าง เหลือกล่อง closed-note (ลบคลาสออกจาก <main> = เปิดจองตามปกติ) */
+.closed-note { display: none; }
+.booking-closed > .wrap > :not(.closed-note),
+.booking-closed > .book-bar { display: none !important; }
+body:has(.book.booking-closed) { padding-bottom: 0; }
+.booking-closed .closed-note {
+  display: flex; flex-direction: column; gap: 12px; max-width: 640px;
+  padding-block: clamp(24px, 6vw, 64px);
+}
+.closed-note p { color: var(--muted); margin: 0 0 8px; }
+
 /* ---------- แถบขั้นตอน 1 เลือกบ้าน/เต็นท์ → 2 กรอกข้อมูล → 3 ชำระเงิน ----------
    แต่ละขั้น = แถบสีด้านบน + เลขในวงกลม + ชื่อขั้น (จอ 360px: 3 ช่องเท่ากัน ชื่อขึ้นบรรทัดใหม่ได้) */
 .steps { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; max-width: 640px; margin: 0 0 28px; padding: 0; list-style: none; counter-reset: step; }
