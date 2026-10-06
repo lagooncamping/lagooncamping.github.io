@@ -289,16 +289,17 @@ main > section + section { border-top: 1px solid var(--line); }
 /* 4 ช่องเรียงแถวเดียว → จอกลางและมือถือ 2×2 */
 .free-items { display: grid; grid-template-columns: repeat(4, 1fr); gap: 20px; align-items: stretch; }
 @media (max-width: 900px) { .free-items { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px; } }
-@media (max-width: 420px) { .free-items { gap: 10px; } .free .item { padding: 16px 14px; } }
+
 .free .item { min-width: 0; padding: 24px; background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius); transition: transform .2s ease, box-shadow .2s ease; }
 .free .item:hover { transform: translateY(-3px); box-shadow: var(--shadow); }
 /* ไอคอนอยู่ในกรอบสี่เหลี่ยมมุมมน พื้นเขียวจางๆ */
 .free .item .ico { display: grid; place-items: center; width: 44px; height: 44px; margin-bottom: 10px; border-radius: 14px; color: var(--forest); background: color-mix(in srgb, var(--forest) 12%, transparent); }
-.free .item .ico svg { display: block; width: 26px; height: 26px; }
+.free .item .ico svg { display: block; width: 28px; height: 28px; }
 .free .item strong { display: block; font-weight: 600; font-size: 1.05rem; line-height: 1.4; }
 .free .item .cond { display: inline-block; margin: 6px 0 2px; padding: 2px 10px; border-radius: 999px; font-style: normal; font-size: .82rem; font-weight: 600; line-height: 1.6; color: var(--clay); background: color-mix(in srgb, var(--clay) 12%, transparent); }
 .free .item .cond.free-all { color: var(--forest); background: color-mix(in srgb, var(--forest) 12%, transparent); }
-.free .item span:not(.ico) { display: block; margin-top: 2px; color: var(--muted); font-size: .9rem; line-height: 1.5; }
+@media (max-width: 420px) { .free-items { gap: 10px; } .free .item { padding: 16px 14px; } .free .item .cond { font-size: .76rem; padding: 2px 8px; } }
+.free .item span:not(.ico) { display: block; margin-top: 4px; color: color-mix(in srgb, var(--ink) 72%, var(--muted)); font-size: .97rem; line-height: 1.55; }   /* ข้อความรอง: เข้ม/สว่างกว่า --muted ให้อ่านง่าย */
 @media (prefers-reduced-motion: reduce) { .free .item:hover { transform: none; } }
 
 /* ---------- แกลเลอรีรูป ---------- */
