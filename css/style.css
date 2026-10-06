@@ -284,7 +284,7 @@ main > section + section { border-top: 1px solid var(--line); }
 
 /* ---------- ของฟรี ---------- */
 .free h2 { margin-bottom: 32px; }
-.free { padding-top: clamp(32px, 6vw, 80px); }   /* อยู่ใต้เส้นคลื่นภาพปก ไม่ต้องเว้นบนมาก */
+.free { padding-top: clamp(32px, 6vw, 80px); padding-bottom: clamp(32px, 5vw, 60px); }   /* ล่างการ์ดกิจกรรมเว้นน้อยลง หน้ากระชับขึ้น */   /* อยู่ใต้เส้นคลื่นภาพปก ไม่ต้องเว้นบนมาก */
 .free .eyebrow { margin-bottom: 4px; }
 /* 4 ช่องเรียงแถวเดียว → จอกลางและมือถือ 2×2 */
 .free-items { display: grid; grid-template-columns: repeat(4, 1fr); gap: 20px; align-items: stretch; }
@@ -433,7 +433,7 @@ main > section + section { border-top: 1px solid var(--line); }
 .page h1 { font-size: clamp(1.8rem, 5vw, 2.6rem); font-weight: 400; color: var(--forest); }
 
 /* ---------- ราคาแบบย่อในหน้าแรก (แถบสีเขียว) ---------- */
-.rates { background: var(--plate); color: var(--plate-ink); }
+.rates { background: var(--plate); color: var(--plate-ink); padding-top: clamp(36px, 6vw, 72px); }
 main > .rates + section { border-top: 0; }
 .rates .eyebrow { color: var(--sun); }
 .rates h2 { color: var(--plate-ink); }
