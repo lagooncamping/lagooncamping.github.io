@@ -91,6 +91,17 @@ body.admin { font-size: 18px; line-height: 1.6; padding-bottom: 96px; }
 .prep li, .mini li { padding: 8px 0; border-bottom: 1px solid var(--line); overflow-wrap: anywhere; }
 .prep li:last-child, .mini li:last-child { border-bottom: 0; }
 .work .muted, .tomorrow .muted { margin: 4px 0; }
+/* ทำความสะอาดแล้ว (ปุ่มใหญ่ กดง่ายบนมือถือ) */
+.prep li.clean-item { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 12px; }
+.clean-text { flex: 1 1 200px; }
+.admin button.clean-btn { flex: 1 1 200px; min-height: 52px; font-size: 1.1rem; font-weight: 700; background: var(--ok-bg); border-color: var(--booked); color: var(--ok-ink); }
+.admin button.clean-btn.undo { flex: 0 1 auto; min-height: 48px; font-size: 1rem; font-weight: 500; background: var(--surface); border-color: var(--line); color: var(--muted); }
+.prep li.clean-item.is-done { background: var(--ok-bg); color: var(--ok-ink); border-radius: var(--radius-sm); padding: 8px 10px; margin: 4px 0; border-bottom: 0; }
+.clean-item.is-done .clean-text { opacity: .85; }
+.clean-item.is-done .clean-text b:not(.clean-ok) { text-decoration: line-through; }
+.clean-ok { white-space: nowrap; }
+.clean-count { font-weight: 500; font-size: 1rem; color: var(--muted); }
+.clean-note { margin: 6px 0 0; font-size: .9rem; color: var(--muted); }
 .empty { color: var(--muted); background: var(--surface); border: 1px dashed var(--line); border-radius: var(--radius-sm); padding: 14px 16px; margin: 0 0 12px; }
 
 /* ---------- การ์ดการจอง ---------- */

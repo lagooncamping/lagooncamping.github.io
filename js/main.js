@@ -67,3 +67,35 @@ document.querySelectorAll('.copy').forEach((button) => {
   // ถึงเวลาหมดเขตระหว่างเปิดหน้าอยู่ → เอาแถบออก
   if (left < 2147483647) setTimeout(() => bar.remove(), left);
 })();
+
+// ---------- รายการ "ของที่ควรเตรียมมา" (เฉพาะหน้า stay.html #checklist) ----------
+// ติ๊กแล้วจำไว้ในเครื่อง (คีย์ lagoon-pack: {ชื่อของ: true}) · ปุ่ม "ล้างเครื่องหมาย" = เอาติ๊กออกทั้งหมด
+// ถ้าเบราว์เซอร์ไม่ให้ใช้ localStorage (เช่นโหมดส่วนตัว) ก็ยังติ๊กได้ แค่ไม่จำ
+(function packChecklist() {
+  const list = document.getElementById('pack-list');
+  if (!list) return; // หน้าอื่นไม่มีรายการนี้
+  const KEY = 'lagoon-pack';
+  const boxes = list.querySelectorAll('input[type="checkbox"][data-pack]');
+  let saved = {};
+  try {
+    saved = JSON.parse(localStorage.getItem(KEY) || '{}') || {};
+  } catch (err) {
+    saved = {};
+  }
+  boxes.forEach((box) => {
+    box.checked = saved[box.dataset.pack] === true;
+    box.addEventListener('change', () => {
+      if (box.checked) saved[box.dataset.pack] = true;
+      else delete saved[box.dataset.pack];
+      try { localStorage.setItem(KEY, JSON.stringify(saved)); } catch (err) { /* ไม่จำ */ }
+    });
+  });
+  const reset = document.getElementById('pack-reset');
+  if (reset) {
+    reset.addEventListener('click', () => {
+      boxes.forEach((box) => { box.checked = false; });
+      saved = {};
+      try { localStorage.removeItem(KEY); } catch (err) { /* ไม่จำ */ }
+    });
+  }
+})();

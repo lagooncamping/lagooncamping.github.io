@@ -493,6 +493,57 @@ document.addEventListener('click', (e) => {
   }
 });
 
+// ---------- ปุ่ม "ทำความสะอาดแล้ว" (เก็บในเครื่องนี้เท่านั้น ไม่ส่งไปชีต) ----------
+// คีย์ 'lagoon-clean-YYYY-MM-DD' = รายการรหัสบ้านที่ทำความสะอาดแล้ววันนั้น
+const CLEAN_KEY = 'lagoon-clean-';
+const cleanMem = {}; // สำรอง ถ้าเครื่องไม่ให้ใช้ localStorage (โหมดส่วนตัว) ยังกดได้จนกว่าจะปิดหน้า
+function cleanGet(day) {
+  try {
+    const v = JSON.parse(localStorage.getItem(CLEAN_KEY + day) || 'null');
+    if (Array.isArray(v)) return v;
+  } catch (e) { /* ใช้ค่าสำรอง */ }
+  return cleanMem[day] || [];
+}
+function cleanSet(day, list) {
+  cleanMem[day] = list;
+  try { list.length ? localStorage.setItem(CLEAN_KEY + day, JSON.stringify(list)) : localStorage.removeItem(CLEAN_KEY + day); } catch (e) { /* ไม่เป็นไร */ }
+}
+// ลบของเก่ากว่า 7 วัน
+function cleanPrune(today) {
+  const oldest = addDays(today, -7);
+  try {
+    for (let i = localStorage.length - 1; i >= 0; i--) {
+      const k = localStorage.key(i);
+      if (k && k.startsWith(CLEAN_KEY) && k.slice(CLEAN_KEY.length) < oldest) localStorage.removeItem(k);
+    }
+  } catch (e) { /* ไม่เป็นไร */ }
+}
+function cleanLi(h, done, mustFirst) {
+  return `<li class="clean-item${done ? ' is-done' : ''}" data-house="${esc(h)}">
+    <span class="clean-text">${done ? '✓' : '🧹'} ทำความสะอาด <b>${esc(houseName(h))}</b> (แขกออกวันนี้)${mustFirst && !done ? ' <b class="warn">⚠️ ต้องเสร็จก่อนแขกเข้า</b>' : ''}${done ? ' <b class="clean-ok">เสร็จแล้ว</b>' : ''}</span>
+    <button type="button" class="clean-btn${done ? ' undo' : ''}" data-clean aria-pressed="${done}">${done ? 'ยกเลิก' : '✓ ทำความสะอาดแล้ว'}</button>
+  </li>`;
+}
+document.addEventListener('click', (e) => {
+  const btn = e.target.closest('[data-clean]');
+  const li = btn && btn.closest('.clean-item');
+  if (!li) return;
+  const day = state.today;
+  const h = li.dataset.house;
+  const list = cleanGet(day).filter((x) => x !== h);
+  const done = !li.classList.contains('is-done');
+  if (done) list.push(h);
+  cleanSet(day, list);
+  const mustFirst = bookings().some((b) => isActive(b) && !b.blocked && b.checkin === day && b.houses.includes(h));
+  li.outerHTML = cleanLi(h, done, mustFirst);
+  const box = $('#today-body');
+  const count = box.querySelector('.clean-count b');
+  if (count) count.textContent = `${box.querySelectorAll('.clean-item.is-done').length}/${box.querySelectorAll('.clean-item').length}`;
+  const again = [...box.querySelectorAll('.clean-item')].find((x) => x.dataset.house === h);
+  if (again) again.querySelector('[data-clean]').focus();
+  toast(done ? `✓ ${houseName(h)} ทำความสะอาดแล้ว` : `ยกเลิกแล้ว ${houseName(h)} ยังไม่ได้ทำความสะอาด`);
+});
+
 // ---------- แท็บ "วันนี้" ----------
 function renderToday() {
   const t = state.today;
@@ -517,7 +568,11 @@ function renderToday() {
   const rentSmallTonight = tonight.reduce((s, b) => s + (Number(b.rentSmall) || 0), 0);
   const ownTent = arrive.reduce((s, b) => s + (Number(b.tent) || 0), 0);
   const blocks = bookings().filter((b) => b.blocked && b.status === ST.CONFIRMED && b.checkin === t);
-  const prep = clean.map((h) => `🧹 ทำความสะอาด <b>${esc(houseName(h))}</b> (แขกออกวันนี้)${arriveHouses.has(h) ? ' <b class="warn">⚠️ ต้องเสร็จก่อนแขกเข้า</b>' : ''}`);
+  cleanPrune(t);
+  const doneSet = new Set(cleanGet(t));
+  const cleanItems = clean.map((h) => cleanLi(h, doneSet.has(h), arriveHouses.has(h)));
+  const cleanDoneN = clean.filter((h) => doneSet.has(h)).length;
+  const prep = [];
   if (rentTonight) prep.push(`⛺ เต็นท์เช่าคืนนี้ <b>${rentTonight} หลัง</b>${rentSmallTonight ? ` (ใหญ่ ${rentTonight - rentSmallTonight} · เล็ก ${rentSmallTonight})` : ''}${rentNew ? ` (ต้องกางใหม่วันนี้ ${rentNew} หลัง)` : ' (กางไว้แล้ว)'}`);
   if (ownTent) prep.push(`🏕️ แขกนำเต็นท์มาเอง เข้าวันนี้ <b>${ownTent} ท่าน</b>`);
   blocks.forEach((b) => prep.push(`🔒 ปิดบ้านวันนี้: <b>${esc(b.houseNames.join(', '))}</b>${b.note ? ` (${esc(b.note)})` : ''}`));
@@ -537,8 +592,9 @@ function renderToday() {
       <p class="collect ${collectSum ? 'is-due' : 'is-done'}">${collectSum
         ? `💵 ต้องเก็บเงินวันนี้ รวม <b>${baht(collectSum)} บาท</b> (${collect.length} การจอง)`
         : '✓ ไม่มีเงินต้องเก็บวันนี้'}</p>
-      <h3>เตรียมงาน</h3>
-      ${prep.length ? `<ul class="prep">${prep.map((p) => `<li>${p}</li>`).join('')}</ul>` : '<p class="muted">ไม่มีงานต้องเตรียม</p>'}
+      <h3>เตรียมงาน${clean.length ? ` <span class="clean-count">· ทำความสะอาดแล้ว <b>${cleanDoneN}/${clean.length}</b></span>` : ''}</h3>
+      ${cleanItems.length + prep.length ? `<ul class="prep">${cleanItems.join('')}${prep.map((p) => `<li>${p}</li>`).join('')}</ul>` : '<p class="muted">ไม่มีงานต้องเตรียม</p>'}
+      ${clean.length ? '<p class="clean-note">ปุ่ม “ทำความสะอาดแล้ว” บันทึกไว้ในเครื่องนี้เท่านั้น</p>' : ''}
     </div>
     <div class="summary">
       <p>คืนนี้มีแขก <b>${tonight.reduce((s, b) => s + people(b), 0)} ท่าน</b> (${tonight.length} การจอง)</p>
