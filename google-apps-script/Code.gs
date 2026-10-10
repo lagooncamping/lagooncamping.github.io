@@ -57,6 +57,7 @@ const SAME_DAY_CUTOFF = 18; // หลัง 18:00 น. ไม่รับจอ�
 const HOUSES = {
   'lagoon-1': { name: 'Lagoon 1', price: 1300, guests: 2 },
   'lagoon-2': { name: 'Lagoon 2', price: 1300, guests: 2 },
+  'lagoon-3': { name: 'Lagoon 3', price: 1300, guests: 2 },
   'studio': { name: 'Lagoon Studio', price: 1500, guests: 2 },
   'family-1': { name: 'Lagoon Family 1', price: 2500, guests: 4 },
   'family-2': { name: 'Lagoon Family 2', price: 3000, guests: 4 },
@@ -316,7 +317,7 @@ function nights_(from, to) {
 // แอดมินพิมพ์การจองเองในชีต อาจพิมพ์รหัสบ้านเป็นชื่อ เช่น "Lagoon 1", "Studio", "Family 2",
 // "สตูดิโอ", "แฟมิลี่ 1", "ครอบครัว1", "ลากูน 1" — แปลงเป็นรหัสให้ (ไม่สนตัวใหญ่เล็ก เว้นวรรค ขีด)
 const HOUSE_ALIAS = {
-  '1': 'lagoon-1', '2': 'lagoon-2',
+  '1': 'lagoon-1', '2': 'lagoon-2', '3': 'lagoon-3',
   studio: 'studio', 'สตูดิโอ': 'studio', 'สตูดิโอ้': 'studio',
   family1: 'family-1', 'แฟมิลี่1': 'family-1', 'แฟมิลี1': 'family-1', 'แฟมมิลี่1': 'family-1', 'ครอบครัว1': 'family-1',
   family2: 'family-2', 'แฟมิลี่2': 'family-2', 'แฟมิลี2': 'family-2', 'แฟมมิลี่2': 'family-2', 'ครอบครัว2': 'family-2',

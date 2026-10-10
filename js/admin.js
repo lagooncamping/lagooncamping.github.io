@@ -12,7 +12,7 @@ const ST = { PENDING: 'รอชำระเงิน', CONFIRMED: 'ยืนย
 const BAL = { UNPAID: 'ยังไม่ชำระ', CASH: 'เงินสด', TRANSFER: 'โอนหน้าเคาน์เตอร์' };
 const REFUND_DONE = 'คืนเงินแล้ว';
 const PAY_FULL = 'เต็มจำนวน';
-const HOUSE_ORDER = ['lagoon-1', 'lagoon-2', 'studio', 'family-1', 'family-2'];
+const HOUSE_ORDER = ['lagoon-1', 'lagoon-2', 'lagoon-3', 'studio', 'family-1', 'family-2'];
 const CAL_DAYS = 30;
 const STORE_KEY = 'lagoonAdminToken';
 

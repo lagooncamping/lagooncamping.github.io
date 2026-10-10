@@ -40,50 +40,68 @@ function promptPayPayload(phone, amount) {
 }
 
 // ---------- ข้อมูลบ้าน (แก้ชื่อ ราคา รูป ได้ตรงนี้) ----------
-// TODO: เปลี่ยนรูปตัวอย่างเป็นรูปจริงของแต่ละหลัง
+// รูปจริง (9 ต.ค. 2569) ตัดมาจากภาพ "รูปบ้านส่งลูกค้า" ในโฟลเดอร์ AIOS — รูปห้องนอน Lagoon 1–3 ใช้รูปเดียวกัน (บ้านเหมือนกันทั้ง 3 หลัง)
+const LAGOON_ROOM = { src: 'img/house-lagoon-room.jpg', alt: 'ห้องนอนบ้าน Lagoon เตียงใหญ่ มีแอร์' };
+const LAKE = { src: 'img/lake-view.jpg', alt: 'วิวทะเลสาบหน้าที่พัก' };
 const HOUSES = [
   {
     id: 'lagoon-1', name: 'Lagoon 1', type: 'บ้านหลังเล็ก', guests: 2, price: 1300,
     features: ['1 เตียงใหญ่', 'ห้องน้ำในตัว'],
     photos: [
-      { src: 'img/houses.jpg', alt: 'รูปตัวอย่าง: บ้านพักไม้ท่ามกลางสนามหญ้า' },
-      { src: 'img/house-orchid.jpg', alt: 'รูปตัวอย่าง: บ้านพักไม้' },
-      { src: 'img/lake-view.jpg', alt: 'รูปตัวอย่าง: วิวทะเลสาบ' },
+      { src: 'img/house-lagoon-1.jpg', alt: 'บ้านไม้ Lagoon 1 ยกพื้น มีระเบียงหน้าบ้าน' },
+      LAGOON_ROOM,
+      { src: 'img/house-lagoon-garden.jpg', alt: 'บ้านพักไม้เรียงริมสนามหญ้า' },
+      LAKE,
     ],
   },
   {
     id: 'lagoon-2', name: 'Lagoon 2', type: 'บ้านหลังเล็ก', guests: 2, price: 1300,
     features: ['1 เตียงใหญ่', 'ห้องน้ำในตัว'],
     photos: [
-      { src: 'img/house-orchid.jpg', alt: 'รูปตัวอย่าง: บ้านพักไม้' },
-      { src: 'img/houses.jpg', alt: 'รูปตัวอย่าง: บ้านพักไม้ท่ามกลางสนามหญ้า' },
-      { src: 'img/lake-view.jpg', alt: 'รูปตัวอย่าง: วิวทะเลสาบ' },
+      { src: 'img/house-lagoon-2.jpg', alt: 'บ้านไม้ Lagoon 2 ท่ามกลางต้นปาล์ม' },
+      LAGOON_ROOM,
+      { src: 'img/house-lagoon-garden.jpg', alt: 'บ้านพักไม้เรียงริมสนามหญ้า' },
+      LAKE,
+    ],
+  },
+  {
+    id: 'lagoon-3', name: 'Lagoon 3', type: 'บ้านหลังเล็ก', guests: 2, price: 1300,
+    features: ['1 เตียงใหญ่', 'ห้องน้ำในตัว'],
+    photos: [
+      { src: 'img/house-lagoon-3.jpg', alt: 'บ้านไม้ Lagoon เรียงกันริมสนามหญ้า' },
+      LAGOON_ROOM,
+      { src: 'img/house-lagoon-3-lake.jpg', alt: 'ต้นไม้ใหญ่ริมทะเลสาบ' },
+      LAKE,
     ],
   },
   {
     id: 'family-1', name: 'Lagoon Family 1', type: 'บ้านหลังกลาง', guests: 4, price: 2500,
     features: ['1 ห้องนอน 2 เตียง', 'ห้องน้ำในตัว'],
     photos: [
-      { src: 'img/houses.jpg', alt: 'รูปตัวอย่าง: บ้านพักไม้ท่ามกลางสนามหญ้า' },
-      { src: 'img/kayak.jpg', alt: 'รูปตัวอย่าง: พายเรือแคนูในทะเลสาบ' },
-      { src: 'img/sunset.jpg', alt: 'รูปตัวอย่าง: พระอาทิตย์ตกริมทะเลสาบ' },
+      { src: 'img/house-family-1.jpg', alt: 'บ้านไม้ Lagoon Family 1 ระเบียงกว้าง มีเรือแคนูหน้าบ้าน' },
+      { src: 'img/house-family-1-room.jpg', alt: 'ห้องนอน Family 1 เตียง 2 เตียง ผนังไม้' },
+      { src: 'img/house-family-1-room2.jpg', alt: 'ห้องนอน Family 1 มีตู้เย็นและโต๊ะเครื่องแป้ง' },
+      LAKE,
     ],
   },
   {
     id: 'family-2', name: 'Lagoon Family 2', type: 'บ้านหลังใหญ่ · มีครัว', guests: 4, price: 3000,
     features: ['2 ห้องนอน (ห้องละ 1 เตียงใหญ่)', '2 ห้องน้ำในตัว'],
     photos: [
-      { src: 'img/house-orchid.jpg', alt: 'รูปตัวอย่าง: บ้านพักไม้' },
-      { src: 'img/lake-view.jpg', alt: 'รูปตัวอย่าง: วิวทะเลสาบ' },
-      { src: 'img/night.jpg', alt: 'รูปตัวอย่าง: ลานแคมป์ยามค่ำคืน' },
+      { src: 'img/house-family-2.jpg', alt: 'บ้านไม้ 2 ชั้น Lagoon Family 2 เปิดไฟยามค่ำ' },
+      { src: 'img/house-family-2-day.jpg', alt: 'บ้าน Family 2 ตอนกลางวัน ใต้ถุนมีโต๊ะนั่งเล่น' },
+      { src: 'img/house-family-2-room.jpg', alt: 'ห้องนอน Family 2 เตียงใหญ่ มีแอร์' },
+      { src: 'img/house-family-2-view.jpg', alt: 'วิวจากระเบียง Family 2 เห็นชิงช้าและทะเลสาบ' },
     ],
   },
   {
     id: 'studio', name: 'Lagoon Studio', type: 'บ้านหลังใหม่ สไตล์โมเดิร์น', guests: 2, price: 1500,
     features: ['2 เตียง', 'ห้องน้ำในตัว'],
     photos: [
-      { src: 'img/house-orchid.jpg', alt: 'รูปตัวอย่าง: บ้านพัก' },
-      { src: 'img/sunset.jpg', alt: 'รูปตัวอย่าง: พระอาทิตย์ตกริมทะเลสาบ' },
+      { src: 'img/house-studio.jpg', alt: 'บ้าน Lagoon Studio ประตูกระจกบานใหญ่ มีโต๊ะหน้าบ้าน' },
+      { src: 'img/house-studio-room.jpg', alt: 'ห้องนอน Studio พื้นกระเบื้อง มีตู้เย็น' },
+      { src: 'img/house-studio-view.jpg', alt: 'วิวสนามหญ้าและทะเลสาบจากประตู Studio' },
+      LAKE,
     ],
   },
 ];

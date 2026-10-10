@@ -68,7 +68,7 @@
 
   <!-- ปิดจองออนไลน์ชั่วคราว (5 ต.ค. 2569): คลาส booking-closed ซ่อนขั้นตอนจองทั้งหมด เหลือแค่กล่อง closed-note ด้านล่าง
        วิธีเปิดจองออนไลน์อีกครั้ง: ลบคำว่า booking-closed ออกจากบรรทัดนี้ (กล่อง closed-note จะหายไปเอง) -->
-  <main class="book booking-closed">
+  <main class="book">
     <div class="wrap">
       <!-- กล่องแจ้ง "ตอนนี้จองผ่านแชต Facebook" — โชว์เฉพาะตอนปิดจองออนไลน์ (ดู css/booking.css ส่วน closed-note) -->
       <section class="closed-note" aria-labelledby="closed-h">
@@ -172,6 +172,11 @@
                 <span class="roof"><i></i><i></i></span><span class="deck"></span>
                 <span class="pill"><b>Lagoon 2</b><span class="st"></span></span>
               </button>
+              <!-- Lagoon 3: วางต่อจาก Lagoon 2 ไว้ก่อน — ถามเจ้าของว่าบ้านจริงอยู่ตรงไหน -->
+              <button class="m" type="button" data-house="lagoon-3" style="--w:100px;--rh:92px">
+                <span class="roof"><i></i><i></i></span><span class="deck"></span>
+                <span class="pill"><b>Lagoon 3</b><span class="st"></span></span>
+              </button>
               <button class="m" type="button" data-house="family-1" style="--w:132px;--rh:112px">
                 <span class="roof"><i></i><i></i></span><span class="deck"></span>
                 <span class="pill"><b>Family 1</b><span class="st"></span></span>
@@ -244,7 +249,7 @@
         <!-- กรอบบ้านพักริมน้ำ (หน้าตาเดียวกับการ์ดลานกางเต็นท์) -->
         <section class="tent-card house-card" id="house-box" aria-labelledby="house-h">
           <h3 id="house-h"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 11 12 4l9 7M5 9.5V20h14V9.5M10 20v-5h4v5"/></svg>บ้านพักริมน้ำ</h3>
-          <p class="house-type">บ้าน 5 หลังเรียงแนวเดียวกัน ติดริมเขื่อน · มีแอร์ ห้องน้ำในตัว และกาแฟยามเช้าทุกหลัง</p>
+          <p class="house-type">บ้าน 6 หลังเรียงแนวเดียวกัน ติดริมเขื่อน · มีแอร์ ห้องน้ำในตัว และกาแฟยามเช้าทุกหลัง</p>
           <!-- สิ่งที่บ้านทุกหลังมีเหมือนกัน -->
           <!-- สิ่งที่บ้านทุกหลังมีเหมือนกัน (ย่อไว้ กดเพื่อดู) -->
           <details class="house-all">
@@ -433,7 +438,7 @@
   <!-- สร้างรูป QR พร้อมเพย์ -->
   <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcode-generator/1.4.4/qrcode.min.js" defer></script>
   <script src="js/main.js?v=20261007a" defer></script>
-  <script src="js/booking.js?v=20261005a" defer></script>
+  <script src="js/booking.js?v=20261009a" defer></script>
   <script src="js/lightbox.js?v=20261003c" defer></script>
   <script src="js/nav.js?v=20261003n" defer></script>
 </body>
