@@ -24,7 +24,7 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Anuphan:wght@400;500;600&family=Chonburi&display=swap">
   <link rel="stylesheet" href="css/style.css?v=20261007a">
-  <link rel="stylesheet" href="css/booking.css?v=20261005b">
+  <link rel="stylesheet" href="css/booking.css?v=20261010a">
   <!-- เส้นทางหน้า (breadcrumb) สำหรับ Google -->
   <script type="application/ld+json">
 {
@@ -68,7 +68,7 @@
 
   <!-- ปิดจองออนไลน์ชั่วคราว (5 ต.ค. 2569): คลาส booking-closed ซ่อนขั้นตอนจองทั้งหมด เหลือแค่กล่อง closed-note ด้านล่าง
        วิธีเปิดจองออนไลน์อีกครั้ง: ลบคำว่า booking-closed ออกจากบรรทัดนี้ (กล่อง closed-note จะหายไปเอง) -->
-  <main class="book">
+  <main class="book booking-closed">
     <div class="wrap">
       <!-- กล่องแจ้ง "ตอนนี้จองผ่านแชต Facebook" — โชว์เฉพาะตอนปิดจองออนไลน์ (ดู css/booking.css ส่วน closed-note) -->
       <section class="closed-note" aria-labelledby="closed-h">
@@ -136,79 +136,81 @@
         <p class="hint full-note" id="full-note" hidden>ช่วงนี้มีคืนที่เต็มทุกหลัง (ลานกางเต็นท์ยังจองได้) ลองเลือกวันอื่น หรือจองเฉพาะเต็นท์</p>
         <p class="hint late-note" id="late-note" hidden></p>
 
-        <!-- แผนผังมุมสูง (ออกแบบใน Claude Design): บ้านเรียงแถวเดียวริมเขื่อน ซ้ายไปขวา Lagoon 1–2, Family 1–2, Studio
-             ภาพวาดขนาด 800×640 แล้วย่อให้พอดีจอด้วย js/booking.js (จอเล็กเลื่อนซ้ายขวาได้) -->
+        <!-- แผนผังบ้านพัก (แนวตั้ง พอดีจอมือถือ ไม่ต้องปัดซ้ายขวา · ทำใหม่ 10 ต.ค. 2569)
+             ภาพพื้นหลัง (น้ำ ตลิ่ง ต้นไม้ ถนน) วาดเป็น SVG ด้านล่าง · ป้ายบ้าน 6 หลังสร้างโดย js/booking.js จากรายการบ้าน
+             ลำดับบ้านบนแผนผังแก้ได้ที่ MAP_ORDER ใน js/booking.js · แตะป้ายบ้าน = เลือก/ยกเลิก (ยังไม่เลือกวันหรือถูกจอง = เปิดดูรูป) -->
         <figure class="map" id="map">
-          <div class="aerial-scroll">
-          <div class="aerial-fit">
-          <div class="aerial" role="group" aria-label="แผนผังบ้านพักมุมสูง กดที่บ้านเพื่อดูรูปและเลือก">
-            <div class="road"><span>ถนนทางเข้า · ลานจอดรถ</span></div>
-            <div class="trees">
-              <i class="tree" style="left:8px;top:64px;width:64px;height:64px;border-radius:48% 52% 44% 56% / 52% 45% 55% 48%"><i style="left:27px;top:-8px;width:40px;height:40px;border-radius:55% 45% 50% 50% / 45% 55% 48% 52%"></i></i>
-              <i class="tree" style="left:92px;top:82px;width:56px;height:56px;border-radius:55% 45% 50% 50% / 45% 55% 48% 52%"><i style="left:24px;top:-7px;width:35px;height:35px;border-radius:42% 58% 53% 47% / 50% 52% 48% 50%"></i></i>
-              <i class="tree" style="left:168px;top:62px;width:70px;height:70px;border-radius:42% 58% 53% 47% / 50% 52% 48% 50%"><i style="left:29px;top:-8px;width:43px;height:43px;border-radius:48% 52% 44% 56% / 52% 45% 55% 48%"></i></i>
-              <i class="tree" style="left:262px;top:86px;width:52px;height:52px;border-radius:48% 52% 44% 56% / 52% 45% 55% 48%"><i style="left:22px;top:-6px;width:32px;height:32px;border-radius:55% 45% 50% 50% / 45% 55% 48% 52%"></i></i>
-              <i class="tree" style="left:330px;top:64px;width:66px;height:66px;border-radius:55% 45% 50% 50% / 45% 55% 48% 52%"><i style="left:28px;top:-8px;width:41px;height:41px;border-radius:42% 58% 53% 47% / 50% 52% 48% 50%"></i></i>
-              <i class="tree" style="left:420px;top:84px;width:58px;height:58px;border-radius:42% 58% 53% 47% / 50% 52% 48% 50%"><i style="left:24px;top:-7px;width:36px;height:36px;border-radius:48% 52% 44% 56% / 52% 45% 55% 48%"></i></i>
-              <i class="tree" style="left:494px;top:60px;width:70px;height:70px;border-radius:48% 52% 44% 56% / 52% 45% 55% 48%"><i style="left:29px;top:-8px;width:43px;height:43px;border-radius:55% 45% 50% 50% / 45% 55% 48% 52%"></i></i>
-              <i class="tree" style="left:590px;top:86px;width:54px;height:54px;border-radius:55% 45% 50% 50% / 45% 55% 48% 52%"><i style="left:23px;top:-6px;width:33px;height:33px;border-radius:42% 58% 53% 47% / 50% 52% 48% 50%"></i></i>
-              <i class="tree" style="left:660px;top:62px;width:66px;height:66px;border-radius:42% 58% 53% 47% / 50% 52% 48% 50%"><i style="left:28px;top:-8px;width:41px;height:41px;border-radius:48% 52% 44% 56% / 52% 45% 55% 48%"></i></i>
-              <i class="tree" style="left:742px;top:84px;width:58px;height:58px;border-radius:48% 52% 44% 56% / 52% 45% 55% 48%"><i style="left:24px;top:-7px;width:36px;height:36px;border-radius:55% 45% 50% 50% / 45% 55% 48% 52%"></i></i>
-              <i class="tree" style="left:16px;top:362px;width:46px;height:46px;border-radius:55% 45% 50% 50% / 45% 55% 48% 52%"><i style="left:19px;top:-6px;width:29px;height:29px;border-radius:42% 58% 53% 47% / 50% 52% 48% 50%"></i></i>
-              <i class="tree" style="left:250px;top:370px;width:40px;height:40px;border-radius:42% 58% 53% 47% / 50% 52% 48% 50%"><i style="left:17px;top:-5px;width:25px;height:25px;border-radius:48% 52% 44% 56% / 52% 45% 55% 48%"></i></i>
-              <i class="tree" style="left:730px;top:360px;width:50px;height:50px;border-radius:48% 52% 44% 56% / 52% 45% 55% 48%"><i style="left:21px;top:-6px;width:31px;height:31px;border-radius:55% 45% 50% 50% / 45% 55% 48% 52%"></i></i>
-            </div>
+          <div class="plan" role="group" aria-label="แผนผังบ้านพัก แตะที่บ้านเพื่อเลือก">
+            <svg class="plan-bg" viewBox="0 0 360 560" preserveAspectRatio="none" aria-hidden="true" focusable="false">
+              <defs>
+                <linearGradient id="plan-grass" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#93BC7A"/><stop offset="1" stop-color="#7DAA66"/></linearGradient>
+                <linearGradient id="plan-lake" x1="0" y1="0" x2="1" y2="0"><stop offset="0" stop-color="#2A6F86"/><stop offset="1" stop-color="#3F93A6"/></linearGradient>
+              </defs>
+              <rect width="360" height="560" fill="url(#plan-grass)"/>
+              <path d="M0 0H112C136 70 100 140 120 210S104 350 126 420S108 520 116 560H0Z" fill="#DCC79C"/>
+              <path d="M0 0H98C122 70 86 140 106 210S90 350 112 420S94 520 102 560H0Z" fill="url(#plan-lake)"/>
+              <g fill="none" stroke="#EAF6F4" stroke-opacity=".4" stroke-width="1.6" stroke-linecap="round">
+                <path d="M14 60q10-5 20 0t20 0"/><path d="M30 150q10-5 20 0t20 0"/><path d="M10 250q10-5 20 0t20 0"/>
+                <path d="M36 330q10-5 20 0t20 0"/><path d="M12 410q10-5 20 0t20 0"/><path d="M40 470q10-5 20 0t20 0"/>
+              </g>
+              <g stroke="#00000022">
+                <path d="M22 108q24-10 48 0q-24 10-48 0z" fill="#E9604F"/>
+                <path d="M30 288q22 9 44 0q-22-9-44 0z" fill="#F3CF55"/>
+              </g>
+              <rect x="334" width="26" height="560" fill="#CFC6B1"/>
+              <path d="M347 0V560" stroke="#FFFFFF" stroke-opacity=".7" stroke-width="2" stroke-dasharray="10 10"/>
+              <g fill="#5E8A4C">
+                <circle cx="322" cy="64" r="14"/><circle cx="318" cy="170" r="11"/><circle cx="324" cy="262" r="15"/>
+                <circle cx="320" cy="360" r="12"/><circle cx="324" cy="436" r="13"/><circle cx="140" cy="440" r="10"/>
+              </g>
+              <g fill="#6F9C5A">
+                <circle cx="317" cy="59" r="8"/><circle cx="314" cy="166" r="6"/><circle cx="319" cy="256" r="9"/>
+                <circle cx="316" cy="356" r="7"/><circle cx="319" cy="431" r="8"/><circle cx="137" cy="436" r="6"/>
+              </g>
+            </svg>
+            <span class="plan-label plan-road">ทางเข้า · ลานจอดรถ</span>
+            <span class="plan-label plan-lake">อ่างเก็บน้ำ<br>ต.ช้างข้าม</span>
+            <!-- ป้ายบ้าน (ปุ่ม .m) ใส่ตรงนี้โดย js/booking.js -->
+            <div class="plan-pins" id="map-pins"></div>
             <!-- ลานกางเต็นท์บนแผนผัง: กดแล้วเลื่อนไปที่การ์ดลานกางเต็นท์ (ห้ามใส่คลาส m — คลาสนั้นใช้กับบ้านเท่านั้น) -->
             <button type="button" class="tent-spot" data-jump="#tents" aria-label="ลานกางเต็นท์ ดูราคาและเลือกจำนวน">
-              <span class="tents" aria-hidden="true"><i></i><i></i></span>
-              <span class="tents-label">ลานกางเต็นท์ · 200฿/ท่าน</span>
+              <span class="tents" aria-hidden="true"><i></i><i></i><i></i></span>
+              <span class="tents-label"><b>ลานกางเต็นท์</b>200 บาท/ท่าน · มีเต็นท์ให้เช่า</span>
             </button>
-            <div class="row">
-              <button class="m" type="button" data-house="lagoon-1" style="--w:100px;--rh:92px">
-                <span class="roof"><i></i><i></i></span><span class="deck"></span>
-                <span class="pill"><b>Lagoon 1</b><span class="st"></span></span>
-              </button>
-              <button class="m" type="button" data-house="lagoon-2" style="--w:100px;--rh:92px">
-                <span class="roof"><i></i><i></i></span><span class="deck"></span>
-                <span class="pill"><b>Lagoon 2</b><span class="st"></span></span>
-              </button>
-              <!-- Lagoon 3: วางต่อจาก Lagoon 2 ไว้ก่อน — ถามเจ้าของว่าบ้านจริงอยู่ตรงไหน -->
-              <button class="m" type="button" data-house="lagoon-3" style="--w:100px;--rh:92px">
-                <span class="roof"><i></i><i></i></span><span class="deck"></span>
-                <span class="pill"><b>Lagoon 3</b><span class="st"></span></span>
-              </button>
-              <button class="m" type="button" data-house="family-1" style="--w:132px;--rh:112px">
-                <span class="roof"><i></i><i></i></span><span class="deck"></span>
-                <span class="pill"><b>Family 1</b><span class="st"></span></span>
-              </button>
-              <button class="m" type="button" data-house="family-2" style="--w:132px;--rh:112px">
-                <span class="roof"><i></i><i></i></span><span class="deck"></span>
-                <span class="pill"><b>Family 2</b><span class="st"></span></span>
-              </button>
-              <button class="m" type="button" data-house="studio" style="--w:84px;--rh:80px">
-                <span class="roof"><i></i><i></i></span><span class="deck"></span>
-                <span class="pill"><b>Studio</b><span class="st"></span></span>
-              </button>
-            </div>
-            <div class="bank"></div>
-            <div class="water"><i class="refl" style="left:0px;width:140px;height:70px"></i><i class="refl" style="left:150px;width:160px;height:90px"></i><i class="refl" style="left:320px;width:140px;height:70px"></i><i class="refl" style="left:480px;width:150px;height:80px"></i><i class="refl" style="left:640px;width:160px;height:90px"></i><svg class="ripple" style="left:60px;top:26px" width="70" height="10" viewBox="0 0 70 10" aria-hidden="true"><path d="M2 6C14 2 24 2 35 5S56 9 68 4"/></svg><svg class="ripple" style="left:250px;top:56px" width="70" height="10" viewBox="0 0 70 10" aria-hidden="true"><path d="M2 6C14 2 24 2 35 5S56 9 68 4"/></svg><svg class="ripple" style="left:470px;top:22px" width="70" height="10" viewBox="0 0 70 10" aria-hidden="true"><path d="M2 6C14 2 24 2 35 5S56 9 68 4"/></svg><svg class="ripple" style="left:650px;top:48px" width="70" height="10" viewBox="0 0 70 10" aria-hidden="true"><path d="M2 6C14 2 24 2 35 5S56 9 68 4"/></svg><svg class="ripple" style="left:140px;top:86px" width="70" height="10" viewBox="0 0 70 10" aria-hidden="true"><path d="M2 6C14 2 24 2 35 5S56 9 68 4"/></svg><svg class="ripple" style="left:560px;top:92px" width="70" height="10" viewBox="0 0 70 10" aria-hidden="true"><path d="M2 6C14 2 24 2 35 5S56 9 68 4"/></svg><svg class="ripple" style="left:360px;top:96px" width="70" height="10" viewBox="0 0 70 10" aria-hidden="true"><path d="M2 6C14 2 24 2 35 5S56 9 68 4"/></svg>
-              <!-- เรือแคนู (มองจากด้านบน) -->
-              <svg class="canoe" style="left:118px;top:34px;--r:-14deg;--hull:#d9583b" width="110" height="34" viewBox="0 0 110 34" aria-hidden="true"><path class="hull" d="M6 17Q55 2 104 17Q55 32 6 17Z"/><path class="deck" d="M30 17Q55 9 80 17Q55 25 30 17Z"/><path class="paddle" d="M44 4 66 30"/><ellipse class="blade" cx="42" cy="2" rx="3" ry="6" transform="rotate(-40 42 2)"/><ellipse class="blade" cx="68" cy="32" rx="3" ry="6" transform="rotate(-40 68 32)"/></svg>
-              <svg class="canoe" style="left:566px;top:58px;--r:12deg;--hull:#f0b23a" width="110" height="34" viewBox="0 0 110 34" aria-hidden="true"><path class="hull" d="M6 17Q55 2 104 17Q55 32 6 17Z"/><path class="deck" d="M30 17Q55 9 80 17Q55 25 30 17Z"/><path class="paddle" d="M44 30 66 4"/><ellipse class="blade" cx="42" cy="32" rx="3" ry="6" transform="rotate(40 42 32)"/><ellipse class="blade" cx="68" cy="2" rx="3" ry="6" transform="rotate(40 68 2)"/></svg>
-              <svg class="canoe" style="left:340px;top:14px;--r:4deg;--hull:#4f9a6a" width="96" height="30" viewBox="0 0 110 34" aria-hidden="true"><path class="hull" d="M6 17Q55 2 104 17Q55 32 6 17Z"/><path class="deck" d="M30 17Q55 9 80 17Q55 25 30 17Z"/></svg>
-              <span class="water-title">อ่างเก็บน้ำตำบลช้างข้าม</span>
-              <span class="water-sub">ทุกหลังหันระเบียงรับวิวน้ำ</span>
-            </div>
-          </div>
-          </div>
           </div>
           <ul class="legend">
             <li><i></i>ว่าง</li>
             <li><i class="sel"></i>เลือกแล้ว</li>
             <li><i class="bk"></i>ถูกจองแล้ว</li>
           </ul>
-          <figcaption>แผนผังจำลอง กดที่บ้านเพื่อดูรูปและเลือก</figcaption>
+          <figcaption>แผนผังจำลอง ไม่ตรงตามมาตราส่วน · แตะที่บ้านเพื่อเลือก</figcaption>
         </figure>
+
+        <!-- กรอบบ้านพักริมน้ำ (หน้าตาเดียวกับการ์ดลานกางเต็นท์) · อยู่ก่อนลานเต็นท์ เพราะเป็นที่พักหลัก (ย้าย 10 ต.ค. 2569) -->
+        <section class="tent-card house-card" id="house-box" aria-labelledby="house-h">
+          <h3 id="house-h"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 11 12 4l9 7M5 9.5V20h14V9.5M10 20v-5h4v5"/></svg>บ้านพักริมน้ำ</h3>
+          <p class="house-type">บ้าน 6 หลังเรียงแนวเดียวกัน ติดริมเขื่อน · มีแอร์ ห้องน้ำในตัว และกาแฟยามเช้าทุกหลัง</p>
+          <!-- สิ่งที่บ้านทุกหลังมีเหมือนกัน -->
+          <!-- สิ่งที่บ้านทุกหลังมีเหมือนกัน (ย่อไว้ กดเพื่อดู) -->
+          <details class="house-all">
+            <summary>สิ่งอำนวยความสะดวกทุกหลัง</summary>
+            <p class="house-all-title">บ้านทุกหลังอยู่แนวเดียวกัน ติดริมเขื่อน และมี</p>
+            <ul class="house-feats">
+              <li><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 2v20M4.9 6.5l14.2 11M19.1 6.5 4.9 17.5M9 3.5l3 2.5 3-2.5M9 20.5l3-2.5 3 2.5"/></svg>แอร์</li>
+              <li><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 20h18M5 20V10h14v10M3 10l9-6 9 6"/><path d="M9 20v-5h6v5"/></svg>ระเบียงเห็นวิวน้ำ</li>
+              <li><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3s6 6.5 6 11a6 6 0 0 1-12 0c0-4.5 6-11 6-11z"/></svg>ห้องน้ำในตัว มีน้ำอุ่น</li>
+              <li><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="6" y="2.5" width="12" height="19" rx="2"/><path d="M6 10h12M9 6v2M9 13v3"/></svg>ตู้เย็น</li>
+              <li><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M2 9a15 15 0 0 1 20 0M5 12.5a10 10 0 0 1 14 0M8.5 16a5 5 0 0 1 7 0"/><circle cx="12" cy="19.5" r="1"/></svg>Wi‑Fi</li>
+              <li><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 20h14l-1.5-9h-11zM9 11V8a3 3 0 0 1 6 0v3M17.5 13l3-2"/></svg>กาต้มน้ำร้อน</li>
+              <li><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 9h12v5a5 5 0 0 1-5 5H9a5 5 0 0 1-5-5zM16 10h2a2 2 0 0 1 0 4h-2M8 3c0 1.5 1 1.5 1 3M12 3c0 1.5 1 1.5 1 3"/></svg>กาแฟยามเช้า</li>
+            </ul>
+            <p class="house-all-note">เพิ่มคนได้ คนละ 300 บาท (มีที่นอนปิกนิกเสริม) แจ้งทาง LINE หรือโทร 081-930-4969</p>
+            <p class="house-all-note">มากันหลายคน? เลือกบ้านได้หลายหลัง และ<a href="#tents" data-jump="#tents">เพิ่มเต็นท์ได้ที่การ์ดลานกางเต็นท์ด้านล่าง (จองเฉพาะเต็นท์ก็ได้)</a></p>
+          </details>
+
+          <!-- รายการบ้านแบบย่อ (js/booking.js สร้างให้จากรายการบ้าน) · กด "ดูรูป" เพื่อดูรูปและข้อมูลเต็ม -->
+          <div class="houses" id="houses"></div>
+        </section>
 
         <!-- ===== ลานกางเต็นท์: จองคู่กับบ้าน หรือจองเฉพาะเต็นท์ก็ได้ (ราคาอยู่ใน js/booking.js และ Code.gs) ===== -->
         <section class="tent-card" id="tents" aria-labelledby="tent-h">
@@ -244,32 +246,6 @@
             </div>
           </div>
           </div>
-        </section>
-
-        <!-- กรอบบ้านพักริมน้ำ (หน้าตาเดียวกับการ์ดลานกางเต็นท์) -->
-        <section class="tent-card house-card" id="house-box" aria-labelledby="house-h">
-          <h3 id="house-h"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 11 12 4l9 7M5 9.5V20h14V9.5M10 20v-5h4v5"/></svg>บ้านพักริมน้ำ</h3>
-          <p class="house-type">บ้าน 6 หลังเรียงแนวเดียวกัน ติดริมเขื่อน · มีแอร์ ห้องน้ำในตัว และกาแฟยามเช้าทุกหลัง</p>
-          <!-- สิ่งที่บ้านทุกหลังมีเหมือนกัน -->
-          <!-- สิ่งที่บ้านทุกหลังมีเหมือนกัน (ย่อไว้ กดเพื่อดู) -->
-          <details class="house-all">
-            <summary>สิ่งอำนวยความสะดวกทุกหลัง</summary>
-            <p class="house-all-title">บ้านทุกหลังอยู่แนวเดียวกัน ติดริมเขื่อน และมี</p>
-            <ul class="house-feats">
-              <li><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 2v20M4.9 6.5l14.2 11M19.1 6.5 4.9 17.5M9 3.5l3 2.5 3-2.5M9 20.5l3-2.5 3 2.5"/></svg>แอร์</li>
-              <li><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 20h18M5 20V10h14v10M3 10l9-6 9 6"/><path d="M9 20v-5h6v5"/></svg>ระเบียงเห็นวิวน้ำ</li>
-              <li><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3s6 6.5 6 11a6 6 0 0 1-12 0c0-4.5 6-11 6-11z"/></svg>ห้องน้ำในตัว มีน้ำอุ่น</li>
-              <li><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="6" y="2.5" width="12" height="19" rx="2"/><path d="M6 10h12M9 6v2M9 13v3"/></svg>ตู้เย็น</li>
-              <li><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M2 9a15 15 0 0 1 20 0M5 12.5a10 10 0 0 1 14 0M8.5 16a5 5 0 0 1 7 0"/><circle cx="12" cy="19.5" r="1"/></svg>Wi‑Fi</li>
-              <li><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 20h14l-1.5-9h-11zM9 11V8a3 3 0 0 1 6 0v3M17.5 13l3-2"/></svg>กาต้มน้ำร้อน</li>
-              <li><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 9h12v5a5 5 0 0 1-5 5H9a5 5 0 0 1-5-5zM16 10h2a2 2 0 0 1 0 4h-2M8 3c0 1.5 1 1.5 1 3M12 3c0 1.5 1 1.5 1 3"/></svg>กาแฟยามเช้า</li>
-            </ul>
-            <p class="house-all-note">เพิ่มคนได้ คนละ 300 บาท (มีที่นอนปิกนิกเสริม) แจ้งทาง LINE หรือโทร 081-930-4969</p>
-            <p class="house-all-note">มากันหลายคน? เลือกบ้านได้หลายหลัง และ<a href="#tents" data-jump="#tents">เพิ่มเต็นท์ได้ที่การ์ดลานกางเต็นท์ด้านบน (จองเฉพาะเต็นท์ก็ได้)</a></p>
-          </details>
-
-          <!-- รายการบ้านแบบย่อ (js/booking.js สร้างให้จากรายการบ้าน) · กด "ดูรายละเอียด" เพื่อดูรูปและข้อมูลเต็ม -->
-          <div class="houses" id="houses"></div>
         </section>
       </section>
 
@@ -438,7 +414,7 @@
   <!-- สร้างรูป QR พร้อมเพย์ -->
   <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcode-generator/1.4.4/qrcode.min.js" defer></script>
   <script src="js/main.js?v=20261007a" defer></script>
-  <script src="js/booking.js?v=20261009a" defer></script>
+  <script src="js/booking.js?v=20261010a" defer></script>
   <script src="js/lightbox.js?v=20261003c" defer></script>
   <script src="js/nav.js?v=20261003n" defer></script>
 </body>

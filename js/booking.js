@@ -238,7 +238,7 @@ const itemNames = () => [
 
 // ---------- สร้างรายการบ้าน (แบบย่อ 1 แถวต่อหลัง) ----------
 // แถว = รูปเล็ก + ชื่อ + พักได้กี่ท่าน · เตียง + ราคา + สถานะ + ปุ่ม "เลือก"
-// กด "ดูรายละเอียด" → กางรูปหลายรูป (ปัดซ้ายขวา) และข้อมูลเต็มของหลังนั้น (กางได้ทีละหลัง)
+// กด "ดูรูป" → กางรูปหลายรูป (ปัดซ้ายขวา) และข้อมูลเต็มของหลังนั้น (กางได้ทีละหลัง)
 const bedInfo = (h) => (h.features || []).find((f) => !/ห้องน้ำ/.test(f)) || '';
 housesEl.innerHTML = HOUSES.map((h) => `
   <article class="house" id="house-${h.id}" data-house="${h.id}">
@@ -250,7 +250,7 @@ housesEl.innerHTML = HOUSES.map((h) => `
         <p class="house-price"><b>${baht(h.price)}</b> บาท/คืน</p>
       </div>
       <div class="house-actions">
-        <button class="more" type="button" aria-expanded="false" aria-controls="more-${h.id}">ดูรายละเอียด</button>
+        <button class="more" type="button" aria-expanded="false" aria-controls="more-${h.id}">ดูรูป</button>
         <button class="pick" type="button" data-pick="${h.id}" aria-pressed="false" aria-label="เลือก ${h.name}">เลือก</button>
       </div>
     </div>
@@ -271,13 +271,30 @@ housesEl.innerHTML = HOUSES.map((h) => `
     </div>
   </article>`).join('');
 
+// ---------- ป้ายบ้านบนแผนผัง (แนวตั้ง จากบนลงล่าง) ----------
+// ลำดับบ้านริมน้ำจากบนลงล่าง — ถ้าลำดับจริงต่างจากนี้ สลับรหัสบ้านในรายการนี้ได้เลย (ตำแหน่งบนภาพขยับตามเอง)
+// ⚠️ ลำดับนี้ยังเป็นการเดา (10 ต.ค. 2569) รอภูมิยืนยันว่าบ้านแต่ละหลังอยู่ตรงไหน
+const MAP_ORDER = ['lagoon-1', 'lagoon-2', 'lagoon-3', 'family-1', 'family-2', 'studio'];
+const MAP_TOP = 6;   // % จากขอบบนของแผนผัง ถึงป้ายบ้านหลังแรก
+const MAP_STEP = 12.6; // % ระยะห่างระหว่างป้ายบ้าน
+const MAP_X = ['24%', '21%', '25%', '23%', '20%', '24%']; // ระยะจากขอบซ้าย (ให้ป้ายเรียงตามแนวตลิ่งที่โค้ง)
+$('#map-pins').innerHTML = MAP_ORDER.map((id, i) => {
+  const h = HOUSES.find((x) => x.id === id);
+  if (!h) return '';
+  return `<button class="m" type="button" data-house="${h.id}" style="--y:${MAP_TOP + i * MAP_STEP}%;--x:${MAP_X[i % MAP_X.length]}">
+    <img src="${h.photos[0].src}" alt="" loading="lazy">
+    <span class="pin-text"><b>${h.name.replace('Lagoon Family', 'Family').replace('Lagoon Studio', 'Studio')}</b><span class="st"></span></span>
+    <span class="tick" aria-hidden="true">✓</span>
+  </button>`;
+}).join('');
+
 // กาง/ย่อรายละเอียดบ้าน (กางหลังใหม่ → หลังอื่นย่อเก็บ ให้หน้าไม่ยาวเกิน)
 function expandHouse(id, open = true) {
   housesEl.querySelectorAll('.house').forEach((card) => {
     const on = open && card.dataset.house === id;
     card.querySelector('.house-more').hidden = !on;
     card.querySelector('.more').setAttribute('aria-expanded', String(on));
-    card.querySelector('.more').textContent = on ? 'ซ่อนรายละเอียด' : 'ดูรายละเอียด';
+    card.querySelector('.more').textContent = on ? 'ซ่อนรูป' : 'ดูรูป';
     card.classList.toggle('is-open', on);
   });
 }
@@ -330,6 +347,7 @@ function render() {
     btn.setAttribute('aria-label', `${picked ? 'เลือกแล้ว' : 'เลือก'} ${h.name}${booked ? ' (ถูกจองแล้ว)' : ''}`);
 
     const marker = document.querySelector(`.m[data-house="${h.id}"]`);
+    if (!marker) return; // บ้านที่ไม่อยู่ใน MAP_ORDER จะไม่มีป้ายบนแผนผัง
     marker.classList.toggle('is-booked', booked);
     marker.classList.toggle('is-selected', picked);
     marker.setAttribute('aria-pressed', String(picked));
@@ -537,17 +555,24 @@ $('#cal-next').addEventListener('click', () => { calOffset = Math.min(CAL_MAX_AH
 calWide.addEventListener('change', renderCal);
 showMonthOf(state.checkin);
 
-// ---------- กดบ้านบนแผนผัง → เลื่อนไปที่แถวบ้านหลังนั้น และกางรูป/รายละเอียดให้ ----------
+// ---------- แตะบ้านบนแผนผัง → เลือก/ยกเลิกบ้านหลังนั้นได้เลย (เหมือนกดปุ่ม "เลือก" ในรายการบ้าน) ----------
+// ยังเลือกไม่ได้ (ยังไม่เลือกวัน หรือหลังนั้นถูกจองแล้ว) → เลื่อนไปที่แถวบ้านหลังนั้น และกางรูป/รายละเอียดให้แทน
 document.querySelectorAll('.m').forEach((marker) => {
+  const id = marker.dataset.house;
   const open = () => {
-    expandHouse(marker.dataset.house);
-    const card = $(`#house-${marker.dataset.house}`);
+    expandHouse(id);
+    const card = $(`#house-${id}`);
     card.scrollIntoView({ behavior: 'smooth', block: 'start' });
     card.classList.add('flash');
     setTimeout(() => card.classList.remove('flash'), 1200);
   };
   // เป็น <button> อยู่แล้ว กด Enter/Space ได้เอง ไม่ต้องดักคีย์บอร์ดเพิ่ม
-  marker.addEventListener('click', open);
+  marker.addEventListener('click', () => {
+    const pick = $(`#house-${id} .pick`);
+    if (pick.disabled) { open(); return; }
+    state.selected.has(id) ? state.selected.delete(id) : state.selected.add(id);
+    render();
+  });
 });
 
 // ---------- ปุ่ม/ลิงก์ที่มี data-jump (ปุ่มลัด 3 แบบที่พัก, ลานเต็นท์บนแผนผัง) → เลื่อนไปที่เป้าหมาย + ไฮไลต์ชั่วครู่ ----------
@@ -572,23 +597,6 @@ document.addEventListener('click', (e) => {
 });
 // ราคาเริ่มต้นบ้านบนปุ่มลัด: คำนวณจากรายการบ้านด้านบน (แก้ราคาบ้านแล้วปุ่มนี้เปลี่ยนตาม)
 
-// ---------- ย่อแผนผังมุมสูง (วาดไว้กว้าง 800px) ให้พอดีความกว้างจอ ไม่เล็กกว่า 0.45 เท่า (เล็กกว่านั้นเลื่อนซ้ายขวาเอา) ----------
-// ย่อเหลือน้อยกว่า 0.7 เท่า → ใส่คลาส is-small ให้ตัวหนังสือบนแผนผังใหญ่ขึ้น อ่านออกบนมือถือ
-const aerialBox = $('.aerial-scroll');
-// ยังเลื่อนไปทางขวาได้อีก → โชว์ขอบจางด้านขวาเป็นคำใบ้
-const updateAerialHint = () => {
-  const more = aerialBox.scrollWidth - aerialBox.clientWidth - aerialBox.scrollLeft > 2;
-  aerialBox.classList.toggle('can-scroll', more);
-};
-const fitAerial = () => {
-  const s = Math.max(0.45, Math.min(1, aerialBox.clientWidth / 800));
-  aerialBox.style.setProperty('--s', s);
-  aerialBox.classList.toggle('is-small', s < 0.7);
-  updateAerialHint();
-};
-new ResizeObserver(fitAerial).observe(aerialBox);
-aerialBox.addEventListener('scroll', updateAerialHint, { passive: true });
-fitAerial();
 
 // ---------- มาจากลิงก์ในหน้าราคา/หน้าแรก (เช่น booking.html#house-family-1 หรือ booking.html#tents) → เลื่อนไปที่การ์ดนั้น ----------
 const linked = (location.hash.startsWith('#house-') || location.hash === '#tents') && document.getElementById(location.hash.slice(1));
@@ -699,6 +707,7 @@ const SERVER_ERRORS = {
 // ข้อความภาษาไทยของช่องที่ยังไม่ถูกต้อง (ไม่ใช้ข้อความของเบราว์เซอร์ ซึ่งอาจเป็นภาษาอังกฤษ)
 function fieldProblem(el) {
   if (el.name === 'phone') return phoneProblem(el.value);
+  if (el.name === 'name' && !el.value.trim()) return 'กรุณากรอกชื่อผู้จอง'; // เว้นวรรคล้วนก็ถือว่ายังไม่กรอก (Google ก็ปัดตก)
   const v = el.validity;
   if (v.valid) return '';
   if (el.name === 'name') return 'กรุณากรอกชื่อผู้จอง';
