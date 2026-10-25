@@ -440,6 +440,22 @@ checkinEl.addEventListener('change', () => {
 });
 checkoutEl.addEventListener('change', () => { state.checkout = checkoutEl.value; calNext = 'in'; render(); });
 
+// ทางลัดวันที่: คืนนี้ / เสาร์นี้ / เสาร์หน้า (พัก 1 คืน) — เติมช่องแล้วใช้ตัวจัดการ change เดิม
+function quickDay(kind) {
+  const dow = new Date(firstDay + 'T00:00:00').getDay();
+  const toSat = (6 - dow + 7) % 7; // วันแรกที่จองได้ ถึงเสาร์ที่ใกล้สุด (ถ้าวันนั้นเป็นเสาร์ = 0)
+  if (kind === 'sat') return addDays(firstDay, toSat);
+  if (kind === 'sat2') return addDays(firstDay, toSat + 7);
+  return firstDay;
+}
+document.querySelectorAll('[data-quick]').forEach((b) => b.addEventListener('click', () => {
+  const d = quickDay(b.dataset.quick);
+  checkinEl.value = d;
+  checkinEl.dispatchEvent(new Event('change'));
+  checkoutEl.value = addDays(d, 1);
+  checkoutEl.dispatchEvent(new Event('change'));
+}));
+
 // ---------- ปฏิทินวันว่าง (ใต้ช่องเช็กอิน/เช็กเอาต์) ----------
 // 1 ช่อง = 1 คืน (วันที่นั้น → วันถัดไป) · ตัวเลขใต้วันที่ = บ้านที่ยังว่างคืนนั้น นับจากการจองที่โหลดมา (BOOKINGS)
 // ลานกางเต็นท์ไม่จำกัดจำนวน จึงนับเฉพาะบ้าน · มือถือโชว์ทีละ 1 เดือน จอกว้างโชว์ 2 เดือน

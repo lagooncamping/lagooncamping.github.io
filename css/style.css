@@ -651,3 +651,8 @@ html:has(.lightbox[open]) { overflow: hidden; }
 
 /* ---------- หน้า 404 ---------- */
 .notfound { min-height: 60vh; display: flex; align-items: center; }
+
+/* ลิงก์ "ข้ามไปเนื้อหา" — ซ่อนไว้ จะโผล่เมื่อกด Tab (สำหรับคนใช้คีย์บอร์ด/โปรแกรมอ่านจอ) */
+.skip-link { position: absolute; left: 8px; top: -60px; z-index: 1000; padding: 10px 16px; background: var(--nav-bg); color: #fff; border-radius: 8px; font-weight: 600; text-decoration: none; }
+.skip-link:focus { top: 8px; outline: 3px solid #fff; outline-offset: 2px; }
+main[tabindex="-1"]:focus { outline: none; }

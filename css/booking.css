@@ -406,3 +406,9 @@ section.tent-card { padding: 22px 22px 24px; }
   white-space: pre-line; background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius-sm, 12px);
   padding: 16px; font-size: .92rem; margin: 0 0 24px; max-width: 520px; overflow-wrap: anywhere;
 }
+
+/* ทางลัดวันที่ (คืนนี้ / เสาร์นี้ / เสาร์หน้า) */
+.quick-dates { display: flex; flex-wrap: wrap; gap: 8px; margin: 12px 0 0; }
+.quick-dates .chip { min-height: 44px; padding: 8px 16px; border: 1px solid var(--line); border-radius: 999px; background: var(--surface); color: var(--ink); font: inherit; font-size: .95rem; cursor: pointer; }
+.quick-dates .chip:hover { border-color: var(--forest); }
+.quick-dates .chip:focus-visible { outline: 2px solid var(--forest); outline-offset: 2px; }

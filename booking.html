@@ -23,8 +23,8 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Anuphan:wght@400;500;600&family=Chonburi&display=swap">
-  <link rel="stylesheet" href="css/style.css?v=20261007a">
-  <link rel="stylesheet" href="css/booking.css?v=20261010a">
+  <link rel="stylesheet" href="css/style.css?v=20261025a">
+  <link rel="stylesheet" href="css/booking.css?v=20261025a">
   <!-- เส้นทางหน้า (breadcrumb) สำหรับ Google -->
   <script type="application/ld+json">
 {
@@ -48,6 +48,7 @@
   </script>
 </head>
 <body>
+  <a class="skip-link" href="#content">ข้ามไปเนื้อหา</a>
 
   <!-- ===== เมนูด้านบน (เหมือนกันทุกหน้า แก้ต้องแก้ทุกไฟล์ .html) ===== -->
   <nav class="nav nav-compact" aria-label="เมนูหลัก">
@@ -66,7 +67,7 @@
     </div>
   </nav>
 
-  <!-- เปิดจองออนไลน์แล้ว (15 ต.ค. 2569) · ปิดจองชั่วคราวอีกครั้ง: ใส่คำว่า booking-closed ต่อท้าย class ของ <main> ด้านล่าง (กล่อง closed-note จะโชว์แทนขั้นตอนจอง) แล้วปรับข้อความหน้าราคา/ข้อมูลเข้าพักให้เป็น "จองผ่านแชต Facebook" -->
+  <!-- เปิดจองออนไลน์แล้ว (15 ต.ค. 2569) · ปิดจองชั่วคราวอีกครั้ง: ใส่คำว่า booking-closed ต่อท้าย class ของ <main id="content" tabindex="-1"> ด้านล่าง (กล่อง closed-note จะโชว์แทนขั้นตอนจอง) แล้วปรับข้อความหน้าราคา/ข้อมูลเข้าพักให้เป็น "จองผ่านแชต Facebook" -->
   <main class="book">
     <div class="wrap">
       <!-- กล่องแจ้ง "ตอนนี้จองผ่านแชต Facebook" — โชว์เฉพาะตอนปิดจองออนไลน์ (ดู css/booking.css ส่วน closed-note) -->
@@ -109,6 +110,12 @@
           <label class="field">เช็กเอาต์
             <input type="date" id="checkout" required>
           </label>
+        </div>
+        <!-- ทางลัดวันที่: แค่เติมช่องวันที่ให้ (1 คืน) ไม่เปลี่ยนกติกาการจอง · ลูกค้าแก้วันเองต่อได้ -->
+        <div class="quick-dates" role="group" aria-label="ทางลัดเลือกวัน (พักคืนเดียว)">
+          <button type="button" class="chip" data-quick="tonight">คืนนี้</button>
+          <button type="button" class="chip" data-quick="sat">เสาร์นี้</button>
+          <button type="button" class="chip" data-quick="sat2">เสาร์หน้า</button>
         </div>
         <!-- พิมพ์วันที่เองแล้วใช้ไม่ได้ (ย้อนหลัง / วันนี้หลัง 18:00 / เช็กเอาต์ไม่หลังเช็กอิน) → js/booking.js ขึ้นข้อความตรงนี้ -->
         <p class="hint date-note" id="date-note" hidden></p>
@@ -413,7 +420,7 @@
   <!-- สร้างรูป QR พร้อมเพย์ -->
   <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcode-generator/1.4.4/qrcode.min.js" defer></script>
   <script src="js/main.js?v=20261007a" defer></script>
-  <script src="js/booking.js?v=20261010a" defer></script>
+  <script src="js/booking.js?v=20261025a" defer></script>
   <script src="js/lightbox.js?v=20261003c" defer></script>
   <script src="js/nav.js?v=20261003n" defer></script>
 </body>

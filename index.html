@@ -27,7 +27,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Anuphan:wght@400;500;600&family=Chonburi&display=swap">
-  <link rel="stylesheet" href="css/style.css?v=20261007a">
+  <link rel="stylesheet" href="css/style.css?v=20261025a">
   <!-- รูปปก: จอใหญ่โหลด sunset.jpg / มือถือโหลด sunset-800.jpg (เล็กกว่า) ให้ตรงกับ css/style.css -->
   <link rel="preload" as="image" href="img/sunset.jpg" media="(min-width:721px)" fetchpriority="high">
   <link rel="preload" as="image" href="img/sunset-800.jpg" media="(max-width:720px)" fetchpriority="high">
@@ -138,6 +138,7 @@
   </script>
 </head>
 <body class="has-dock">
+  <a class="skip-link" href="#content">ข้ามไปเนื้อหา</a>
 
   <!-- ===== เมนูด้านบน (เหมือนกันทุกหน้า แก้ต้องแก้ทุกไฟล์ .html) ===== -->
   <!-- หน้าแรก: เมนูโปร่งใสลอยบนรูปปก เลื่อนลงแล้วเปลี่ยนเป็นสีเขียว (คลาส nav-over) -->
@@ -184,7 +185,7 @@
   <!-- เส้นคลื่นใต้ภาพปก -->
   <svg class="wave wave-hero" viewBox="0 0 1200 28" preserveAspectRatio="none" aria-hidden="true"><path fill="currentColor" d="M0 18 C150 4 300 4 450 14 S750 26 900 14 S1100 4 1200 12 V28 H0Z"/></svg>
 
-  <main>
+  <main id="content" tabindex="-1">
     <!-- ===== ของฟรี ===== -->
     <section class="free" aria-labelledby="free-h">
       <div class="wrap">
