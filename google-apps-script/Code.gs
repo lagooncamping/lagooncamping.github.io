@@ -13,7 +13,7 @@
  *     LINE_TOKEN = Channel access token ของ LINE OA
  *     ADMIN_CODE = รหัสลับสำหรับลงทะเบียนแอดมิน (ตั้งเอง ยาว ๆ เดายาก)
  *     ADMIN_IDS  = ระบบเติมเองเมื่อแอดมินพิมพ์ "ลงทะเบียน <รหัสลับ>" ในแชท LINE OA
- * - หลังบ้าน (หน้า admin.html): ดู/ยืนยัน/ยกเลิกการจอง เพิ่มการจองทางโทรศัพท์ รับเงินส่วนที่เหลือ คืนเงิน
+ * - หลังบ้าน (หน้า admin.html): ดู/ยืนยัน/ยกเลิก/แก้ไขการจอง เพิ่มการจองทางโทรศัพท์ รับเงินส่วนที่เหลือ คืนเงิน
  *   ปฏิทินบ้านว่าง และปิดบ้าน (ซ่อม/ไม่รับจอง) — ไม่ต้องเข้าไปแก้ในชีตเอง
  *   ตั้งรหัสเข้าหลังบ้านที่ Project Settings > Script properties > Add script property
  *     ADMIN_PIN  = ตัวเลข 6 หลักขึ้นไป (ตั้งเอง ห้ามใช้ 123456 หรือวันเกิด) ยังไม่ตั้ง = หลังบ้านเข้าไม่ได้
@@ -707,7 +707,7 @@ function authorizeLine() {
 // ---------- หลังบ้าน (admin.html): API สำหรับแอดมิน ----------
 // ทุกคำขอส่งมาทาง doPost เป็น { admin: '<คำสั่ง>', token, ... }
 // login → { ok, token, exp } · คำสั่งอื่นต้องมี token ที่ยังไม่หมดอายุ ไม่งั้นได้ { ok:false, error:'auth' }
-//   list · setStatus · setBalance · setRefund · addBooking · block (ดูรายละเอียดที่แต่ละฟังก์ชัน)
+//   list · setStatus · setBalance · setRefund · addBooking · block · editBooking (ดูรายละเอียดที่แต่ละฟังก์ชัน)
 
 const ADMIN_URL = 'https://lagooncamping.github.io/admin.html';
 const ADMIN_TOKEN_DAYS = 30;  // เข้าสู่ระบบครั้งเดียว ใช้ได้ 30 วัน
@@ -727,6 +727,7 @@ function adminApi_(d) {
     case 'setRefund': return adminSetRefund_(d);
     case 'addBooking': return adminAdd_(d, false);
     case 'block': return adminAdd_(d, true);
+    case 'editBooking': return adminEdit_(d);
     default: return { ok: false, error: 'bad_request' };
   }
 }
@@ -927,82 +928,140 @@ function adminSetCol_(id, col, value) {
   });
 }
 
+// ตรวจข้อมูลจากฟอร์มหลังบ้าน (ใช้ทั้งเพิ่มการจอง ปิดบ้าน และแก้ไข) → { error } หรือค่าที่พร้อมเขียนลงชีต
+// edit = แก้การจองเดิม: ต้องส่งยอดรวมมาเสมอ (ฟอร์มใส่ยอดเดิมไว้ให้) · ไม่เปลี่ยนวัน = ย้อนหลังได้ (แก้ชื่อ/เบอร์ของการจองที่ผ่านไปแล้ว)
+function adminFields_(d, block, edit) {
+  const isDate = (s) => typeof s === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(s);
+  const houses = Array.isArray(d.houses) ? [...new Set(d.houses.map(String))] : [];
+  if (houses.some((h) => !isHouse_(h))) return { error: 'bad_house' };
+  const checkin = block && !edit ? d.from : d.checkin;
+  const checkout = block && !edit ? d.to : d.checkout;
+  // วันนี้/ย้อนหลังได้ (แขก walk-in) แต่วันออกต้องหลังวันนี้
+  if (!isDate(checkin) || !isDate(checkout) || checkout <= checkin) return { error: 'bad_dates' };
+  if (checkout <= todayISO_() && !(edit && edit.checkin === checkin && edit.checkout === checkout)) return { error: 'bad_dates' };
+  const nights = nights_(checkin, checkout);
+  if (!(nights > 0)) return { error: 'bad_dates' };
+  if (nights > ADMIN_MAX_NIGHTS) return { error: 'too_long' };
+
+  const f = { houses, checkin, checkout, nights, tent: 0, rent: 0, rentSmall: 0, guests: 0, name: 'ปิดบ้าน', phone: '', note: '', total: 0, paid: 'none' };
+  if (block) {
+    if (!houses.length) return { error: 'bad_house' };
+    f.note = String((edit ? d.note : d.reason) == null ? '' : (edit ? d.note : d.reason)).trim();
+    if (f.note.length > 200) return { error: 'bad_note' };
+    return f;
+  }
+  f.tent = Number(d.tentGuests || 0);
+  f.rent = Number(d.tentRentals || 0);
+  f.rentSmall = Number(d.tentRentalsSmall || 0);
+  if (!(Number.isInteger(f.tent) && f.tent >= 0 && f.tent <= 30)) return { error: 'bad_tent' };
+  if (!(Number.isInteger(f.rent) && f.rent >= 0 && f.rent <= 10)) return { error: 'bad_tent' };
+  if (!(Number.isInteger(f.rentSmall) && f.rentSmall >= 0 && f.rentSmall <= 10)) return { error: 'bad_tent' };
+  if (!houses.length && !f.tent && !f.rent && !f.rentSmall) return { error: 'bad_house' };
+  f.guests = Number(d.guests || 0);
+  if (!(Number.isInteger(f.guests) && f.guests >= 0 && f.guests <= 30)) return { error: 'bad_guests' };
+  f.name = String(d.name == null ? '' : d.name).trim();
+  if (!f.name || f.name.length > 100) return { error: 'bad_name' };
+  f.phone = String(d.phone == null ? '' : d.phone).trim();
+  if (f.phone.length > 30) return { error: 'bad_phone' };
+  f.note = String(d.note == null ? '' : d.note).trim();
+  if (f.note.length > 500) return { error: 'bad_note' };
+  if (!edit) f.note = f.note ? '[แอดมิน] ' + f.note : '[แอดมิน]';
+  f.paid = Object.prototype.hasOwnProperty.call(ADMIN_PAID, d.paid) ? d.paid : 'none';
+  if (d.total !== undefined && d.total !== null && d.total !== '') {
+    f.total = Number(d.total);
+    if (!(Number.isInteger(f.total) && f.total >= 0 && f.total <= 10000000)) return { error: 'bad_total' };
+  } else {
+    f.total = (houses.reduce((sum, h) => sum + HOUSES[h].price, 0) + f.tent * TENT_PRICE + f.rent * TENT_RENT + f.rentSmall * TENT_RENT_SMALL) * nights;
+  }
+  return f;
+}
+
+// รหัสการจองใหม่ที่ไม่ซ้ำกับในชีต เช่น LG261027-4821 / BLK261027-1234
+function newId_(values, block) {
+  const ids = new Set(values.map((r, i) => rowKey_(r, i)));
+  const day = Utilities.formatDate(new Date(), TZ, 'yyMMdd');
+  let id;
+  do {
+    id = (block ? 'BLK' : 'LG') + day + '-' + Math.floor(1000 + Math.random() * 9000);
+  } while (ids.has(id));
+  return id;
+}
+
 /** addBooking (block=false): จองทางโทรศัพท์/LINE/walk-in → ยืนยันแล้วทันที ไม่ส่ง LINE (ประหยัดโควตา 200 ข้อความ/เดือน)
  *    { houses[], checkin, checkout, guests, name, phone, note, tentGuests, tentRentals, tentRentalsSmall, total?, paid: none|deposit|full }
  *  block (block=true): ปิดบ้าน (ซ่อม/ไม่รับจอง) { houses[], from, to, reason } — เปิดคืน = setStatus CANCELLED */
 function adminAdd_(d, block) {
-  const isDate = (s) => typeof s === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(s);
-  const houses = Array.isArray(d.houses) ? [...new Set(d.houses.map(String))] : [];
-  if (houses.some((h) => !isHouse_(h))) return { ok: false, error: 'bad_house' };
-  const checkin = block ? d.from : d.checkin;
-  const checkout = block ? d.to : d.checkout;
-  // วันนี้/ย้อนหลังได้ (แขก walk-in) แต่วันออกต้องหลังวันนี้
-  if (!isDate(checkin) || !isDate(checkout) || checkout <= checkin || checkout <= todayISO_()) return { ok: false, error: 'bad_dates' };
-  const nights = nights_(checkin, checkout);
-  if (!(nights > 0)) return { ok: false, error: 'bad_dates' };
-  if (nights > ADMIN_MAX_NIGHTS) return { ok: false, error: 'too_long' };
-
-  let tent = 0;
-  let rent = 0;
-  let rentSmall = 0;
-  let guests = 0;
-  let name = 'ปิดบ้าน';
-  let phone = '';
-  let note;
-  let total = 0;
-  let paid = 'none';
-  if (block) {
-    if (!houses.length) return { ok: false, error: 'bad_house' };
-    note = String(d.reason == null ? '' : d.reason).trim();
-    if (note.length > 200) return { ok: false, error: 'bad_note' };
-  } else {
-    tent = Number(d.tentGuests || 0);
-    rent = Number(d.tentRentals || 0);
-    rentSmall = Number(d.tentRentalsSmall || 0);
-    if (!(Number.isInteger(tent) && tent >= 0 && tent <= 30)) return { ok: false, error: 'bad_tent' };
-    if (!(Number.isInteger(rent) && rent >= 0 && rent <= 10)) return { ok: false, error: 'bad_tent' };
-    if (!(Number.isInteger(rentSmall) && rentSmall >= 0 && rentSmall <= 10)) return { ok: false, error: 'bad_tent' };
-    if (!houses.length && !tent && !rent && !rentSmall) return { ok: false, error: 'bad_house' };
-    guests = Number(d.guests || 0);
-    if (!(Number.isInteger(guests) && guests >= 0 && guests <= 30)) return { ok: false, error: 'bad_guests' };
-    name = String(d.name == null ? '' : d.name).trim();
-    if (!name || name.length > 100) return { ok: false, error: 'bad_name' };
-    phone = String(d.phone == null ? '' : d.phone).trim();
-    if (phone.length > 30) return { ok: false, error: 'bad_phone' };
-    note = String(d.note == null ? '' : d.note).trim();
-    if (note.length > 500) return { ok: false, error: 'bad_note' };
-    note = note ? '[แอดมิน] ' + note : '[แอดมิน]';
-    paid = Object.prototype.hasOwnProperty.call(ADMIN_PAID, d.paid) ? d.paid : 'none';
-    if (d.total !== undefined && d.total !== null && d.total !== '') {
-      total = Number(d.total);
-      if (!(Number.isInteger(total) && total >= 0 && total <= 10000000)) return { ok: false, error: 'bad_total' };
-    } else {
-      total = (houses.reduce((sum, h) => sum + HOUSES[h].price, 0) + tent * TENT_PRICE + rent * TENT_RENT + rentSmall * TENT_RENT_SMALL) * nights;
-    }
-  }
+  const f = adminFields_(d, block, null);
+  if (f.error) return { ok: false, error: f.error };
   // ยอดที่จ่ายมาแล้ว: ยังไม่จ่าย = 0 · มัดจำ = 50% · จ่ายครบ = ยอดรวม
-  const due = block || paid === 'none' ? 0 : paid === 'full' ? total : Math.ceil(total * DEPOSIT_RATE);
+  const due = block || f.paid === 'none' ? 0 : f.paid === 'full' ? f.total : Math.ceil(f.total * DEPOSIT_RATE);
 
   return adminLocked_((sh) => {
     const values = adminValues_(sh);
-    const taken = adminTaken_(values, houses, checkin, checkout, '');
+    const taken = adminTaken_(values, f.houses, f.checkin, f.checkout, '');
     if (taken.length) return { ok: false, error: 'booked', houses: taken };
 
     const now = new Date();
-    const ids = new Set(values.map((r, i) => rowKey_(r, i)));
-    let id;
-    do {
-      id = (block ? 'BLK' : 'LG') + Utilities.formatDate(now, TZ, 'yyMMdd') + '-' + Math.floor(1000 + Math.random() * 9000);
-    } while (ids.has(id));
-    const items = houses.length ? houses.map((h) => ({ id: h, name: HOUSES[h].name })) : [TENT_ROW];
-    const extra = smallCols_(sh, rentSmall);
+    const id = newId_(values, block);
+    const items = f.houses.length ? f.houses.map((h) => ({ id: h, name: HOUSES[h].name })) : [TENT_ROW];
+    const extra = smallCols_(sh, f.rentSmall);
     const rows = items.map((h) => [
-      Utilities.formatDate(now, TZ, 'yyyy-MM-dd HH:mm'), id, h.id, h.name, checkin, checkout, nights,
-      guests, safe_(name), safe_(phone), safe_(note), total, STATUS.CONFIRMED, due, '',
-      block ? '' : ADMIN_PAID[paid], !block && paid !== 'full' ? BALANCE.UNPAID : '', '', tent || '', rent || '',
+      Utilities.formatDate(now, TZ, 'yyyy-MM-dd HH:mm'), id, h.id, h.name, f.checkin, f.checkout, f.nights,
+      f.guests, safe_(f.name), safe_(f.phone), safe_(f.note), f.total, STATUS.CONFIRMED, due, '',
+      block ? '' : ADMIN_PAID[f.paid], !block && f.paid !== 'full' ? BALANCE.UNPAID : '', '', f.tent || '', f.rent || '',
     ].concat(extra));
     sh.getRange(sh.getLastRow() + 1, 1, rows.length, rows[0].length).setValues(rows);
-    return { ok: true, id, total, due };
+    return { ok: true, id, total: f.total, due };
+  });
+}
+
+/** editBooking: แก้การจองเดิม (วัน บ้าน เต็นท์ จำนวนคน ชื่อ เบอร์ หมายเหตุ ยอดรวม) — ใช้ได้ทั้งการจองจากเว็บและที่แอดมินเพิ่มเอง
+ *    { id, houses[], checkin, checkout, guests, name, phone, note, tentGuests, tentRentals, tentRentalsSmall, total }
+ *    ปิดบ้าน (BLK...) แก้ได้แค่ { id, houses[], checkin, checkout, note }
+ *  ไม่เปลี่ยน: สถานะ เวลาที่จอง แบบชำระ เวลาชำระ ช่องรับเงิน/คืนเงิน และ LINE ลูกค้า
+ *  ยอดที่ต้องชำระ: การจองที่ยังรอชำระ คิดใหม่ตามยอดรวมใหม่ (มัดจำ 50% หรือเต็มจำนวน) · สถานะอื่น = ยอดที่จ่ายมาแล้ว คงเดิม
+ *  จำนวนบ้านเปลี่ยน → เพิ่ม/ลบแถวของรหัสนี้ให้เอง (1 แถวต่อบ้าน) · ไม่ส่ง LINE หาใคร (ใช้ปุ่มคัดลอกข้อความส่งลูกค้าเอง) */
+function adminEdit_(d) {
+  const id = String(d.id || '');
+  return adminLocked_((sh) => {
+    const values = adminValues_(sh);
+    const rows = adminRows_(values, id);
+    if (!rows.length) return { ok: false, error: 'not_found' };
+    const old = values[rows[0] - 2];
+    const block = /^BLK/.test(id);
+    const f = adminFields_(d, block, { checkin: iso_(old[COL.checkin - 1]), checkout: iso_(old[COL.checkout - 1]) });
+    if (f.error) return { ok: false, error: f.error };
+
+    const now = nowText_();
+    const status = String(old[COL.status - 1] || '').trim();
+    const active = status !== STATUS.CANCELLED && status !== STATUS.EXPIRED && !isExpired_(status, old[COL.deadline - 1], now);
+    if (active) {
+      const taken = adminTaken_(values, f.houses, f.checkin, f.checkout, id);
+      if (taken.length) return { ok: false, error: 'booked', houses: taken };
+    }
+    const payType = String(old[15] || '');
+    let due = Number(old[13]) || 0;
+    if (status === STATUS.PENDING && payType === PAY_TYPES.full) due = f.total;
+    else if (status === STATUS.PENDING && payType === PAY_TYPES.deposit) due = Math.ceil(f.total * DEPOSIT_RATE);
+
+    // แถวที่แอดมินพิมพ์เองในชีต (ไม่มีรหัส) → ให้รหัสใหม่ ไม่งั้นแถวที่เพิ่มจะกลายเป็นคนละการจอง
+    const newId = /^ROW/.test(id) ? newId_(values, block) : id;
+    if (f.rentSmall) ensureCols_(sh);
+    const width = Math.max(20, readCols_(sh));
+    const cell = (i) => (old[i] === undefined || old[i] === null ? '' : old[i]);
+    const items = f.houses.length ? f.houses.map((h) => ({ id: h, name: HOUSES[h].name })) : [TENT_ROW];
+    const out = items.map((h) => [
+      cell(0), newId, h.id, h.name, f.checkin, f.checkout, f.nights,
+      f.guests, safe_(f.name), safe_(f.phone), safe_(f.note), f.total, cell(12), due, cell(14),
+      cell(15), cell(16), cell(17), f.tent || '', f.rent || '', cell(20), f.rentSmall || '',
+    ].slice(0, width));
+
+    // เขียนทับแถวเดิมทีละแถว · บ้านเพิ่ม = ต่อท้ายชีต · บ้านลด = ลบแถวที่เกิน (ลบจากล่างขึ้นบน เลขแถวจะได้ไม่เลื่อน)
+    rows.slice(0, out.length).forEach((n, i) => sh.getRange(n, 1, 1, width).setValues([out[i]]));
+    const more = out.slice(rows.length);
+    if (more.length) sh.getRange(sh.getLastRow() + 1, 1, more.length, width).setValues(more);
+    rows.slice(out.length).sort((a, b) => b - a).forEach((n) => sh.deleteRow(n));
+    return { ok: true, id: newId, total: f.total, due };
   });
 }
 

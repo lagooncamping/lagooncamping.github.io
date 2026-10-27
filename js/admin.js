@@ -77,6 +77,7 @@ const store = {
 const state = {
   token: '', data: null, tab: 'today', loading: false, loadedAt: 0,
   today: bangkokToday(), focus: '', addHouses: new Set(), blockHouses: new Set(),
+  editId: '', // กำลังแก้การจองรหัสนี้ในฟอร์ม (ว่าง = เพิ่มการจองใหม่)
 };
 const bookings = () => (state.data ? state.data.bookings : []);
 const houseIds = () => HOUSE_ORDER.filter((h) => state.data && state.data.houses[h]);
@@ -400,6 +401,7 @@ function card(b) {
     ${moneyHtml(b)}
     ${phone.length >= 9 && !b.blocked ? `<a class="btn-call" href="tel:${esc(phone)}">📞 โทร ${esc(b.phone)}</a>` : (b.phone ? `<p>📞 ${esc(b.phone)}</p>` : '')}
     ${msgButtons(b)}
+    <p class="edit-row"><button type="button" class="link" data-edit>✏️ ${b.blocked ? 'แก้ช่วงปิดบ้าน' : 'แก้ไขการจอง'}</button></p>
     <div class="acts">${actionsFor(b).map(([act, label, ask, kind]) =>
       `<button type="button" class="${kind}" data-act="${act}" data-ask="${esc(ask)}">${esc(label)}</button>`).join('')}</div>
     <div class="ask" hidden>
@@ -720,10 +722,11 @@ function bindPicks(sel, set, after) {
   });
 }
 // บ้านที่ถูกจองในช่วง from–to (ใช้ข้อมูลล่าสุดที่โหลดมา Google เช็กซ้ำอีกรอบตอนบันทึก)
-function takenBetween(from, to) {
+// exceptId = ไม่นับการจองที่กำลังแก้อยู่ (บ้านเดิมของตัวเองต้องเลือกได้)
+function takenBetween(from, to, exceptId = '') {
   const taken = {};
   if (!isISO(from) || !isISO(to) || to <= from) return taken;
-  bookings().filter((b) => isActive(b) && b.checkin < to && b.checkout > from)
+  bookings().filter((b) => b.id !== exceptId && isActive(b) && b.checkin < to && b.checkout > from)
     .forEach((b) => b.houses.forEach((h) => { taken[h] = b.blocked ? 'ปิดบ้าน' : b.name; }));
   return taken;
 }
@@ -733,20 +736,74 @@ const addForm = $('#add-form');
 const F = (name) => addForm.elements[name];
 const intVal = (name) => Math.max(0, Math.floor(Number(F(name).value)) || 0);
 
+// ข้อความหัวฟอร์มตามแบบ: เพิ่มการจอง / แก้การจอง / แก้ช่วงปิดบ้าน
+function setFormMode(mode, b) {
+  addForm.dataset.mode = mode;
+  $('#h-add').textContent = mode === 'add' ? 'เพิ่มการจอง' : mode === 'block' ? 'แก้ช่วงปิดบ้าน' : 'แก้ไขการจอง';
+  $('#add-hint').textContent = mode === 'add'
+    ? 'สำหรับลูกค้าที่โทร/ทัก LINE หรือมาถึงหน้ารีสอร์ท · บันทึกแล้วเป็น “ยืนยันแล้ว” ทันที'
+    : `รหัส ${b.id} · ${b.blocked ? 'ปิดบ้าน' : b.status} — สถานะและการรับเงินไม่เปลี่ยน (ใช้ปุ่มบนการ์ดเหมือนเดิม) · ระบบไม่ส่งข้อความหาลูกค้าเอง`;
+  $('#note-label').textContent = mode === 'block' ? 'เหตุผลที่ปิด' : 'หมายเหตุ';
+  $('#total-label').textContent = mode === 'add' ? 'ยอดรวม (บาท) — เว้นว่าง = ใช้ราคาตามระบบ' : 'ยอดรวม (บาท)';
+  addForm.querySelector('[type=submit]').textContent = mode === 'add' ? 'บันทึกการจอง' : 'บันทึกการแก้ไข';
+}
+
 function openAdd(prefill = {}) {
   addForm.reset();
-  state.addHouses = new Set(prefill.house ? [prefill.house] : []);
+  state.editId = '';
+  setFormMode('add');
+  // ล้างของเดิมใน Set ตัวเดิม (ห้ามสร้าง Set ใหม่: ปุ่มเลือกบ้านผูกกับ Set ตัวนี้ไว้ตั้งแต่เปิดหน้า)
+  state.addHouses.clear();
+  if (prefill.house) state.addHouses.add(prefill.house);
   F('checkin').value = prefill.checkin || state.today;
   F('checkout').value = prefill.checkout || addDays(state.today, 1);
   F('guests').value = prefill.house && state.data ? state.data.houses[prefill.house].guests : 2;
   $('#add-error').textContent = '';
   setTab('add');
 }
+// ปุ่ม "แก้ไขการจอง" บนการ์ด → ฟอร์มเดียวกับเพิ่มการจอง ใส่ข้อมูลเดิมไว้ให้
+function openEdit(id) {
+  const b = byId(id);
+  if (!b) { toast(ERRORS.not_found); return; }
+  addForm.reset();
+  state.editId = id;
+  setFormMode(b.blocked ? 'block' : 'edit', b);
+  state.addHouses.clear();
+  b.houses.filter((h) => state.data.houses[h]).forEach((h) => state.addHouses.add(h));
+  F('checkin').value = b.checkin;
+  F('checkout').value = b.checkout;
+  F('guests').value = Number(b.guests) || 0;
+  F('tentGuests').value = Number(b.tent) || 0;
+  F('tentRentals').value = Number(b.rent) || 0;
+  F('tentRentalsSmall').value = Number(b.rentSmall) || 0;
+  F('name').value = b.name || '';
+  F('phone').value = b.phone || '';
+  F('note').value = b.note || '';
+  F('total').value = b.blocked ? '' : String(Number(b.total) || 0);
+  $('#add-error').textContent = '';
+  setTab('add');
+}
+document.addEventListener('click', (e) => {
+  const el = e.target.closest('[data-edit]');
+  const c = el && el.closest('.bk');
+  if (c) openEdit(c.dataset.id);
+});
+$('#edit-cancel').addEventListener('click', () => {
+  const id = state.editId;
+  openAdd();
+  openBooking(id);
+});
+$('#use-system-price').addEventListener('click', () => {
+  F('total').value = String(estimate().total);
+  updateEstimate();
+});
 function refreshAdd() {
   const from = F('checkin').value;
   const to = F('checkout').value;
   F('checkout').min = isISO(from) ? addDays(from, 1) : '';
-  renderPicks('#add-houses', state.addHouses, takenBetween(from, to));
+  const editing = state.editId && byId(state.editId);
+  // แก้การจองที่ยกเลิก/หมดเวลาไปแล้ว: ไม่ล็อกบ้าน ไม่ต้องเช็กว่าว่าง (เปิดกลับมาค่อยเช็กตอนกดปุ่มบนการ์ด)
+  renderPicks('#add-houses', state.addHouses, editing && !isActive(editing) ? {} : takenBetween(from, to, state.editId));
   updateEstimate();
 }
 function estimate() {
@@ -766,6 +823,17 @@ function updateEstimate() {
   const paid = addForm.querySelector('[name=paid]:checked').value;
   const rate = state.data ? state.data.depositRate || 0.5 : 0.5;
   const dep = Math.ceil(sum * rate);
+  const b = state.editId && byId(state.editId);
+  if (b) {
+    // แก้การจอง: รอชำระ = ยอดที่ลูกค้าต้องโอนคิดใหม่ (Code.gs คิดแบบเดียวกัน) · อื่นๆ = จ่ายมาแล้วเท่าเดิม
+    const due = b.payType === PAY_FULL ? sum : dep;
+    const paidNow = Number(b.due) || 0;
+    $('#add-estimate').innerHTML = `ราคาตามระบบ: <b>${baht(total)} บาท</b> · ยอดรวมที่จะบันทึก: <b>${baht(sum)} บาท</b><br>`
+      + (b.status === ST.PENDING && b.payType
+        ? `ลูกค้าต้องโอน ${baht(due)} บาท (${esc(b.payType)})${due !== paidNow ? ` · เดิม ${baht(paidNow)} บาท` : ''}`
+        : `จ่ายมาแล้ว ${baht(paidNow)} บาท · ส่วนที่เหลือ ${baht(Math.max(0, sum - paidNow))} บาท`);
+    return;
+  }
   $('#add-estimate').innerHTML = `ราคาตามระบบ: <b>${baht(total)} บาท</b>`
     + (typed !== '' ? ` · ใช้ยอดที่แก้: <b>${baht(sum)} บาท</b>` : '')
     + '<br>' + (paid === 'none' ? `ต้องเก็บเงินทั้งหมด ${baht(sum)} บาท`
@@ -797,13 +865,30 @@ addForm.addEventListener('submit', async (e) => {
   const houses = [...state.addHouses];
   const name = F('name').value.trim();
   if (!isISO(checkin) || !isISO(checkout) || checkout <= checkin) { errEl.textContent = 'วันออกต้องหลังวันเข้า'; return; }
-  if (checkout <= state.today) { errEl.textContent = 'วันออกต้องหลังวันนี้'; return; }
+  const editing = state.editId ? byId(state.editId) : null;
+  const sameDates = editing && editing.checkin === checkin && editing.checkout === checkout;
+  if (checkout <= state.today && !sameDates) { errEl.textContent = 'วันออกต้องหลังวันนี้'; return; }
+  if (editing && editing.blocked) { saveEdit(editing, { houses, checkin, checkout, note: F('note').value.trim() }); return; }
   if (!houses.length && !intVal('tentGuests') && !intVal('tentRentals') && !intVal('tentRentalsSmall')) { errEl.textContent = ERRORS.bad_house; return; }
   if (!name) { errEl.textContent = ERRORS.bad_name; F('name').focus(); return; }
-  const busy = houses.filter((h) => takenBetween(checkin, checkout)[h]);
+  const busy = editing && !isActive(editing) ? [] : houses.filter((h) => takenBetween(checkin, checkout, state.editId)[h]);
   if (busy.length) { errEl.textContent = `${busy.map(houseName).join(', ')} ไม่ว่างในวันที่เลือก`; return; }
   const typed = F('total').value.trim();
   if (typed !== '' && !(Number.isInteger(Number(typed)) && Number(typed) >= 0)) { errEl.textContent = ERRORS.bad_total; return; }
+  if (editing) {
+    saveEdit(editing, {
+      houses, checkin, checkout,
+      guests: houses.length ? intVal('guests') : 0,
+      tentGuests: intVal('tentGuests'),
+      tentRentals: intVal('tentRentals'),
+      tentRentalsSmall: intVal('tentRentalsSmall'),
+      name,
+      phone: F('phone').value.trim(),
+      note: F('note').value.trim(),
+      total: typed === '' ? estimate().total : Number(typed),
+    });
+    return;
+  }
 
   const btn = addForm.querySelector('[type=submit]');
   btn.disabled = true;
@@ -838,6 +923,34 @@ addForm.addEventListener('submit', async (e) => {
   state.focus = out.id;
   await load();
 });
+
+// บันทึกการแก้ไข → กลับไปที่การ์ดของการจองนั้น
+async function saveEdit(b, payload) {
+  const errEl = $('#add-error');
+  const btn = addForm.querySelector('[type=submit]');
+  btn.disabled = true;
+  btn.textContent = 'กำลังบันทึก…';
+  const out = await api('editBooking', { id: b.id, ...payload });
+  btn.disabled = false;
+  btn.textContent = 'บันทึกการแก้ไข';
+  if (!state.token) return;
+  if (!out.ok) {
+    if (out.error === 'booked') {
+      errEl.textContent = `${out.houses.map(houseName).join(', ')} มีคนอื่นจองช่วงนี้แล้ว เลือกบ้านหรือวันอื่น`;
+      await load();
+    } else {
+      errEl.textContent = out.error === 'bad_request' ? 'ระบบยังแก้การจองไม่ได้ (ต้องอัปเดต Apps Script ก่อน)' : errText(out.error);
+    }
+    return;
+  }
+  toast(b.blocked ? 'แก้ช่วงปิดบ้านแล้ว' : 'บันทึกการแก้ไขแล้ว');
+  state.addHouses.clear();
+  addForm.reset();
+  state.editId = '';
+  setFormMode('add');
+  state.focus = out.id;
+  await load();
+}
 
 // ---------- ฟอร์ม "ปิดบ้าน" ----------
 const blockForm = $('#block-form');

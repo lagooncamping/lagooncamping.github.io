@@ -15,7 +15,7 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Anuphan:wght@400;500;600&family=Chonburi&display=swap">
   <link rel="stylesheet" href="css/style.css?v=20261005b">
-  <link rel="stylesheet" href="css/admin.css?v=20261007a">
+  <link rel="stylesheet" href="css/admin.css?v=20261027a">
 </head>
 <body class="admin">
 
@@ -117,8 +117,8 @@
 
       <section id="v-add" class="view" hidden aria-labelledby="h-add">
         <h1 id="h-add">เพิ่มการจอง</h1>
-        <p class="hint">สำหรับลูกค้าที่โทร/ทัก LINE หรือมาถึงหน้ารีสอร์ท · บันทึกแล้วเป็น “ยืนยันแล้ว” ทันที</p>
-        <form id="add-form" class="form" novalidate>
+        <p class="hint" id="add-hint">สำหรับลูกค้าที่โทร/ทัก LINE หรือมาถึงหน้ารีสอร์ท · บันทึกแล้วเป็น “ยืนยันแล้ว” ทันที</p>
+        <form id="add-form" class="form" data-mode="add" novalidate>
           <div class="two">
             <label>วันเข้าพัก<input type="date" name="checkin" required></label>
             <label>วันออก<input type="date" name="checkout" required></label>
@@ -128,7 +128,7 @@
             <legend>เลือกบ้าน (กดได้หลายหลัง)</legend>
             <div class="house-picks" id="add-houses"></div>
           </fieldset>
-          <fieldset>
+          <fieldset class="not-block">
             <legend>ลานกางเต็นท์</legend>
             <div class="counter">
               <span>นำเต็นท์มาเอง (ท่าน)</span>
@@ -149,16 +149,16 @@
               <button type="button" data-step="tentRentalsSmall" data-d="1" aria-label="เพิ่มเต็นท์เช่าหลังเล็ก">+</button>
             </div>
           </fieldset>
-          <div class="counter">
+          <div class="counter not-block">
             <span>คนพักในบ้าน (ท่าน)</span>
             <button type="button" data-step="guests" data-d="-1" aria-label="ลดจำนวนคน">−</button>
             <input type="number" name="guests" min="0" max="30" value="2" inputmode="numeric" aria-label="คนพักในบ้าน (ท่าน)">
             <button type="button" data-step="guests" data-d="1" aria-label="เพิ่มจำนวนคน">+</button>
           </div>
-          <label>ชื่อลูกค้า<input type="text" name="name" maxlength="100" required autocomplete="off"></label>
-          <label>เบอร์โทร<input type="tel" name="phone" maxlength="30" inputmode="tel" autocomplete="off"></label>
-          <label>หมายเหตุ<textarea name="note" rows="2" maxlength="500"></textarea></label>
-          <fieldset>
+          <label class="not-block">ชื่อลูกค้า<input type="text" name="name" maxlength="100" required autocomplete="off"></label>
+          <label class="not-block">เบอร์โทร<input type="tel" name="phone" maxlength="30" inputmode="tel" autocomplete="off"></label>
+          <label><span id="note-label">หมายเหตุ</span><textarea name="note" rows="2" maxlength="500"></textarea></label>
+          <fieldset class="not-edit">
             <legend>จ่ายเงินแล้วหรือยัง</legend>
             <div class="radios">
               <label><input type="radio" name="paid" value="none" checked><span>ยังไม่จ่าย</span></label>
@@ -166,12 +166,14 @@
               <label><input type="radio" name="paid" value="full"><span>จ่ายครบ</span></label>
             </div>
           </fieldset>
-          <p class="estimate" id="add-estimate"></p>
-          <label>ยอดรวม (บาท) — เว้นว่าง = ใช้ราคาตามระบบ
+          <p class="estimate not-block" id="add-estimate"></p>
+          <label class="not-block"><span id="total-label">ยอดรวม (บาท) — เว้นว่าง = ใช้ราคาตามระบบ</span>
             <input type="number" name="total" min="0" step="1" inputmode="numeric" placeholder="">
           </label>
+          <button type="button" class="link only-edit not-block" id="use-system-price">ใช้ราคาตามระบบแทน</button>
           <p class="error" id="add-error" role="alert"></p>
           <button class="big primary" type="submit">บันทึกการจอง</button>
+          <button class="big ghost only-edit" type="button" id="edit-cancel">ไม่แก้แล้ว กลับไปดูการจอง</button>
         </form>
       </section>
     </main>
@@ -179,6 +181,6 @@
 
   <div class="toast" id="toast" role="status" aria-live="polite" hidden></div>
 
-  <script src="js/admin.js?v=20261009a"></script>
+  <script src="js/admin.js?v=20261027a"></script>
 </body>
 </html>

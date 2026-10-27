@@ -223,6 +223,12 @@ body.admin { font-size: 18px; line-height: 1.6; padding-bottom: 96px; }
 .radios input:focus-visible + span { outline: 2px solid var(--forest); outline-offset: 2px; }
 .estimate { background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius-sm); padding: 10px 14px; margin: 0; }
 
+/* ฟอร์มเดียวใช้ 3 แบบ: add = เพิ่มการจอง · edit = แก้การจองลูกค้า · block = แก้ช่วงปิดบ้าน */
+#add-form[data-mode="add"] .only-edit,
+#add-form:not([data-mode="add"]) .not-edit,
+#add-form[data-mode="block"] .not-block { display: none; }
+.bk .edit-row { margin: 8px 0 0; }
+
 /* ---------- ข้อความแจ้งด้านล่าง ---------- */
 .toast {
   position: fixed; left: 16px; right: 16px; bottom: 16px; z-index: 20; max-width: 520px; margin: 0 auto;
