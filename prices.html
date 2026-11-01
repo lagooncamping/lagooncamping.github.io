@@ -22,7 +22,7 @@
   <link rel="apple-touch-icon" href="img/apple-touch-icon.png">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Anuphan:wght@400;500;600&family=Chonburi&display=swap">
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Anuphan:wght@400;500;600&family=Kanit:wght@500;600&display=swap">
   <link rel="stylesheet" href="css/style.css?v=20261110a">
   <!-- ปุ่มภาษา EN/ไทย + โหมดมืด/สว่าง (ต้องอยู่ใน head ไม่มี defer) -->
   <script src="js/prefs.js?v=20261110a"></script>
@@ -85,12 +85,16 @@
             <div class="row"><span class="name"><a href="booking.html#tents">นำเต็นท์มาเอง</a></span><span class="baht">200<small>บาท/ท่าน</small></span><span class="detail">ผู้ใหญ่และเด็ก 15 ปีขึ้นไป · เด็ก 10–14 ปี 100 บาท · ต่ำกว่า 10 ปี ฟรี</span></div>
             <div class="row"><span class="name"><a href="booking.html#tents">เต็นท์เช่า หลังใหญ่</a></span><span class="baht">1,300<small>บาท/หลัง</small></span><span class="detail">นอนได้ 2 ท่าน · พร้อมเครื่องนอน 2 ชุด พัดลม และปลั๊ก</span></div>
             <div class="row"><span class="name"><a href="booking.html#tents">เต็นท์เช่า หลังเล็ก</a></span><span class="baht">1,000<small>บาท/หลัง</small></span><span class="detail">นอนได้ 2 ท่าน · พร้อมเครื่องนอน 2 ชุด พัดลม และปลั๊ก</span></div>
-            <div class="row"><span class="name">ทาร์ปด้านข้าง</span><span class="baht">+100<small>บาท</small></span><span class="detail">กางทาร์ปด้านหน้าเต็นท์ฟรี</span></div>
-            <div class="row"><span class="name">เครื่องครัวไฟฟ้าที่นำมาเอง</span><span class="baht">+100<small>บาท/เต็นท์</small></span><span class="detail">หม้อ เตา กระทะ กาต้มน้ำ เหมาจ่าย ใช้กี่ชิ้นก็ได้ · มือถือ ไฟ พัดลม ลำโพง โน้ตบุ๊ก ใช้ไฟฟรี</span></div>
-            <div class="row"><span class="name">แอร์เคลื่อนที่ที่นำมาเอง</span><span class="baht">+200<small>บาท/เครื่อง</small></span><span class="detail">เฉพาะลานเต็นท์ (บ้านพักมีแอร์อยู่แล้ว)</span></div>
             <div class="row"><span class="name">พายเรือแคนู</span><span class="baht">100<small>บาท/ลำ/ชม.</small></span><span class="detail">ลูกค้าลานกางเต็นท์ · ลำละ 2 ท่าน · รอบละ 1 ชั่วโมง · ลูกค้าบ้านพักพายฟรี</span></div>
-            <p class="sub tent-more">ของให้เช่า: พัดลม 50 บาท/คืน · ชุดเครื่องนอน (ที่นอนปิกนิก หมอน ผ้าห่ม) 200 บาท/ชุด · เตาปิ้งย่าง อันใหญ่ 100 บาท / อันเล็ก 50 บาท · สายพ่วงไฟ 50 บาท/เส้น</p>
-            <p class="sub tent-more">ฟรีเสื้อชูชีพสำหรับลงเล่นน้ำ ทั้งเด็กและผู้ใหญ่ · พาสัตว์เลี้ยงมากางเต็นท์ฟรี ·ที่จอดรถลานกว้าง เต็นท์หลังคารถจอดกางได้ · เหมาลาน สอบถามราคาทาง LINE หรือโทร</p>
+            <!-- ย่อไว้ (1 พ.ย. 2569) ให้หน้าไม่ยาว: ค่าใช้จ่ายเพิ่ม ของให้เช่า และของฟรีของลานเต็นท์ -->
+            <details class="more-box">
+              <summary>ค่าใช้จ่ายเพิ่ม · ของให้เช่า · ของฟรี</summary>
+              <div class="row"><span class="name">ทาร์ปด้านข้าง</span><span class="baht">+100<small>บาท</small></span><span class="detail">กางทาร์ปด้านหน้าเต็นท์ฟรี</span></div>
+              <div class="row"><span class="name">เครื่องครัวไฟฟ้าที่นำมาเอง</span><span class="baht">+100<small>บาท/เต็นท์</small></span><span class="detail">หม้อ เตา กระทะ กาต้มน้ำ เหมาจ่าย ใช้กี่ชิ้นก็ได้ · มือถือ ไฟ พัดลม ลำโพง โน้ตบุ๊ก ใช้ไฟฟรี</span></div>
+              <div class="row"><span class="name">แอร์เคลื่อนที่ที่นำมาเอง</span><span class="baht">+200<small>บาท/เครื่อง</small></span><span class="detail">เฉพาะลานเต็นท์ (บ้านพักมีแอร์อยู่แล้ว)</span></div>
+              <p class="sub tent-more">ของให้เช่า: พัดลม 50 บาท/คืน · ชุดเครื่องนอน (ที่นอนปิกนิก หมอน ผ้าห่ม) 200 บาท/ชุด · เตาปิ้งย่าง อันใหญ่ 100 บาท / อันเล็ก 50 บาท · สายพ่วงไฟ 50 บาท/เส้น</p>
+              <p class="sub tent-more">ฟรีเสื้อชูชีพสำหรับลงเล่นน้ำ ทั้งเด็กและผู้ใหญ่ · พาสัตว์เลี้ยงมากางเต็นท์ฟรี ·ที่จอดรถลานกว้าง เต็นท์หลังคารถจอดกางได้ · เหมาลาน สอบถามราคาทาง LINE หรือโทร</p>
+            </details>
           </div>
           <div class="board">
             <img class="photo" src="img/p-houses-zone.jpg" alt="บ้านพักไม้หลายหลังบนสนามหญ้ากลางสวน" loading="lazy">
@@ -132,7 +136,10 @@
               <li>ยกเลิก/ไม่มาเข้าพัก ได้รับคืน 50% ของยอดจอง (ส่วนที่เกินมัดจำ)</li>
             </ul>
           </div>
-          <p class="lead-in">ชำระแล้วขอเลื่อนวันได้โดยแจ้งแอดมิน · ยกเลิกหรือไม่มาเข้าพัก: ไม่คืนมัดจำ 50% ทุกกรณี (ยกเว้นเหตุฉุกเฉิน ทางลานจะพิจารณาเป็นรายกรณี) · ถ้าชำระเต็มจำนวน ได้รับเงินคืนส่วนที่เกินมัดจำ (50% ของยอดจอง) แอดมินโอนคืนให้</p>
+          <details class="more-box">
+            <summary>เลื่อนวัน และการคืนเงิน</summary>
+            <p class="lead-in">ชำระแล้วขอเลื่อนวันได้โดยแจ้งแอดมิน · ยกเลิกหรือไม่มาเข้าพัก: ไม่คืนมัดจำ 50% ทุกกรณี (ยกเว้นเหตุฉุกเฉิน ทางลานจะพิจารณาเป็นรายกรณี) · ถ้าชำระเต็มจำนวน ได้รับเงินคืนส่วนที่เกินมัดจำ (50% ของยอดจอง) แอดมินโอนคืนให้</p>
+          </details>
         </div>
 
         <p class="note">ราคาอาจเปลี่ยนตามช่วงเทศกาลและวันหยุด · จองออนไลน์ได้ตลอด 24 ชม. (เข้าพักวันนี้ จองทางเว็บได้ถึง 18:00 น. หลังจากนั้นโทร 081-930-4969)</p>

@@ -388,7 +388,7 @@
   }
 
   async function voucherCanvas(b) {
-    try { await Promise.all([document.fonts.load('40px Chonburi'), document.fonts.load('600 28px Anuphan'), document.fonts.load('22px Anuphan')]); } catch (err) { /* ใช้ฟอนต์สำรอง */ }
+    try { await Promise.all([document.fonts.load('500 40px Kanit'), document.fonts.load('600 28px Anuphan'), document.fonts.load('22px Anuphan')]); } catch (err) { /* ใช้ฟอนต์สำรอง */ }
     const st = statusInfo(b);
     const W = 720;
     const pad = 48;
@@ -412,7 +412,7 @@
       });
     };
     y = 40;
-    text('The Lagoon', '40px Chonburi, Anuphan, serif', '#2f4a36', { lh: 44, align: 'center', x: W / 2 });
+    text('The Lagoon', '500 40px Kanit, Anuphan, sans-serif', '#2f4a36', { lh: 44, align: 'center', x: W / 2 });
     text('ใบยืนยันการจอง', '600 24px Anuphan, sans-serif', '#6b6a5f', { lh: 40, align: 'center', x: W / 2 });
     y += 24;
     const lineY1 = y;

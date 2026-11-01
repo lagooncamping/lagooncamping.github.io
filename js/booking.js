@@ -949,7 +949,7 @@ async function qrCanvas(p) {
   const qr = makeQr(p.due);
   if (!qr) return null;
   // รอฟอนต์ของเว็บโหลดเสร็จก่อน ไม่งั้นตัวหนังสือในรูปจะเป็นฟอนต์สำรอง
-  try { await Promise.all([document.fonts.load('40px Chonburi'), document.fonts.load('600 28px Anuphan')]); } catch (err) { /* ใช้ฟอนต์สำรอง */ }
+  try { await Promise.all([document.fonts.load('500 40px Kanit'), document.fonts.load('600 28px Anuphan')]); } catch (err) { /* ใช้ฟอนต์สำรอง */ }
   const n = qr.getModuleCount();
   const cell = Math.floor(400 / (n + 4)); // ขนาดช่อง QR (รวมขอบขาว 2 ช่องรอบนอก ให้แอปธนาคารอ่านง่าย)
   const size = cell * (n + 4);
@@ -965,7 +965,7 @@ async function qrCanvas(p) {
   ctx.textAlign = 'center';
   ctx.textBaseline = 'alphabetic';
   ctx.fillStyle = '#2f4a36';
-  ctx.font = '40px Chonburi, Anuphan, serif';
+  ctx.font = '500 40px Kanit, Anuphan, sans-serif';
   ctx.fillText('The Lagoon', W / 2, 72);
   ctx.fillStyle = '#6b6a5f';
   ctx.font = '22px Anuphan, sans-serif';
