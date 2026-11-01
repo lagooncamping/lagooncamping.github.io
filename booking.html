@@ -217,7 +217,12 @@
           </details>
 
           <!-- รายการบ้านแบบย่อ (js/booking.js สร้างให้จากรายการบ้าน) · กด "ดูรูป" เพื่อดูรูปและข้อมูลเต็ม -->
-          <div class="houses" id="houses"></div>
+          <!-- ย่อการ์ดบ้านไว้ (ปรับ 1 พ.ย. 2569): เลือกบ้านจากแผนผังด้านบนได้เลย · กดตรงนี้เพื่อดูรูปและรายละเอียดทีละหลัง
+               แตะบ้านที่ยังเลือกไม่ได้บนแผนผัง → กล่องนี้กางเอง (js/booking.js expandHouse) -->
+          <details class="house-list" id="house-list">
+            <summary>ดูรูปและรายละเอียดบ้านทีละหลัง</summary>
+            <div class="houses" id="houses"></div>
+          </details>
         </section>
 
         <!-- ===== ลานกางเต็นท์: จองคู่กับบ้าน หรือจองเฉพาะเต็นท์ก็ได้ (ราคาอยู่ใน js/booking.js และ Code.gs) ===== -->
@@ -285,7 +290,7 @@
           <fieldset class="paytype">
             <legend>เลือกแบบชำระเงิน</legend>
             <label class="paytype-opt">
-              <input type="radio" name="payType" value="deposit" required>
+              <input type="radio" name="payType" value="deposit" required checked>
               <span><b>มัดจำ 50%</b> <span class="paytype-amount" data-amount="deposit"></span>
                 <small>ส่วนที่เหลือจ่ายวันเช็กอิน (เงินสดหรือโอนหน้าเคาน์เตอร์) · ยกเลิกไม่คืนมัดจำ</small></span>
             </label>
@@ -422,7 +427,7 @@
   <!-- สร้างรูป QR พร้อมเพย์ -->
   <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcode-generator/1.4.4/qrcode.min.js" defer></script>
   <script src="js/main.js?v=20261007a" defer></script>
-  <script src="js/booking.js?v=20261025a" defer></script>
+  <script src="js/booking.js?v=20261101a" defer></script>
   <script src="js/lightbox.js?v=20261003c" defer></script>
   <script src="js/nav.js?v=20261110a" defer></script>
 </body>

@@ -65,6 +65,8 @@ async function openBooking(opts = {}) {
   if (opts.blockQr) await page.route(/qrcode/, (r) => r.abort());
   await page.goto(`${base}/booking.html${opts.hash || ''}`);
   await page.waitForSelector('.m');
+  // การ์ดบ้านย่ออยู่ในกล่อง "ดูรูปและรายละเอียดบ้านทีละหลัง" (1 พ.ย. 2569) → กางก่อน เพื่อให้กดปุ่ม "เลือก" ในการ์ดได้
+  if (!opts.keepClosed) await page.evaluate(() => { const d = document.getElementById('house-list'); if (d) d.open = true; });
   return page;
 }
 const step = (page) => page.evaluate(() => ['pick', 'details', 'done'].find((s) => !document.getElementById(`step-${s}`).hidden));
@@ -166,6 +168,15 @@ test('แตะบ้านบนแผนผัง = เลือก · แต�
   eq(await page.locator('.m[data-house="family-1"] .st').innerText(), 'เลือกแล้ว', 'ป้ายบนแผนผัง');
   await page.click('.m[data-house="family-1"]');
   expect(await page.locator('#bar').isHidden(), 'ยกเลิกแล้วแถบสรุปต้องหาย');
+});
+test('การ์ดบ้านย่อไว้ตอนเปิดหน้า · แตะบ้านที่ถูกจองบนแผนผัง → กล่องกางเองและเห็นรูป · มัดจำ 50% ถูกเลือกไว้', async () => {
+  const page = await openBooking({ keepClosed: true });
+  expect(!(await page.locator('#house-list').evaluate((d) => d.open)), 'เปิดหน้ามา กล่องรายละเอียดบ้านต้องย่ออยู่');
+  await page.click('.m[data-house="lagoon-2"]'); // Lagoon 2 ถูกจองในโหมดทดลอง
+  expect(await page.locator('#house-list').evaluate((d) => d.open), 'แตะบ้านที่ถูกจอง → กล่องต้องกางเอง');
+  expect(await page.locator('#more-lagoon-2').isVisible(), 'ต้องเห็นรูป Lagoon 2');
+  expect(await page.locator('[name=payType][value=deposit]').isChecked(), 'มัดจำ 50% ต้องถูกเลือกไว้ก่อน');
+  expect(!page.errors.length, page.errors[0]);
 });
 test('บ้านที่ถูกจองแล้ว: ป้ายขึ้น "ถูกจองแล้ว" และแตะแล้วไม่ถูกเลือก', async () => {
   const page = await openBooking(); // โหมดทดลอง: Lagoon 2 ถูกจองคืนนี้

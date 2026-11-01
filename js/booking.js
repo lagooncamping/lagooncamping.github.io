@@ -292,6 +292,7 @@ $('#map-pins').innerHTML = MAP_ORDER.map((id, i) => {
 
 // กาง/ย่อรายละเอียดบ้าน (กางหลังใหม่ → หลังอื่นย่อเก็บ ให้หน้าไม่ยาวเกิน)
 function expandHouse(id, open = true) {
+  if (open) $('#house-list').open = true; // การ์ดบ้านถูกย่ออยู่ในกล่อง "ดูรูปและรายละเอียด" → กางกล่องก่อน
   housesEl.querySelectorAll('.house').forEach((card) => {
     const on = open && card.dataset.house === id;
     card.querySelector('.house-more').hidden = !on;

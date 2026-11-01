@@ -428,3 +428,18 @@ section.tent-card { padding: 22px 22px 24px; }
 .quick-dates .chip { min-height: 44px; padding: 8px 16px; border: 1px solid var(--line); border-radius: 999px; background: var(--surface); color: var(--ink); font: inherit; font-size: .95rem; cursor: pointer; }
 .quick-dates .chip:hover { border-color: var(--forest); }
 .quick-dates .chip:focus-visible { outline: 2px solid var(--forest); outline-offset: 2px; }
+
+/* ---------- ปรับ 1 พ.ย. 2569: การ์ดบ้านย่ออยู่ในกล่อง (เลือกบ้านจากแผนผังได้เลย ไม่ต้องเห็นบ้านซ้ำ 2 รอบ) ---------- */
+.house-list { margin: 4px 0 0; border: 1.5px solid var(--line); border-radius: var(--radius-sm, 12px); background: var(--surface); }
+.house-list summary {
+  display: flex; align-items: center; justify-content: space-between; gap: 12px; min-height: 52px; padding: 0 16px;
+  font-weight: 600; color: var(--forest); cursor: pointer; list-style: none;
+}
+.house-list summary::-webkit-details-marker { display: none; }
+.house-list summary::after { content: "▾"; transition: transform .2s; }
+.house-list[open] summary::after { transform: rotate(180deg); }
+.house-list summary:focus-visible { outline: 2px solid var(--sun); outline-offset: 2px; }
+.house-list .houses { padding: 0 12px 12px; }
+/* ตัวหนังสือเล็กบนหน้าจอให้อ่านง่ายขึ้นบนมือถือ */
+.cal-note, .map figcaption, .status { font-size: .85rem; }
+.cal-legend { font-size: .82rem; }
