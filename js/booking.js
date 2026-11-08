@@ -40,7 +40,8 @@ function promptPayPayload(phone, amount) {
 }
 
 // ---------- ข้อมูลบ้าน (แก้ชื่อ ราคา รูป ได้ตรงนี้) ----------
-// รูปจริง (9 ต.ค. 2569) ตัดมาจากภาพ "รูปบ้านส่งลูกค้า" ในโฟลเดอร์ AIOS — รูปห้องนอน Lagoon 1–3 ใช้รูปเดียวกัน (บ้านเหมือนกันทั้ง 3 หลัง)
+// รูปจริง (9 ต.ค. 2569) ตัดมาจากภาพ "รูปบ้านส่งลูกค้า" ในโฟลเดอร์ AIOS
+// 8 พ.ย. 2569: Lagoon 1, Lagoon 2, Studio ใช้รูปถ่ายใหม่ของแต่ละหลัง (Lagoon 3, Family 1–2 ยังใช้รูปเดิม รอถ่ายรอบหน้า)
 const LAGOON_ROOM = { src: 'img/house-lagoon-room.jpg', alt: 'ห้องนอนบ้าน Lagoon เตียงใหญ่ มีแอร์' };
 const LAKE = { src: 'img/lake-view.jpg', alt: 'วิวทะเลสาบหน้าที่พัก' };
 const HOUSES = [
@@ -48,20 +49,20 @@ const HOUSES = [
     id: 'lagoon-1', name: 'Lagoon 1', type: 'บ้านหลังเล็ก', guests: 2, price: 1300,
     features: ['1 เตียงใหญ่', 'ห้องน้ำในตัว'],
     photos: [
-      { src: 'img/house-lagoon-1.jpg', alt: 'บ้านไม้ Lagoon 1 ยกพื้น มีระเบียงหน้าบ้าน' },
-      LAGOON_ROOM,
-      { src: 'img/house-lagoon-garden.jpg', alt: 'บ้านพักไม้เรียงริมสนามหญ้า' },
-      LAKE,
+      { src: 'img/house-lagoon1-outside.jpg', alt: 'บ้านไม้ทรงไทย Lagoon 1 ยกพื้น มีบันไดและระเบียงหน้าบ้าน' },
+      { src: 'img/house-lagoon1-room.jpg', alt: 'ห้องนอน Lagoon 1 เตียงใหญ่ ผนังและฝ้าไม้ มีแอร์' },
+      { src: 'img/house-lagoon1-veranda.jpg', alt: 'ระเบียงไม้หน้าบ้าน Lagoon 1 มีม้านั่งยาว' },
+      { src: 'img/house-lagoon1-bath.jpg', alt: 'ห้องน้ำในตัวบ้าน Lagoon 1 ผนังกระเบื้องขาวดำ' },
     ],
   },
   {
     id: 'lagoon-2', name: 'Lagoon 2', type: 'บ้านหลังเล็ก', guests: 2, price: 1300,
     features: ['1 เตียงใหญ่', 'ห้องน้ำในตัว'],
     photos: [
-      { src: 'img/house-lagoon-2.jpg', alt: 'บ้านไม้ Lagoon 2 ท่ามกลางต้นปาล์ม' },
-      LAGOON_ROOM,
-      { src: 'img/house-lagoon-garden.jpg', alt: 'บ้านพักไม้เรียงริมสนามหญ้า' },
-      LAKE,
+      { src: 'img/house-lagoon2-outside.jpg', alt: 'บ้านไม้ทรงไทย Lagoon 2 ระเบียงกว้าง ท่ามกลางต้นปาล์ม' },
+      { src: 'img/house-lagoon2-view.jpg', alt: 'วิวสนามหญ้าและทะเลสาบจากม้านั่งระเบียงบ้าน Lagoon 2' },
+      { src: 'img/house-lagoon2-room.jpg', alt: 'ห้องนอน Lagoon 2 เตียงใหญ่ ผนังไม้ มีแอร์ ห้องน้ำในตัว' },
+      { src: 'img/house-lagoon2-bath.jpg', alt: 'ห้องน้ำในตัวบ้าน Lagoon 2 กระเบื้องสีเทา' },
     ],
   },
   {
@@ -98,10 +99,10 @@ const HOUSES = [
     id: 'studio', name: 'Lagoon Studio', type: 'บ้านหลังใหม่ สไตล์โมเดิร์น', guests: 2, price: 1500,
     features: ['2 เตียง', 'ห้องน้ำในตัว'],
     photos: [
-      { src: 'img/house-studio.jpg', alt: 'บ้าน Lagoon Studio ประตูกระจกบานใหญ่ มีโต๊ะหน้าบ้าน' },
-      { src: 'img/house-studio-room.jpg', alt: 'ห้องนอน Studio พื้นกระเบื้อง มีตู้เย็น' },
-      { src: 'img/house-studio-view.jpg', alt: 'วิวสนามหญ้าและทะเลสาบจากประตู Studio' },
-      LAKE,
+      { src: 'img/house-studio2-view.jpg', alt: 'โต๊ะหินอ่อนหน้าห้อง Studio มองเห็นสนามหญ้าและทะเลสาบ' },
+      { src: 'img/house-studio2-outside.jpg', alt: 'บ้าน Lagoon Studio ประตูกระจกบานใหญ่ มีโต๊ะนั่งเล่นหน้าบ้าน' },
+      { src: 'img/house-studio2-room.jpg', alt: 'ห้องนอน Studio เตียงไม้ใหญ่ พื้นกระเบื้อง มีแอร์ ตู้เย็น และกาต้มน้ำ' },
+      { src: 'img/house-studio2-bath.jpg', alt: 'ห้องน้ำในตัว Studio ผนังกระเบื้องลายหินอ่อน' },
     ],
   },
 ];
