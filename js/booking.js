@@ -41,7 +41,9 @@ function promptPayPayload(phone, amount) {
 
 // ---------- ข้อมูลบ้าน (แก้ชื่อ ราคา รูป ได้ตรงนี้) ----------
 // รูปจริง (9 ต.ค. 2569) ตัดมาจากภาพ "รูปบ้านส่งลูกค้า" ในโฟลเดอร์ AIOS
-// 8 พ.ย. 2569: Lagoon 1, Lagoon 2, Studio ใช้รูปถ่ายใหม่ของแต่ละหลัง (Lagoon 3, Family 1–2 ยังใช้รูปเดิม รอถ่ายรอบหน้า)
+// 8 พ.ย. 2569: Lagoon 1, Lagoon 2, Studio ใช้รูปถ่ายใหม่ของแต่ละหลัง
+// 10 พ.ย. 2569: เรียงรูปตามโปสเตอร์บ้านพักชุดใหม่ "พักใจ ริมน้ำ" (รูปแรก = รูปใหญ่บนโปสเตอร์)
+//   Family 1–2 เปลี่ยนเป็นไฟล์ชัดขึ้นของรูปชุดเดียวกับโปสเตอร์ · Lagoon 3 ใช้รูปวิวทะเลสาบ + แถวบ้าน ตามโปสเตอร์ (ยังไม่มีรูปถ่ายเฉพาะหลัง)
 const LAGOON_ROOM = { src: 'img/house-lagoon-room.jpg', alt: 'ห้องนอนบ้าน Lagoon เตียงใหญ่ มีแอร์' };
 const LAKE = { src: 'img/lake-view.jpg', alt: 'วิวทะเลสาบหน้าที่พัก' };
 const HOUSES = [
@@ -49,9 +51,9 @@ const HOUSES = [
     id: 'lagoon-1', name: 'Lagoon 1', type: 'บ้านหลังเล็ก', guests: 2, price: 1300,
     features: ['1 เตียงใหญ่', 'ห้องน้ำในตัว'],
     photos: [
+      { src: 'img/house-lagoon1-veranda.jpg', alt: 'ระเบียงไม้หน้าบ้าน Lagoon 1 มีม้านั่งยาว' },
       { src: 'img/house-lagoon1-outside.jpg', alt: 'บ้านไม้ทรงไทย Lagoon 1 ยกพื้น มีบันไดและระเบียงหน้าบ้าน' },
       { src: 'img/house-lagoon1-room.jpg', alt: 'ห้องนอน Lagoon 1 เตียงใหญ่ ผนังและฝ้าไม้ มีแอร์' },
-      { src: 'img/house-lagoon1-veranda.jpg', alt: 'ระเบียงไม้หน้าบ้าน Lagoon 1 มีม้านั่งยาว' },
       { src: 'img/house-lagoon1-bath.jpg', alt: 'ห้องน้ำในตัวบ้าน Lagoon 1 ผนังกระเบื้องขาวดำ' },
     ],
   },
@@ -59,8 +61,8 @@ const HOUSES = [
     id: 'lagoon-2', name: 'Lagoon 2', type: 'บ้านหลังเล็ก', guests: 2, price: 1300,
     features: ['1 เตียงใหญ่', 'ห้องน้ำในตัว'],
     photos: [
-      { src: 'img/house-lagoon2-outside.jpg', alt: 'บ้านไม้ทรงไทย Lagoon 2 ระเบียงกว้าง ท่ามกลางต้นปาล์ม' },
       { src: 'img/house-lagoon2-view.jpg', alt: 'วิวสนามหญ้าและทะเลสาบจากม้านั่งระเบียงบ้าน Lagoon 2' },
+      { src: 'img/house-lagoon2-outside.jpg', alt: 'บ้านไม้ทรงไทย Lagoon 2 ระเบียงกว้าง ท่ามกลางต้นปาล์ม' },
       { src: 'img/house-lagoon2-room.jpg', alt: 'ห้องนอน Lagoon 2 เตียงใหญ่ ผนังไม้ มีแอร์ ห้องน้ำในตัว' },
       { src: 'img/house-lagoon2-bath.jpg', alt: 'ห้องน้ำในตัวบ้าน Lagoon 2 กระเบื้องสีเทา' },
     ],
@@ -69,10 +71,9 @@ const HOUSES = [
     id: 'lagoon-3', name: 'Lagoon 3', type: 'บ้านหลังเล็ก', guests: 2, price: 1300,
     features: ['1 เตียงใหญ่', 'ห้องน้ำในตัว'],
     photos: [
+      { src: 'img/lake-view.jpg', alt: 'ต้นไม้ใหญ่และม้านั่งริมทะเลสาบหน้าที่พัก' },
       { src: 'img/house-lagoon-3.jpg', alt: 'บ้านไม้ Lagoon เรียงกันริมสนามหญ้า' },
       LAGOON_ROOM,
-      { src: 'img/house-lagoon-3-lake.jpg', alt: 'ต้นไม้ใหญ่ริมทะเลสาบ' },
-      LAKE,
     ],
   },
   {
@@ -80,8 +81,8 @@ const HOUSES = [
     features: ['1 ห้องนอน 2 เตียง', 'ห้องน้ำในตัว'],
     photos: [
       { src: 'img/house-family-1.jpg', alt: 'บ้านไม้ Lagoon Family 1 ระเบียงกว้าง มีเรือแคนูหน้าบ้าน' },
-      { src: 'img/house-family-1-room.jpg', alt: 'ห้องนอน Family 1 เตียง 2 เตียง ผนังไม้' },
-      { src: 'img/house-family-1-room2.jpg', alt: 'ห้องนอน Family 1 มีตู้เย็นและโต๊ะเครื่องแป้ง' },
+      { src: 'img/house-family1-room.jpg', alt: 'ห้องนอน Family 1 เตียง 2 เตียง ผนังไม้ มีแอร์' },
+      { src: 'img/house-family1-room2.jpg', alt: 'ห้องนอน Family 1 มีตู้เย็นและโต๊ะเครื่องแป้ง' },
       LAKE,
     ],
   },
@@ -89,10 +90,10 @@ const HOUSES = [
     id: 'family-2', name: 'Lagoon Family 2', type: 'บ้านหลังใหญ่ · มีครัว', guests: 4, price: 3000,
     features: ['2 ห้องนอน (ห้องละ 1 เตียงใหญ่)', '2 ห้องน้ำในตัว'],
     photos: [
+      { src: 'img/house-family2-view.jpg', alt: 'วิวจากระเบียง Family 2 เห็นชิงช้าและทะเลสาบ' },
+      { src: 'img/house-family2-day.jpg', alt: 'บ้านไม้ 2 ชั้น Lagoon Family 2 ตอนกลางวัน ใต้ถุนมีโต๊ะนั่งเล่น' },
+      { src: 'img/house-family2-room.jpg', alt: 'ห้องนอน Family 2 เตียงใหญ่ มีแอร์' },
       { src: 'img/house-family-2.jpg', alt: 'บ้านไม้ 2 ชั้น Lagoon Family 2 เปิดไฟยามค่ำ' },
-      { src: 'img/house-family-2-day.jpg', alt: 'บ้าน Family 2 ตอนกลางวัน ใต้ถุนมีโต๊ะนั่งเล่น' },
-      { src: 'img/house-family-2-room.jpg', alt: 'ห้องนอน Family 2 เตียงใหญ่ มีแอร์' },
-      { src: 'img/house-family-2-view.jpg', alt: 'วิวจากระเบียง Family 2 เห็นชิงช้าและทะเลสาบ' },
     ],
   },
   {
