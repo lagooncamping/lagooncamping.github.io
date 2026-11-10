@@ -8,12 +8,25 @@
   --mb-err: #b4462f;
 }
 @media (prefers-color-scheme: dark) {
-  :root {
-    --mb-ok-bg: #1f3a24;   --mb-ok-ink: #a8d8ad;
-    --mb-wait-bg: #3d2f12; --mb-wait-ink: #f2c47a;
-    --mb-off-bg: #2b2d2a;  --mb-off-ink: #b9b8ad;
+  :root:not([data-theme="light"]) {
+    --mb-ok-bg: #1f3a24;
+    --mb-ok-ink: #a8d8ad;
+    --mb-wait-bg: #3d2f12;
+    --mb-wait-ink: #f2c47a;
+    --mb-off-bg: #2b2d2a;
+    --mb-off-ink: #b9b8ad;
     --mb-err: #f0957d;
   }
+}
+/* กดปุ่มโหมดมืดเอง (js/prefs.js) */
+:root[data-theme="dark"] {
+  --mb-ok-bg: #1f3a24;
+  --mb-ok-ink: #a8d8ad;
+  --mb-wait-bg: #3d2f12;
+  --mb-wait-ink: #f2c47a;
+  --mb-off-bg: #2b2d2a;
+  --mb-off-ink: #b9b8ad;
+  --mb-err: #f0957d;
 }
 
 .mb .head { margin-bottom: 24px; }

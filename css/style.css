@@ -31,7 +31,7 @@
 
 /* โหมดมืด (ตามการตั้งค่าเครื่องผู้ชม) */
 @media (prefers-color-scheme: dark) {
-  :root {
+  :root:not([data-theme="light"]) {
     --bg: #141613;
     --surface: #1b1e1a;
     --ink: #ece8df;
@@ -49,6 +49,25 @@
     --shadow: 0 10px 30px rgba(0, 0, 0, .4);
     color-scheme: dark;
   }
+}
+/* กดปุ่มโหมดมืดเอง (js/prefs.js) */
+:root[data-theme="dark"] {
+  --bg: #141613;
+  --surface: #1b1e1a;
+  --ink: #ece8df;
+  --muted: #a5a395;
+  --line: #2e322c;
+  --forest: #9fc29f;
+  --plate: #1b1e1a;
+  --plate-ink: #ece8df;
+  --plate-muted: #a5a395;
+  --plate-line: #2e322c;
+  --sun: #f2b66d;
+  --clay: #eb9a5c;
+  --nav-bg: #10130f;
+  --nav-ink: #ece8df;
+  --shadow: 0 10px 30px rgba(0, 0, 0, .4);
+  color-scheme: dark;
 }
 
 /* ---------- พื้นฐาน ---------- */
@@ -192,8 +211,30 @@ main > section + section { border-top: 1px solid var(--line); }
 .menu-btn .i-close, .menu-btn[aria-expanded="true"] .i-open { display: none; }
 .menu-btn[aria-expanded="true"] .i-close { display: inline; }
 
+/* ปุ่มภาษา (EN / ไทย) และปุ่มโหมดมืด/สว่าง — js/prefs.js ใส่ให้เองทุกหน้า */
+.pref-btn {
+  display: inline-flex; align-items: center; justify-content: center; gap: 8px; flex: none;
+  min-height: 44px; min-width: 44px; padding: 0 12px; border-radius: 999px;
+  border: 1px solid color-mix(in srgb, var(--nav-ink) 45%, transparent);
+  background: rgba(255, 255, 255, .1); color: var(--nav-ink);
+  font-family: var(--font); font-size: .9rem; font-weight: 600; letter-spacing: .02em; cursor: pointer;
+  transition: background .2s ease;
+}
+.pref-btn:hover { background: rgba(255, 255, 255, .22); }
+.pref-btn svg { width: 18px; height: 18px; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; flex: none; }
+/* จอใหญ่: ปุ่มโหมดมืดเป็นไอคอนกลมอยู่ท้ายแถวเมนู */
+.nav-actions { display: flex; align-items: center; gap: 10px; flex: none; }
+.nav .pref-item { display: flex; align-items: center; }
+.nav .pref-theme { padding: 0; width: 44px; }
+.nav .pref-theme span { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
+.nav ul:has(.pref-item) { align-items: center; }
+/* จอ 1021–1140px: มีปุ่มภาษา/โหมดมืดเพิ่ม → ลดระยะห่างเมนูให้อยู่แถวเดียว */
+@media (min-width: 1021px) and (max-width: 1140px) { .nav-compact ul { gap: 18px; } .nav-compact .wrap { gap: 12px; } }
+/* ระหว่างโหลดคำแปลภาษาอังกฤษ: ซ่อนหน้าแป๊บเดียวไม่ให้เห็นภาษาไทยกะพริบ */
+html.i18n-wait body { visibility: hidden; }
+
 /* มือถือ: แถวเดียว = โลโก้ + ปุ่มจอง + ปุ่ม "เมนู" กดแล้วรายการเมนูเลื่อนลงมาใต้แถบ (ดู js/nav.js) */
-@media (max-width: 960px) { /* 5 เมนูยาวเกินจอ 721–960px → ใช้ปุ่ม "เมนู" แบบมือถือ */
+@media (max-width: 1020px) { /* 5 เมนู + ปุ่มภาษา/โหมดมืด ยาวเกินจอ 721–1020px → ใช้ปุ่ม "เมนู" แบบมือถือ */
   .nav-compact .wrap, .nav-over.nav-compact .wrap, .nav-over.nav-compact.is-solid .wrap { flex-wrap: nowrap; gap: 8px; padding-block: 10px; padding-inline: 16px; }
   .nav-compact .brand { margin-right: auto; font-size: 1.1rem; min-width: 0; }
   .nav-compact .brand::before { width: 36px; height: 36px; }
@@ -215,11 +256,15 @@ main > section + section { border-top: 1px solid var(--line); }
   .nav-compact ul a::after { display: none; }
   .nav-compact ul a:hover { transform: none; }
   .nav-compact ul a[aria-current="page"] { color: var(--sun); }
+  /* มือถือ: ปุ่มโหมดมืดเป็นแถวสุดท้ายในรายการเมนู มีคำบอกชัดๆ */
+  .nav-compact .pref-item { padding-top: 10px; }
+  .nav-compact .pref-theme { width: auto; padding: 0 16px; }
+  .nav-compact .pref-theme span { position: static; width: auto; height: auto; overflow: visible; clip: auto; }
   .nav-over.is-open { background: var(--nav-bg); }
   .nav-over.is-open ul a, .nav-over.is-open .brand { text-shadow: none; }
 }
 /* จอแคบมาก: ซ่อนปุ่มจองบนเมนู (มีปุ่ม "จองที่พัก" ในแถบล่างแล้ว) ให้ทุกอย่างอยู่แถวเดียว */
-@media (max-width: 400px) { .nav-compact .btn-small { display: none; } }
+@media (max-width: 440px) { .nav-compact .btn-small { display: none; } }  /* มีปุ่มภาษา EN เพิ่มบนแถบ จึงซ่อนตั้งแต่ 440px */
 
 /* ---------- ภาพปก (Hero) ---------- */
 /* รูปพระอาทิตย์ตกเต็มจอเป็นพื้นหลัง + ข้อความด้านล่างซ้าย + ป้ายราคาวงกลม */

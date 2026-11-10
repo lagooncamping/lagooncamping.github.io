@@ -67,10 +67,12 @@ body:has(.book.booking-closed) { padding-bottom: 0; }
 .dates { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px; max-width: 520px; }
 .nights { margin: 12px 0 40px; font-size: .95rem; }
 .full-note { margin: -32px 0 40px; font-size: .88rem; color: #9a5a12; }
-@media (prefers-color-scheme: dark) { .full-note { color: var(--sun); } }
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) .full-note { color: var(--sun); } }
+:root[data-theme="dark"] .full-note { color: var(--sun); }
 /* ข้อความใต้ช่องวันที่ เมื่อพิมพ์วันที่ที่จองไม่ได้ (js/booking.js) */
 .date-note { margin: 8px 0 0; max-width: 520px; font-size: .88rem; color: #9a5a12; }
-@media (prefers-color-scheme: dark) { .date-note { color: var(--sun); } }
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) .date-note { color: var(--sun); } }
+:root[data-theme="dark"] .date-note { color: var(--sun); }
 
 /* ---------- ปฏิทินวันว่าง ----------
    จอ 360px: พื้นที่ ~328px ÷ 7 ช่อง = ~46px ต่อวัน · ช่องสูง 44px กดง่าย · แสดงเดือนเดียวทุกขนาดจอ */
@@ -107,8 +109,19 @@ body:has(.book.booking-closed) { padding-bottom: 0; }
 .cal-day.is-full .cal-free { color: var(--muted); }
 .cal-day.is-full .cal-num { color: var(--muted); text-decoration: line-through; }
 @media (prefers-color-scheme: dark) {
-  .cal-day.is-all .cal-free { color: #8fd19e; }
-  .cal-day.is-some .cal-free { color: #f2b66d; }
+  :root:not([data-theme="light"]) .cal-day.is-all .cal-free {
+    color: #8fd19e;
+  }
+  :root:not([data-theme="light"]) .cal-day.is-some .cal-free {
+    color: #f2b66d;
+  }
+}
+/* กดปุ่มโหมดมืดเอง (js/prefs.js) */
+:root[data-theme="dark"] .cal-day.is-all .cal-free {
+  color: #8fd19e;
+}
+:root[data-theme="dark"] .cal-day.is-some .cal-free {
+  color: #f2b66d;
 }
 /* ช่วงที่เลือก: คืนระหว่างกลางเป็นแถบสีอ่อน · วันเช็กอิน/เช็กเอาต์เป็นสีเขียวเข้ม */
 .cal-day.in-range { background: color-mix(in srgb, var(--forest) 18%, transparent); border-radius: 0; }
@@ -122,7 +135,8 @@ body:has(.book.booking-closed) { padding-bottom: 0; }
 .cal-legend .all { background: #2e7a45; }
 .cal-legend .some { background: #a35a00; }
 .cal-legend .full { background: var(--muted); }
-@media (prefers-color-scheme: dark) { .cal-legend .all { background: #8fd19e; } .cal-legend .some { background: #f2b66d; } }
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) .cal-legend .all { background: #8fd19e; } :root:not([data-theme="light"]) .cal-legend .some { background: #f2b66d; } }
+:root[data-theme="dark"] .cal-legend .all { background: #8fd19e; } :root[data-theme="dark"] .cal-legend .some { background: #f2b66d; }
 .cal-status { margin: 6px 0 0; font-size: .85rem; color: var(--forest); font-weight: 500; }
 .cal-status:empty { display: none; }
 .cal-note { margin: 4px 0 0; font-size: .8rem; color: var(--muted); }
@@ -330,7 +344,8 @@ section.tent-card { padding: 22px 22px 24px; }
 .form .btn:disabled { opacity: .6; cursor: wait; }
 .form-error { margin: 0; color: #b4462f; font-size: .92rem; }
 .form-error:empty { display: none; }
-@media (prefers-color-scheme: dark) { .form-error { color: #f0a08c; } }
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) .form-error { color: #f0a08c; } }
+:root[data-theme="dark"] .form-error { color: #f0a08c; }
 /* ---------- เลือกแบบชำระเงิน ---------- */
 .paytype { border: 0; margin: 0; padding: 0; display: grid; gap: 10px; min-width: 0; }
 .paytype legend { font-size: .9rem; color: var(--muted); margin-bottom: 6px; padding: 0; }
@@ -365,7 +380,8 @@ section.tent-card { padding: 22px 22px 24px; }
 .pay-info dd { margin: 0; }
 .pay-amount { font-size: 1.6rem; font-weight: 500; color: var(--forest); font-variant-numeric: tabular-nums; }
 .pay-deadline { font-weight: 500; color: #b4462f; }
-@media (prefers-color-scheme: dark) { .pay-deadline { color: #f0a08c; } }
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) .pay-deadline { color: #f0a08c; } }
+:root[data-theme="dark"] .pay-deadline { color: #f0a08c; }
 .pay-steps { margin: 0 0 28px; padding-left: 1.3em; display: grid; gap: 8px; max-width: 640px; }
 .pay-left { font-weight: 400; font-size: .85rem; color: var(--muted); white-space: nowrap; }
 /* ปุ่ม "บันทึกรูป QR" / "คัดลอกรายละเอียด" ใต้ QR */
