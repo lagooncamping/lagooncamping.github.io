@@ -51,7 +51,7 @@ const HOUSES = [
     id: 'lagoon-1', name: 'Lagoon 1', type: 'บ้านหลังเล็ก', guests: 2, price: 1300,
     features: ['1 เตียงใหญ่', 'ห้องน้ำในตัว'],
     photos: [
-      { src: 'img/poster-lagoon1-main.jpg', alt: 'ระเบียงไม้หน้าบ้าน Lagoon 1 มีม้านั่งยาว' },
+      { src: 'img/lagoon1-veranda-full.jpg', alt: 'ระเบียงไม้หน้าบ้าน Lagoon 1 มีม้านั่งยาว โคมไฟสาน มองเห็นต้นไม้' },
       { src: 'img/poster-lagoon1-outside.jpg', alt: 'บ้านไม้ทรงไทย Lagoon 1 ยกพื้น มีบันไดและระเบียงหน้าบ้าน' },
       { src: 'img/poster-lagoon1-room.jpg', alt: 'ห้องนอน Lagoon 1 เตียงใหญ่ ผนังและฝ้าไม้ มีแอร์' },
       { src: 'img/house-lagoon1-bath.jpg', alt: 'ห้องน้ำในตัวบ้าน Lagoon 1 ผนังกระเบื้องขาวดำ' },
