@@ -43,7 +43,7 @@ function promptPayPayload(phone, amount) {
 // รูปจริง (9 ต.ค. 2569) ตัดมาจากภาพ "รูปบ้านส่งลูกค้า" ในโฟลเดอร์ AIOS
 // 8 พ.ย. 2569: Lagoon 1, Lagoon 2, Studio ใช้รูปถ่ายใหม่ของแต่ละหลัง
 // 10 พ.ย. 2569: เรียงรูปตามโปสเตอร์บ้านพักชุดใหม่ "พักใจ ริมน้ำ" (รูปแรก = รูปใหญ่บนโปสเตอร์)
-//   img/h-*.jpg = รูปจริงแต่งโทนตามตัวอย่าง GPT ของภูมิ (ไม้อุ่น ใบเขียว ไม่จ้า) · Lagoon 1 รูปแรก = รูปที่ภูมิแต่งด้วย GPT (ภูมิยกเว้นกฎข้อ 9 เฉพาะรูปนี้)
+//   img/h-*.jpg = รูปจริงชุด "Lagoon_Approved_Tone_All23" ที่ภูมิแต่งสีและอนุมัติเอง (ย่อเป็น 1080x810) · Lagoon 1 รูปแรก = รูปที่ภูมิแต่งด้วย GPT (ภูมิยกเว้นกฎข้อ 9 เฉพาะรูปนี้)
 const LAGOON_ROOM = { src: 'img/house-lagoon-room.jpg', alt: 'ห้องนอนบ้าน Lagoon เตียงใหญ่ มีแอร์' };
 const LAKE = { src: 'img/lake-view.jpg', alt: 'วิวทะเลสาบหน้าที่พัก' };
 const HOUSES = [
@@ -73,7 +73,7 @@ const HOUSES = [
     photos: [
       { src: 'img/h-lagoon3-1.jpg', alt: 'ต้นไม้ใหญ่และม้านั่งริมทะเลสาบหน้าที่พัก' },
       { src: 'img/h-lagoon3-2.jpg', alt: 'บ้านไม้ Lagoon เรียงกันริมสนามหญ้า' },
-      LAGOON_ROOM,
+      { src: 'img/h-lagoon3-3.jpg', alt: 'ห้องนอนบ้าน Lagoon เตียงใหญ่ มีแอร์' },
     ],
   },
   {
