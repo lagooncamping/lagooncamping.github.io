@@ -71,8 +71,8 @@ const HOUSES = [
     id: 'lagoon-3', name: 'Lagoon 3', type: 'บ้านหลังเล็ก', guests: 2, price: 1300,
     features: ['1 เตียงใหญ่', 'ห้องน้ำในตัว'],
     photos: [
-      { src: 'img/h-lagoon3-1.jpg', alt: 'ต้นไม้ใหญ่และม้านั่งริมทะเลสาบหน้าที่พัก' },
       { src: 'img/h-lagoon3-2.jpg', alt: 'บ้านไม้ Lagoon เรียงกันริมสนามหญ้า' },
+      { src: 'img/lake-through-trees.jpg', alt: 'สนามหญ้าและต้นไม้ใหญ่ริมทะเลสาบในรีสอร์ท' },
       { src: 'img/h-lagoon3-3.jpg', alt: 'ห้องนอนบ้าน Lagoon เตียงใหญ่ มีแอร์' },
     ],
   },
@@ -83,7 +83,7 @@ const HOUSES = [
       { src: 'img/h-family1-1.jpg', alt: 'บ้านไม้ Lagoon Family 1 ระเบียงกว้าง มีเรือแคนูหน้าบ้าน' },
       { src: 'img/h-family1-2.jpg', alt: 'ห้องนอน Family 1 เตียง 2 เตียง ผนังไม้ มีแอร์' },
       { src: 'img/h-family1-3.jpg', alt: 'ห้องนอน Family 1 มีตู้เย็นและโต๊ะเครื่องแป้ง' },
-      { src: 'img/h-family1-4.jpg', alt: 'วิวทะเลสาบหน้าที่พัก' },
+      { src: 'img/lake-road.jpg', alt: 'ถนนริมทะเลสาบใกล้ที่พัก ร่มไม้ใหญ่' },
     ],
   },
   {
