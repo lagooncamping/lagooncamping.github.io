@@ -43,7 +43,7 @@ function promptPayPayload(phone, amount) {
 // รูปจริง (9 ต.ค. 2569) ตัดมาจากภาพ "รูปบ้านส่งลูกค้า" ในโฟลเดอร์ AIOS
 // 8 พ.ย. 2569: Lagoon 1, Lagoon 2, Studio ใช้รูปถ่ายใหม่ของแต่ละหลัง
 // 10 พ.ย. 2569: เรียงรูปตามโปสเตอร์บ้านพักชุดใหม่ "พักใจ ริมน้ำ" (รูปแรก = รูปใหญ่บนโปสเตอร์)
-//   3 รูปแรกของทุกหลัง = รูปที่ภูมิตัดจากโปสเตอร์ส่งมา (img/poster-*.jpg · ภูมิเลือกใช้ไฟล์นี้แม้ภาพเล็ก) · Lagoon 3 = วิวทะเลสาบ + แถวบ้าน (ยังไม่มีรูปถ่ายเฉพาะหลัง)
+//   img/h-*.jpg = รูปจริงแต่งโทนตามตัวอย่าง GPT ของภูมิ (ไม้อุ่น ใบเขียว ไม่จ้า) · Lagoon 1 รูปแรก = รูปที่ภูมิแต่งด้วย GPT (ภูมิยกเว้นกฎข้อ 9 เฉพาะรูปนี้)
 const LAGOON_ROOM = { src: 'img/house-lagoon-room.jpg', alt: 'ห้องนอนบ้าน Lagoon เตียงใหญ่ มีแอร์' };
 const LAKE = { src: 'img/lake-view.jpg', alt: 'วิวทะเลสาบหน้าที่พัก' };
 const HOUSES = [
@@ -52,27 +52,27 @@ const HOUSES = [
     features: ['1 เตียงใหญ่', 'ห้องน้ำในตัว'],
     photos: [
       { src: 'img/lagoon1-veranda-full.jpg', alt: 'ระเบียงไม้หน้าบ้าน Lagoon 1 มีม้านั่งยาว โคมไฟสาน มองเห็นต้นไม้' },
-      { src: 'img/poster-lagoon1-outside.jpg', alt: 'บ้านไม้ทรงไทย Lagoon 1 ยกพื้น มีบันไดและระเบียงหน้าบ้าน' },
-      { src: 'img/poster-lagoon1-room.jpg', alt: 'ห้องนอน Lagoon 1 เตียงใหญ่ ผนังและฝ้าไม้ มีแอร์' },
-      { src: 'img/house-lagoon1-bath.jpg', alt: 'ห้องน้ำในตัวบ้าน Lagoon 1 ผนังกระเบื้องขาวดำ' },
+      { src: 'img/h-lagoon1-2.jpg', alt: 'บ้านไม้ทรงไทย Lagoon 1 ยกพื้น มีบันไดและระเบียงหน้าบ้าน' },
+      { src: 'img/h-lagoon1-3.jpg', alt: 'ห้องนอน Lagoon 1 เตียงใหญ่ ผนังและฝ้าไม้ มีแอร์' },
+      { src: 'img/h-lagoon1-4.jpg', alt: 'ห้องน้ำในตัวบ้าน Lagoon 1 ผนังกระเบื้องขาวดำ' },
     ],
   },
   {
     id: 'lagoon-2', name: 'Lagoon 2', type: 'บ้านหลังเล็ก', guests: 2, price: 1300,
     features: ['1 เตียงใหญ่', 'ห้องน้ำในตัว'],
     photos: [
-      { src: 'img/poster-lagoon2-main.jpg', alt: 'วิวสนามหญ้าและทะเลสาบจากม้านั่งระเบียงบ้าน Lagoon 2' },
-      { src: 'img/poster-lagoon2-outside.jpg', alt: 'บ้านไม้ทรงไทย Lagoon 2 ระเบียงกว้าง ท่ามกลางต้นปาล์ม' },
-      { src: 'img/poster-lagoon2-room.jpg', alt: 'ห้องนอน Lagoon 2 เตียงใหญ่ ผนังไม้ มีแอร์ ห้องน้ำในตัว' },
-      { src: 'img/house-lagoon2-bath.jpg', alt: 'ห้องน้ำในตัวบ้าน Lagoon 2 กระเบื้องสีเทา' },
+      { src: 'img/h-lagoon2-1.jpg', alt: 'วิวสนามหญ้าและทะเลสาบจากม้านั่งระเบียงบ้าน Lagoon 2' },
+      { src: 'img/h-lagoon2-2.jpg', alt: 'บ้านไม้ทรงไทย Lagoon 2 ระเบียงกว้าง ท่ามกลางต้นปาล์ม' },
+      { src: 'img/h-lagoon2-3.jpg', alt: 'ห้องนอน Lagoon 2 เตียงใหญ่ ผนังไม้ มีแอร์ ห้องน้ำในตัว' },
+      { src: 'img/h-lagoon2-4.jpg', alt: 'ห้องน้ำในตัวบ้าน Lagoon 2 กระเบื้องสีเทา' },
     ],
   },
   {
     id: 'lagoon-3', name: 'Lagoon 3', type: 'บ้านหลังเล็ก', guests: 2, price: 1300,
     features: ['1 เตียงใหญ่', 'ห้องน้ำในตัว'],
     photos: [
-      { src: 'img/poster-lagoon3-main.jpg', alt: 'ต้นไม้ใหญ่และม้านั่งริมทะเลสาบหน้าที่พัก' },
-      { src: 'img/poster-lagoon3-houses.jpg', alt: 'บ้านไม้ Lagoon เรียงกันริมสนามหญ้า' },
+      { src: 'img/h-lagoon3-1.jpg', alt: 'ต้นไม้ใหญ่และม้านั่งริมทะเลสาบหน้าที่พัก' },
+      { src: 'img/h-lagoon3-2.jpg', alt: 'บ้านไม้ Lagoon เรียงกันริมสนามหญ้า' },
       LAGOON_ROOM,
     ],
   },
@@ -80,30 +80,30 @@ const HOUSES = [
     id: 'family-1', name: 'Lagoon Family 1', type: 'บ้านหลังกลาง', guests: 4, price: 2500,
     features: ['1 ห้องนอน 2 เตียง', 'ห้องน้ำในตัว'],
     photos: [
-      { src: 'img/poster-family1-main.jpg', alt: 'บ้านไม้ Lagoon Family 1 ระเบียงกว้าง มีเรือแคนูหน้าบ้าน' },
-      { src: 'img/poster-family1-room.jpg', alt: 'ห้องนอน Family 1 เตียง 2 เตียง ผนังไม้ มีแอร์' },
-      { src: 'img/poster-family1-room2.jpg', alt: 'ห้องนอน Family 1 มีตู้เย็นและโต๊ะเครื่องแป้ง' },
-      LAKE,
+      { src: 'img/h-family1-1.jpg', alt: 'บ้านไม้ Lagoon Family 1 ระเบียงกว้าง มีเรือแคนูหน้าบ้าน' },
+      { src: 'img/h-family1-2.jpg', alt: 'ห้องนอน Family 1 เตียง 2 เตียง ผนังไม้ มีแอร์' },
+      { src: 'img/h-family1-3.jpg', alt: 'ห้องนอน Family 1 มีตู้เย็นและโต๊ะเครื่องแป้ง' },
+      { src: 'img/h-family1-4.jpg', alt: 'วิวทะเลสาบหน้าที่พัก' },
     ],
   },
   {
     id: 'family-2', name: 'Lagoon Family 2', type: 'บ้านหลังใหญ่ · มีครัว', guests: 4, price: 3000,
     features: ['2 ห้องนอน (ห้องละ 1 เตียงใหญ่)', '2 ห้องน้ำในตัว'],
     photos: [
-      { src: 'img/poster-family2-main.jpg', alt: 'วิวจากระเบียง Family 2 เห็นชิงช้าและทะเลสาบ' },
-      { src: 'img/poster-family2-outside.jpg', alt: 'บ้านไม้ 2 ชั้น Lagoon Family 2 ตอนกลางวัน ใต้ถุนมีโต๊ะนั่งเล่น' },
-      { src: 'img/poster-family2-room.jpg', alt: 'ห้องนอน Family 2 เตียงใหญ่ มีแอร์' },
-      { src: 'img/house-family-2.jpg', alt: 'บ้านไม้ 2 ชั้น Lagoon Family 2 เปิดไฟยามค่ำ' },
+      { src: 'img/h-family2-1.jpg', alt: 'วิวจากระเบียง Family 2 เห็นชิงช้าและทะเลสาบ' },
+      { src: 'img/h-family2-2.jpg', alt: 'บ้านไม้ 2 ชั้น Lagoon Family 2 ตอนกลางวัน ใต้ถุนมีโต๊ะนั่งเล่น' },
+      { src: 'img/h-family2-3.jpg', alt: 'ห้องนอน Family 2 เตียงใหญ่ มีแอร์' },
+      { src: 'img/h-family2-4.jpg', alt: 'บ้านไม้ 2 ชั้น Lagoon Family 2 เปิดไฟยามค่ำ' },
     ],
   },
   {
     id: 'studio', name: 'Lagoon Studio', type: 'บ้านหลังใหม่ สไตล์โมเดิร์น', guests: 2, price: 1500,
     features: ['2 เตียง', 'ห้องน้ำในตัว'],
     photos: [
-      { src: 'img/poster-studio-main.jpg', alt: 'โต๊ะหินอ่อนหน้าห้อง Studio มองเห็นสนามหญ้าและทะเลสาบ' },
-      { src: 'img/poster-studio-outside.jpg', alt: 'บ้าน Lagoon Studio ประตูกระจกบานใหญ่ มีโต๊ะนั่งเล่นหน้าบ้าน' },
-      { src: 'img/poster-studio-room.jpg', alt: 'ห้องนอน Studio เตียงไม้ใหญ่ พื้นกระเบื้อง มีแอร์ ตู้เย็น และกาต้มน้ำ' },
-      { src: 'img/house-studio2-bath.jpg', alt: 'ห้องน้ำในตัว Studio ผนังกระเบื้องลายหินอ่อน' },
+      { src: 'img/h-studio-1.jpg', alt: 'โต๊ะหินอ่อนหน้าห้อง Studio มองเห็นสนามหญ้าและทะเลสาบ' },
+      { src: 'img/h-studio-2.jpg', alt: 'บ้าน Lagoon Studio ประตูกระจกบานใหญ่ มีโต๊ะนั่งเล่นหน้าบ้าน' },
+      { src: 'img/h-studio-3.jpg', alt: 'ห้องนอน Studio เตียงไม้ใหญ่ พื้นกระเบื้อง มีแอร์ ตู้เย็น และกาต้มน้ำ' },
+      { src: 'img/h-studio-4.jpg', alt: 'ห้องน้ำในตัว Studio ผนังกระเบื้องลายหินอ่อน' },
     ],
   },
 ];
