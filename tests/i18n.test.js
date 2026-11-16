@@ -161,6 +161,7 @@ test('หน้าจอง (English): เลือกวัน → บ้าน
   await page.waitForSelector('.m');
   await page.click('.cal-day[data-date="2026-10-20"]');
   await page.click('.cal-day[data-date="2026-10-22"]');
+  await page.evaluate(() => { const d = document.getElementById('house-list'); if (d) d.open = true; }); // กล่องรายละเอียดบ้านย่ออยู่ (ปรับ 1 พ.ย.)
   await page.click('[data-pick="lagoon-1"]');
   await page.click('[data-qty="#tent-rent"][data-d="1"]');
   const bar = await page.locator('#bar-text').innerText();

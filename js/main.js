@@ -99,3 +99,26 @@ document.querySelectorAll('.copy').forEach((button) => {
     });
   }
 })();
+
+// ---------- เนื้อหาค่อยๆ ลอยขึ้นตอนเลื่อนถึง (16 พ.ย. 2569) ----------
+// ใส่เฉพาะเครื่องที่รองรับ และไม่ได้ตั้ง "ลดการเคลื่อนไหว" · ส่วนที่อยู่บนจอแล้วตอนเปิดหน้า แสดงทันที
+(function reveal() {
+  if (!('IntersectionObserver' in window)) return;
+  if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+  const els = document.querySelectorAll('main .head, .free .item, .rate-card, .home-card, .teaser, .gallery figure, .board, .near-chips li');
+  if (!els.length) return;
+  const vh = window.innerHeight;
+  const io = new IntersectionObserver((entries) => {
+    entries.forEach((e) => { if (e.isIntersecting) { e.target.classList.add('in'); io.unobserve(e.target); } });
+  }, { rootMargin: '0px 0px -8% 0px' });
+  els.forEach((el) => {
+    if (el.getBoundingClientRect().top < vh) return; // อยู่บนจอแล้ว ไม่ต้องซ่อน
+    el.classList.add('reveal');
+    io.observe(el);
+  });
+  document.documentElement.classList.add('reveal-on');
+  // กันพลาด: ถ้ามีอะไรค้างซ่อนอยู่ (เช่น กระโดดไปท้ายหน้า) ให้โชว์ทั้งหมดหลัง 4 วินาที
+  setTimeout(() => document.querySelectorAll('.reveal:not(.in)').forEach((el) => {
+    if (el.getBoundingClientRect().top < window.innerHeight) el.classList.add('in');
+  }), 4000);
+})();

@@ -732,3 +732,58 @@ h1, h2, .eyebrow, .brand, .hero-name, .chips b, .board :is(h2, h3), .times dt, .
 .more-box summary:focus-visible { outline: 2px solid var(--sun); outline-offset: 2px; border-radius: 8px; }
 .more-box[open] { padding-bottom: 12px; }
 .more-box .row:first-of-type { border-top: 0; }
+
+/* =========================================================
+   ปรับให้สวยขึ้น 16 พ.ย. 2569 (ภูมิขอ "ปรับปรุงเว็บให้สวยงาม")
+   - หัวข้อ Kanit หนาขึ้นนิด อ่านชัดบนมือถือ · การ์ดมีเงานุ่มๆ · บ้านพักแต่ละแบบปัดดูได้ในหน้าแรก · เนื้อหาค่อยๆ ลอยขึ้นตอนเลื่อน
+   ========================================================= */
+h1, h2 { font-weight: 500; }
+.hero h1 { font-weight: 600; line-height: 1.25; letter-spacing: -.005em; }
+.hero-name { font-weight: 500; }
+.hero .lead { font-size: 1.05rem; line-height: 1.7; }
+.chips li { backdrop-filter: blur(6px); -webkit-backdrop-filter: blur(6px); }
+.chips b { font-weight: 600; }
+.rate-card .baht, .chips b, .times dt { font-weight: 600; }
+
+/* การ์ด: เงานุ่มๆ ตั้งแต่แรก (เดิมแบนราบ) */
+.free .item { box-shadow: 0 1px 2px rgba(20,30,20,.04), 0 6px 18px rgba(20,30,20,.05); }
+.rate-card { box-shadow: 0 12px 32px rgba(0,0,0,.22); }
+.teaser img { box-shadow: 0 8px 22px rgba(20,30,20,.12); }
+
+/* ---------- บ้านพักแต่ละแบบ (หน้าแรก) ---------- */
+.homes .head { max-width: none; }
+.homes-hint { display: none; font-size: .88rem; }
+.home-row { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(4, 1fr); gap: 20px; }
+.home-card {
+  display: flex; flex-direction: column; height: 100%;
+  text-decoration: none; color: var(--ink);
+  background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius); overflow: hidden;
+  box-shadow: 0 1px 2px rgba(20,30,20,.04), 0 8px 22px rgba(20,30,20,.07);
+  transition: transform .25s ease, box-shadow .25s ease;
+}
+.home-card:hover { transform: translateY(-4px); box-shadow: var(--shadow); }
+.home-card img { width: 100%; aspect-ratio: 4 / 3; object-fit: cover; display: block; }
+.home-body { display: flex; flex-direction: column; gap: 4px; padding: 16px 18px 18px; flex: 1; }
+.home-body strong { font-family: var(--font-display); font-weight: 500; font-size: 1.2rem; color: var(--forest); line-height: 1.35; }
+.home-body small { color: var(--muted); font-size: .9rem; line-height: 1.55; }
+.home-body .price { margin-top: auto; padding-top: 10px; font-family: var(--font-display); font-weight: 600; font-size: 1.45rem; color: var(--clay); line-height: 1.3; }
+.home-body .price em { font-family: var(--font); font-style: normal; font-weight: 400; font-size: .88rem; color: var(--muted); margin-left: 2px; }
+.homes .near-more { display: inline-block; margin-top: 24px; }
+/* มือถือ/แท็บเล็ต: ปัดซ้าย-ขวา เห็นการ์ดถัดไปโผล่นิดๆ ให้รู้ว่าปัดได้ */
+@media (max-width: 900px) {
+  .homes-hint { display: block; }
+  .home-row {
+    display: flex; gap: 14px; overflow-x: auto; scroll-snap-type: x mandatory;
+    margin-inline: -20px; padding: 4px 20px 16px; scroll-padding-inline: 20px;
+    scrollbar-width: none;
+  }
+  .home-row::-webkit-scrollbar { display: none; }
+  .home-row li { flex: 0 0 min(78%, 300px); scroll-snap-align: start; }
+}
+@media (prefers-reduced-motion: reduce) { .home-card:hover { transform: none; } }
+
+/* ---------- เนื้อหาค่อยๆ ลอยขึ้นตอนเลื่อนถึง (js/main.js ใส่คลาส) · ปิดเองถ้าเครื่องตั้ง "ลดการเคลื่อนไหว" ---------- */
+.reveal-on .reveal { opacity: 0; transform: translateY(18px); transition: opacity .7s ease, transform .7s ease; }
+.reveal-on .reveal.in { opacity: 1; transform: none; }
+@media (prefers-reduced-motion: reduce) { .reveal-on .reveal { opacity: 1; transform: none; transition: none; } }
+@media print { .reveal-on .reveal { opacity: 1; transform: none; } }

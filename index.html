@@ -27,9 +27,9 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Anuphan:wght@400;500;600&family=Kanit:wght@500;600&display=swap">
-  <link rel="stylesheet" href="css/style.css?v=20261110a">
+  <link rel="stylesheet" href="css/style.css?v=20261116a">
   <!-- ปุ่มภาษา EN/ไทย + โหมดมืด/สว่าง (ต้องอยู่ใน head ไม่มี defer) -->
-  <script src="js/prefs.js?v=20261110a"></script>
+  <script src="js/prefs.js?v=20261116a"></script>
   <!-- รูปปก: จอใหญ่โหลด sunset.jpg / มือถือโหลด sunset-800.jpg (เล็กกว่า) ให้ตรงกับ css/style.css -->
   <link rel="preload" as="image" href="img/sunset.jpg" media="(min-width:721px)" fetchpriority="high">
   <link rel="preload" as="image" href="img/sunset-800.jpg" media="(max-width:720px)" fetchpriority="high">
@@ -235,7 +235,7 @@
           </a>
           <a class="rate-card" href="prices.html">
             <span class="tag">มีแอร์ทุกหลัง</span>
-            <img src="img/p-houses-zone.jpg" alt="บ้านพักไม้หลายหลังบนสนามหญ้ากลางสวน" loading="lazy">
+            <img src="img/h-lagoon2-1.jpg" alt="วิวสนามหญ้าและทะเลสาบจากม้านั่งระเบียงบ้าน Lagoon 2" loading="lazy">
             <div>
               <h3>บ้านพัก</h3>
               <p class="baht"><small>เริ่ม</small> 1,300 <small>บาท / หลัง</small></p>
@@ -248,6 +248,36 @@
           <a class="btn btn-glass" href="booking.html#tents"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M2 20h20M3 20 12 4l9 16M9.5 20 12 15l2.5 5"/></svg>จองลานกางเต็นท์</a>
           <a class="btn btn-glass" href="prices.html"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20.6 13.4 13.4 20.6a2 2 0 0 1-2.8 0L2 12V2h10l8.6 8.6a2 2 0 0 1 0 2.8z"/><circle cx="7" cy="7" r="1.5"/></svg>ดูราคาทั้งหมด</a>
         </div>
+      </div>
+    </section>
+
+    <!-- ===== บ้านพักแต่ละแบบ (ปัดซ้าย-ขวาบนมือถือ) · ราคาต้องตรงกับ prices.html และ js/booking.js · รูป = ชุดที่ภูมิแต่งสีและอนุมัติ (img/h-*.jpg) ===== -->
+    <section class="homes" aria-labelledby="homes-h">
+      <div class="wrap">
+        <div class="head">
+          <span class="eyebrow">บ้านพักริมทะเลสาบ</span>
+          <h2 id="homes-h">บ้านพัก 6 หลัง มีแอร์ทุกหลัง</h2>
+          <p class="homes-hint" aria-hidden="true">ปัดดูบ้านแต่ละแบบ →</p>
+        </div>
+        <ul class="home-row">
+          <li><a class="home-card" href="booking.html">
+            <img src="img/h-lagoon3-2.jpg" alt="บ้านไม้ Lagoon เรียงกันริมสนามหญ้า" loading="lazy">
+            <span class="home-body"><strong>Lagoon 1–3</strong><small>มี 3 หลัง · 2 ท่าน · 1 เตียงใหญ่ · ห้องน้ำในตัว</small><b class="price">1,300 <em>บาท/คืน</em></b></span>
+          </a></li>
+          <li><a class="home-card" href="booking.html">
+            <img src="img/h-studio-2.jpg" alt="บ้าน Lagoon Studio ประตูกระจกบานใหญ่ มีโต๊ะนั่งเล่นหน้าบ้าน" loading="lazy">
+            <span class="home-body"><strong>Lagoon Studio</strong><small>สไตล์โมเดิร์น · 2 ท่าน · 2 เตียง · ห้องน้ำในตัว</small><b class="price">1,500 <em>บาท/คืน</em></b></span>
+          </a></li>
+          <li><a class="home-card" href="booking.html">
+            <img src="img/h-family1-1.jpg" alt="บ้านไม้ Lagoon Family 1 ระเบียงกว้าง มีเรือแคนูหน้าบ้าน" loading="lazy">
+            <span class="home-body"><strong>Lagoon Family 1</strong><small>4 ท่าน · 1 ห้องนอน 2 เตียง · ห้องน้ำในตัว</small><b class="price">2,500 <em>บาท/คืน</em></b></span>
+          </a></li>
+          <li><a class="home-card" href="booking.html">
+            <img src="img/h-family2-2.jpg" alt="บ้านไม้ 2 ชั้น Lagoon Family 2 ตอนกลางวัน ใต้ถุนมีโต๊ะนั่งเล่น" loading="lazy">
+            <span class="home-body"><strong>Lagoon Family 2</strong><small>4 ท่าน · 2 ห้องนอน · 2 ห้องน้ำ · มีครัว</small><b class="price">3,000 <em>บาท/คืน</em></b></span>
+          </a></li>
+        </ul>
+        <a class="near-more" href="booking.html">ดูรูปทุกหลังและเช็กวันว่าง →</a>
       </div>
     </section>
 
@@ -356,7 +386,7 @@
     <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3C6.5 3 2 6.6 2 11c0 3.9 3.5 7.2 8.3 7.9.3.1.8.2.9.5.1.3.1.7 0 1l-.1.9c0 .3-.2 1 .9.5s5.9-3.5 8-6C21.3 14.2 22 12.7 22 11c0-4.4-4.5-8-10-8z"/></svg>
     <span>ทักไลน์</span>
   </a>
-  <script src="js/main.js?v=20261007a" defer></script>
+  <script src="js/main.js?v=20261116a" defer></script>
   <script src="js/nav.js?v=20261110a" defer></script>
 </body>
 </html>
