@@ -264,6 +264,24 @@ test('ข้ามเดือน/ข้ามปี: 30 ธ.ค. – 2 ม.ค.
   await page.fill('#checkout', '2027-01-02'); await page.dispatchEvent('#checkout', 'change');
   expect((await page.locator('#nights').innerText()).includes('3 คืน'), 'จำนวนคืน');
 });
+test('คืนที่มีคนเหมาลาน (จองจากหลังบ้าน): ลูกค้าจองเต็นท์ไม่ได้ · บ้านพักยังจองได้ · คืนอื่นปกติ', async () => {
+  const page = await openBooking();
+  // ชุดทดสอบใช้โหมดทดลอง (ไม่โหลดจาก Google) → ใส่ "เหมาลาน 17–18 ต.ค." แบบเดียวกับที่ Code.gs ส่งมา
+  await page.evaluate(() => { BOOKINGS.push({ house: 'field', from: '2026-10-17', to: '2026-10-18' }); render(); });
+  const pickDates = async (a, b) => {
+    await page.fill('#checkin', a); await page.dispatchEvent('#checkin', 'change');
+    await page.fill('#checkout', b); await page.dispatchEvent('#checkout', 'change');
+  };
+  await pickDates('2026-10-17', '2026-10-18');
+  await page.waitForFunction(() => !document.getElementById('tent-closed').hidden);
+  expect(await page.locator('#tent-guests').isDisabled(), 'ช่องเต็นท์ต้องกดไม่ได้');
+  expect(await page.locator('[data-qty="#tent-rent"][data-d="1"]').isDisabled(), 'ปุ่ม + เต็นท์เช่าต้องกดไม่ได้');
+  expect(await page.locator('#house-lagoon-1 .pick').isEnabled(), 'บ้านพักยังเลือกได้');
+  await pickDates('2026-10-18', '2026-10-19');
+  expect(await page.locator('#tent-closed').isHidden(), 'คืนอื่นต้องไม่มีข้อความปิดลาน');
+  expect(await page.locator('#tent-guests').isEnabled(), 'คืนอื่นจองเต็นท์ได้');
+  eq(page.errors.join(' | '), '', 'error ในหน้า');
+});
 test('ฟอร์ม: ชื่อว่าง/เว้นวรรคล้วน · เบอร์สั้น · คนเกินบ้าน → ไม่ผ่าน · เบอร์ +66 → ผ่าน', async () => {
   const page = await openBooking();
   await page.click('[data-pick="lagoon-1"]');

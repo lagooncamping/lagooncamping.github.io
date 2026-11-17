@@ -525,6 +525,8 @@
     'อ่างเก็บน้ำ': 'Reservoir',
     'ต.ช้างข้าม': 'Chang Kham',
     'ถูกจองแล้ว': 'Booked',
+    'วันที่เลือก ลานกางเต็นท์ไม่ว่าง (มีการจองเหมาลาน) · ยังจองบ้านพักได้ถ้าว่าง': 'The campground is booked for a private event on these dates · cabins can still be booked if free',
+    'วันที่เลือก ลานกางเต็นท์ไม่ว่าง (มีการจองเหมาลาน) กรุณาเลือกบ้านพักหรือวันอื่น': 'The campground is booked for a private event on these dates. Please choose a cabin or other dates',
     'ว่าง': 'Free',
     'เลือกแล้ว': 'Selected',
     '✓ เลือกแล้ว': '✓ Selected',

@@ -33,9 +33,14 @@ const ERRORS = {
   bad_note: 'หมายเหตุยาวเกินไป',
   bad_total: 'ยอดรวมต้องเป็นตัวเลขเต็ม ไม่ติดลบ',
   not_found: 'ไม่พบการจองนี้ในชีตแล้ว ลองกดโหลดใหม่',
+  need_total: 'เหมาลาน: กรุณาใส่ราคาที่ตกลงกับลูกค้า (ใส่ 0 ได้ถ้ายังไม่ตกลง)',
+  tent_booked: 'เหมาลานไม่ได้: ช่วงนี้มีลูกค้าจองเต็นท์อยู่แล้ว',
+  field_closed: 'จองเต็นท์ไม่ได้: ช่วงนี้มีคนเหมาลานแล้ว',
   server: 'ระบบมีปัญหา ลองใหม่อีกครั้ง',
 };
 const errText = (code) => ERRORS[code] || 'ทำไม่สำเร็จ ลองใหม่อีกครั้ง';
+// รหัสการจองที่ชนกัน (เหมาลาน ↔ เต็นท์) ต่อท้ายข้อความ
+const idsText = (out) => (Array.isArray(out.ids) && out.ids.length ? ` (รหัส ${out.ids.join(', ')})` : '');
 
 // ---------- ตัวช่วย ----------
 const $ = (sel) => document.querySelector(sel);
@@ -81,7 +86,8 @@ const state = {
 };
 const bookings = () => (state.data ? state.data.bookings : []);
 const houseIds = () => HOUSE_ORDER.filter((h) => state.data && state.data.houses[h]);
-const houseName = (id) => (state.data && state.data.houses[id] ? state.data.houses[id].name : id);
+const FIELD = 'field'; // รหัสบ้านของแถวเหมาลานใน Code.gs (FIELD_ROW)
+const houseName = (id) => (id === FIELD ? 'ลาน (มีคนเหมาลาน)' : state.data && state.data.houses[id] ? state.data.houses[id].name : id);
 // การจองที่ยังล็อกบ้านอยู่
 const isActive = (b) => b.status === ST.CONFIRMED || b.status === ST.PENDING;
 // เต็นท์เช่า: rent = หลังใหญ่ · rentSmall = หลังเล็ก (หลังละ 2 ท่านทั้งคู่ · ระบบเก่ายังไม่ส่ง rentSmall = 0)
@@ -222,7 +228,8 @@ function statusClass(b) {
   return { [ST.PENDING]: 'pending', [ST.CONFIRMED]: 'confirmed', [ST.CANCELLED]: 'cancelled', [ST.EXPIRED]: 'expired' }[b.status] || 'other';
 }
 function itemsText(b) {
-  const parts = b.houseNames.length ? [b.houseNames.join(', ')] : [];
+  const parts = b.field ? ['🎪 เหมาลานทั้งลาน'] : [];
+  if (b.houseNames.length) parts.push(b.houseNames.join(', '));
   if (b.tent) parts.push(`เต็นท์มาเอง ${b.tent} ท่าน`);
   if (b.rent) parts.push(`เช่าเต็นท์หลังใหญ่ ${b.rent} หลัง`);
   if (b.rentSmall) parts.push(`เช่าเต็นท์หลังเล็ก ${b.rentSmall} หลัง`);
@@ -390,10 +397,10 @@ function card(b) {
   const cls = statusClass(b);
   const pill = cls === 'blocked' ? 'ปิดบ้าน' : (b.status || 'ไม่มีสถานะ');
   const phone = String(b.phone || '').replace(/[^\d+]/g, '');
-  const who = b.blocked ? '' : `<p class="who"><b>${esc(b.name || '-')}</b>${people(b) ? ` · ${people(b)} ท่าน` : ''}${b.guests && (b.tent || rentAll(b)) ? ` (ในบ้าน ${b.guests})` : ''}</p>`;
+  const who = b.blocked ? '' : `<p class="who"><b>${esc(b.name || '-')}</b>${people(b) ? ` · ${b.field ? 'แขกประมาณ ' : ''}${people(b)} ท่าน` : ''}${b.guests && (b.tent || rentAll(b)) ? ` (ในบ้าน ${b.guests})` : ''}</p>`;
   return `
-  <article class="bk st-${cls}" id="b-${esc(b.id)}" data-id="${esc(b.id)}">
-    <div class="bk-top"><span class="pill">${esc(pill)}</span>${b.lineLinked && !b.blocked ? '<span class="line-badge" title="ลูกค้าทัก LINE พร้อมเลขการจองแล้ว กดยืนยันแล้วระบบส่งใบยืนยันเข้า LINE ให้">LINE ✓</span>' : ''}<span class="bk-id">${esc(b.id)}</span></div>
+  <article class="bk st-${cls}${b.field ? ' is-field' : ''}" id="b-${esc(b.id)}" data-id="${esc(b.id)}">
+    <div class="bk-top"><span class="pill">${esc(pill)}</span>${b.field ? '<span class="field-badge">🎪 เหมาลาน</span>' : ''}${b.lineLinked && !b.blocked ? '<span class="line-badge" title="ลูกค้าทัก LINE พร้อมเลขการจองแล้ว กดยืนยันแล้วระบบส่งใบยืนยันเข้า LINE ให้">LINE ✓</span>' : ''}<span class="bk-id">${esc(b.id)}</span></div>
     <h3>${b.blocked ? 'ปิดบ้าน: ' : ''}${esc(b.blocked ? b.houseNames.join(', ') : itemsText(b))}</h3>
     <p class="dates">${dateRange(b)}</p>
     ${who}
@@ -451,7 +458,7 @@ document.addEventListener('click', async (e) => {
     ask.hidden = true;
     errEl.textContent = out.error === 'booked'
       ? `ทำไม่ได้: ${out.houses.map(houseName).join(', ')} มีคนอื่นจองช่วงนี้ไปแล้ว`
-      : errText(out.error);
+      : errText(out.error) + idsText(out);
     return;
   }
   // ยืนยันแล้ว: Code.gs ส่งใบยืนยันเข้า LINE ลูกค้าให้เอง ถ้าลูกค้าเคยทัก LINE พร้อมเลขการจอง (out.pushed)
@@ -577,6 +584,8 @@ function renderToday() {
   const prep = [];
   if (rentTonight) prep.push(`⛺ เต็นท์เช่าคืนนี้ <b>${rentTonight} หลัง</b>${rentSmallTonight ? ` (ใหญ่ ${rentTonight - rentSmallTonight} · เล็ก ${rentSmallTonight})` : ''}${rentNew ? ` (ต้องกางใหม่วันนี้ ${rentNew} หลัง)` : ' (กางไว้แล้ว)'}`);
   if (ownTent) prep.push(`🏕️ แขกนำเต็นท์มาเอง เข้าวันนี้ <b>${ownTent} ท่าน</b>`);
+  const fields = tonight.filter((b) => b.field);
+  fields.forEach((b) => prep.push(`🎪 คืนนี้เหมาลาน: <b>${esc(b.name || '-')}</b>${people(b) ? ` · แขกประมาณ ${people(b)} ท่าน` : ''}${b.houseNames.length ? ` · รวมบ้าน ${esc(b.houseNames.join(', '))}` : ''}`));
   blocks.forEach((b) => prep.push(`🔒 ปิดบ้านวันนี้: <b>${esc(b.houseNames.join(', '))}</b>${b.note ? ` (${esc(b.note)})` : ''}`));
 
   // พรุ่งนี้
@@ -589,6 +598,12 @@ function renderToday() {
 
   $('#h-today').textContent = `วันนี้ ${thDate(t)}`;
   $('#today-body').innerHTML = `
+    <div class="stats">
+      <div class="stat"><span>แขกคืนนี้</span><b>${tonight.reduce((s, b) => s + people(b), 0)}</b><small>ท่าน · ${tonight.length} การจอง</small></div>
+      <div class="stat"><span>บ้านว่างคืนนี้</span><b>${free.length}/${houseIds().length}</b><small>${free.length ? esc(free.join(', ')) : 'เต็มทุกหลัง'}</small></div>
+      <div class="stat${fields.length ? ' is-field' : ''}"><span>ลานคืนนี้</span><b>${fields.length ? '🎪' : '⛺'}</b><small>${fields.length ? 'เหมาลาน ปิดรับเต็นท์' : 'เปิดรับเต็นท์ปกติ'}</small></div>
+      <button type="button" class="stat${pending ? ' is-due' : ''}" data-goto="pending"><span>รอชำระ</span><b>${pending}</b><small>${pending ? 'กดดูรายการ →' : 'ไม่มีค้าง 👍'}</small></button>
+    </div>
     <div class="work">
       <h2>งานวันนี้</h2>
       <p class="collect ${collectSum ? 'is-due' : 'is-done'}">${collectSum
@@ -597,11 +612,6 @@ function renderToday() {
       <h3>เตรียมงาน${clean.length ? ` <span class="clean-count">· ทำความสะอาดแล้ว <b>${cleanDoneN}/${clean.length}</b></span>` : ''}</h3>
       ${cleanItems.length + prep.length ? `<ul class="prep">${cleanItems.join('')}${prep.map((p) => `<li>${p}</li>`).join('')}</ul>` : '<p class="muted">ไม่มีงานต้องเตรียม</p>'}
       ${clean.length ? '<p class="clean-note">ปุ่ม “ทำความสะอาดแล้ว” บันทึกไว้ในเครื่องนี้เท่านั้น</p>' : ''}
-    </div>
-    <div class="summary">
-      <p>คืนนี้มีแขก <b>${tonight.reduce((s, b) => s + people(b), 0)} ท่าน</b> (${tonight.length} การจอง)</p>
-      <p>บ้านว่างคืนนี้: <b>${free.length ? esc(free.join(', ')) : 'เต็มทุกหลัง'}</b></p>
-      ${pending ? `<p><button type="button" class="link" data-goto="pending">มีการจองรอชำระเงิน ${pending} รายการ →</button></p>` : ''}
     </div>
     <h2 class="sub">เข้าพักวันนี้ (${arrive.length})</h2>${cards(arrive, 'ไม่มีคนเข้าพักวันนี้')}
     <h2 class="sub">พักต่อคืนนี้ (${stay.length})</h2>${cards(stay, 'ไม่มี')}
@@ -664,8 +674,8 @@ function renderCalendar() {
     const b = cellBooking(h, d);
     const label = `${houseName(h)} ${thDate(d)}`;
     if (!b) return `<td><button type="button" class="c-free" data-free="${h}" data-day="${d}" aria-label="${esc(label)} ว่าง กดเพื่อจอง"></button></td>`;
-    const kind = b.blocked ? 'blocked' : b.status === ST.PENDING ? 'pending' : 'booked';
-    const word = { blocked: 'ปิดบ้าน', pending: 'รอชำระ', booked: 'จองแล้ว' }[kind];
+    const kind = b.blocked ? 'blocked' : b.status === ST.PENDING ? 'pending' : b.field ? 'field' : 'booked';
+    const word = { blocked: 'ปิดบ้าน', pending: 'รอชำระ', booked: 'จองแล้ว', field: 'เหมาลาน' }[kind];
     const start = b.checkin === d || d === state.today;
     return `<td><button type="button" class="c-${kind}" data-open="${esc(b.id)}" aria-label="${esc(label)} ${word}: ${esc(b.name)}">${start ? esc(b.blocked ? 'ปิด' : b.name) : ''}</button></td>`;
   }).join('')}</tr>`).join('');
@@ -676,7 +686,15 @@ function renderCalendar() {
     return `<td class="c-num"${n ? ` aria-label="${esc(`${label} ${thDate(d)} ${n} ${unit}`)}"` : ''}>${n || ''}</td>`;
   }).join('')}</tr>`;
   const tents = tentRow('เต็นท์เช่า', 'หลัง', rentAll, 'c-sep') + tentRow('เต็นท์มาเอง', 'ท่าน', (b) => Number(b.tent) || 0);
-  $('#cal-scroll').innerHTML = `<table class="cal"><thead><tr><th class="corner">บ้าน</th>${head}</tr></thead><tbody>${rows}${tents}</tbody></table>`;
+  // แถวเหมาลาน: ว่าง = กดเพื่อจองเหมาลานคืนนั้น · มีงาน = กดดูการจอง
+  const fieldRow = `<tr class="c-sep"><th scope="row">🎪 เหมาลาน</th>${days.map((d) => {
+    const b = night.find((x) => x.field && x.checkin <= d && x.checkout > d);
+    const label = `เหมาลาน ${thDate(d)}`;
+    if (!b) return `<td><button type="button" class="c-free c-field-free" data-free-field data-day="${d}" aria-label="${esc(label)} ว่าง กดเพื่อจองเหมาลาน"></button></td>`;
+    const start = b.checkin === d || d === state.today;
+    return `<td><button type="button" class="c-field${b.status === ST.PENDING ? ' is-pending' : ''}" data-open="${esc(b.id)}" aria-label="${esc(label)}: ${esc(b.name)}">${start ? esc(b.name) : ''}</button></td>`;
+  }).join('')}</tr>`;
+  $('#cal-scroll').innerHTML = `<table class="cal"><thead><tr><th class="corner">บ้าน</th>${head}</tr></thead><tbody>${rows}${fieldRow}${tents}</tbody></table>`;
   const blocks = bookings().filter((b) => b.blocked && b.status === ST.CONFIRMED && b.checkout > state.today);
   $('#blocks-body').innerHTML = cards(blocks, 'ไม่มีบ้านที่ปิดอยู่');
   const shown = $('#cal-detail').dataset.id;
@@ -693,6 +711,8 @@ function showCalDetail(id, scroll = true) {
 $('#cal-scroll').addEventListener('click', (e) => {
   const open = e.target.closest('[data-open]');
   if (open) { showCalDetail(open.dataset.open); return; }
+  const freeField = e.target.closest('[data-free-field]');
+  if (freeField) { openAdd({ field: true, checkin: freeField.dataset.day, checkout: addDays(freeField.dataset.day, 1) }); return; }
   const free = e.target.closest('[data-free]');
   if (free) openAdd({ house: free.dataset.free, checkin: free.dataset.day, checkout: addDays(free.dataset.day, 1) });
 });
@@ -744,8 +764,44 @@ function setFormMode(mode, b) {
     ? 'สำหรับลูกค้าที่โทร/ทัก LINE หรือมาถึงหน้ารีสอร์ท · บันทึกแล้วเป็น “ยืนยันแล้ว” ทันที'
     : `รหัส ${b.id} · ${b.blocked ? 'ปิดบ้าน' : b.status} — สถานะและการรับเงินไม่เปลี่ยน (ใช้ปุ่มบนการ์ดเหมือนเดิม) · ระบบไม่ส่งข้อความหาลูกค้าเอง`;
   $('#note-label').textContent = mode === 'block' ? 'เหตุผลที่ปิด' : 'หมายเหตุ';
-  $('#total-label').textContent = mode === 'add' ? 'ยอดรวม (บาท) — เว้นว่าง = ใช้ราคาตามระบบ' : 'ยอดรวม (บาท)';
   addForm.querySelector('[type=submit]').textContent = mode === 'add' ? 'บันทึกการจอง' : 'บันทึกการแก้ไข';
+  setKind(b && b.field ? 'field' : 'normal');
+}
+// แบบการจอง: normal = บ้าน/เต็นท์ · field = เหมาลาน (ซ่อนช่องเต็นท์ ต้องใส่ราคาที่ตกลงเอง)
+const isField = () => addForm.dataset.kind === 'field';
+function setKind(kind) {
+  addForm.dataset.kind = kind === 'field' ? 'field' : 'normal';
+  addForm.querySelector(`[name=kind][value=${addForm.dataset.kind}]`).checked = true;
+  const field = isField();
+  const mode = addForm.dataset.mode;
+  F('guests').max = field ? 2000 : 30;
+  $('#guests-label').textContent = field ? 'จำนวนแขกในงาน (โดยประมาณ)' : 'คนพักในบ้าน (ท่าน)';
+  $('#name-label').textContent = field ? 'ชื่อลูกค้า / เจ้าภาพงาน' : 'ชื่อลูกค้า';
+  $('#total-label').textContent = field ? 'ราคาเหมาที่ตกลงกับลูกค้า (บาท) — ต้องใส่'
+    : mode === 'add' ? 'ยอดรวม (บาท) — เว้นว่าง = ใช้ราคาตามระบบ' : 'ยอดรวม (บาท)';
+  if (field) { F('tentGuests').value = 0; F('tentRentals').value = 0; F('tentRentalsSmall').value = 0; }
+  if (state.data) refreshAdd();
+}
+addForm.addEventListener('change', (e) => { if (e.target.name === 'kind') setKind(e.target.value); });
+$('#pick-all').addEventListener('click', () => {
+  const taken = takenBetween(F('checkin').value, F('checkout').value, state.editId);
+  houseIds().filter((h) => !taken[h]).forEach((h) => state.addHouses.add(h));
+  refreshAdd();
+});
+// เตือนในฟอร์ม (Google เช็กซ้ำตอนบันทึก): เหมาลานทับการจองเต็นท์ · จองเต็นท์ทับคืนที่เหมาลาน · เหมาลานซ้อนกัน
+function fieldWarnText(from, to, exceptId = '') {
+  if (!isISO(from) || !isISO(to) || to <= from) return '';
+  const near = bookings().filter((b) => b.id !== exceptId && isActive(b) && !b.blocked && b.checkin < to && b.checkout > from);
+  const tents = intVal('tentGuests') + intVal('tentRentals') + intVal('tentRentalsSmall');
+  if (isField()) {
+    const other = near.find((b) => b.field);
+    if (other) return `ช่วงนี้มีคนเหมาลานแล้ว: ${other.name} (${other.id})`;
+    const tentBk = near.filter((b) => !b.field && (Number(b.tent) || rentAll(b)));
+    if (tentBk.length) return `ช่วงนี้มีลูกค้าจองเต็นท์อยู่ ${tentBk.length} การจอง (${tentBk.map((b) => `${b.name} ${b.id}`).join(', ')}) ต้องย้ายหรือยกเลิกก่อนถึงจะเหมาลานได้`;
+    return '';
+  }
+  const ev = tents && near.find((b) => b.field);
+  return ev ? `จองเต็นท์ไม่ได้: ช่วงนี้มีคนเหมาลาน (${ev.name} ${ev.id})` : '';
 }
 
 function openAdd(prefill = {}) {
@@ -759,6 +815,7 @@ function openAdd(prefill = {}) {
   F('checkout').value = prefill.checkout || addDays(state.today, 1);
   F('guests').value = prefill.house && state.data ? state.data.houses[prefill.house].guests : 2;
   $('#add-error').textContent = '';
+  if (prefill.field) { setKind('field'); F('guests').value = 0; }
   setTab('add');
 }
 // ปุ่ม "แก้ไขการจอง" บนการ์ด → ฟอร์มเดียวกับเพิ่มการจอง ใส่ข้อมูลเดิมไว้ให้
@@ -806,6 +863,11 @@ function refreshAdd() {
   renderPicks('#add-houses', state.addHouses, editing && !isActive(editing) ? {} : takenBetween(from, to, state.editId));
   updateEstimate();
 }
+function updateFieldWarn() {
+  const editing = state.editId && byId(state.editId);
+  const off = addForm.dataset.mode === 'block' || (editing && !isActive(editing));
+  $('#field-warn').textContent = off ? '' : fieldWarnText(F('checkin').value, F('checkout').value, state.editId);
+}
 function estimate() {
   const n = isISO(F('checkin').value) && isISO(F('checkout').value) ? nightsBetween(F('checkin').value, F('checkout').value) : 0;
   if (!state.data || n <= 0) return { n, total: 0 };
@@ -815,6 +877,7 @@ function estimate() {
   return { n, total: per * n };
 }
 function updateEstimate() {
+  updateFieldWarn();
   const { n, total } = estimate();
   $('#add-nights').textContent = n > 0 ? `${thDate(F('checkin').value)} – ${thDate(F('checkout').value)} · ${n} คืน` : 'วันออกต้องหลังวันเข้า';
   F('total').placeholder = total ? String(total) : '';
@@ -824,6 +887,14 @@ function updateEstimate() {
   const rate = state.data ? state.data.depositRate || 0.5 : 0.5;
   const dep = Math.ceil(sum * rate);
   const b = state.editId && byId(state.editId);
+  if (isField()) {
+    // เหมาลาน: ไม่มีราคาตามระบบ (ตกลงรายกรณี) · บ้านที่เลือกแสดงราคาปกติไว้ให้ดูประกอบ
+    const paidNow = b ? Number(b.due) || 0 : paid === 'none' ? 0 : paid === 'deposit' ? dep : sum;
+    $('#add-estimate').innerHTML = `🎪 ราคาเหมาลานตกลงเป็นรายกรณี${total ? ` · ราคาบ้านที่เลือกตามปกติ ${baht(total)} บาท (ไว้ดูประกอบ)` : ''}<br>`
+      + (typed === '' ? '<b class="warn">ยังไม่ได้ใส่ราคาเหมา</b>'
+        : `ยอดรวม <b>${baht(sum)} บาท</b> · จ่ายแล้ว ${baht(paidNow)} บาท · ต้องเก็บเพิ่ม ${baht(Math.max(0, sum - paidNow))} บาท`);
+    return;
+  }
   if (b) {
     // แก้การจอง: รอชำระ = ยอดที่ลูกค้าต้องโอนคิดใหม่ (Code.gs คิดแบบเดียวกัน) · อื่นๆ = จ่ายมาแล้วเท่าเดิม
     const due = b.payType === PAY_FULL ? sum : dep;
@@ -869,16 +940,21 @@ addForm.addEventListener('submit', async (e) => {
   const sameDates = editing && editing.checkin === checkin && editing.checkout === checkout;
   if (checkout <= state.today && !sameDates) { errEl.textContent = 'วันออกต้องหลังวันนี้'; return; }
   if (editing && editing.blocked) { saveEdit(editing, { houses, checkin, checkout, note: F('note').value.trim() }); return; }
-  if (!houses.length && !intVal('tentGuests') && !intVal('tentRentals') && !intVal('tentRentalsSmall')) { errEl.textContent = ERRORS.bad_house; return; }
+  const field = isField();
+  if (!field && !houses.length && !intVal('tentGuests') && !intVal('tentRentals') && !intVal('tentRentalsSmall')) { errEl.textContent = ERRORS.bad_house; return; }
   if (!name) { errEl.textContent = ERRORS.bad_name; F('name').focus(); return; }
   const busy = editing && !isActive(editing) ? [] : houses.filter((h) => takenBetween(checkin, checkout, state.editId)[h]);
   if (busy.length) { errEl.textContent = `${busy.map(houseName).join(', ')} ไม่ว่างในวันที่เลือก`; return; }
   const typed = F('total').value.trim();
   if (typed !== '' && !(Number.isInteger(Number(typed)) && Number(typed) >= 0)) { errEl.textContent = ERRORS.bad_total; return; }
+  if (field && typed === '') { errEl.textContent = ERRORS.need_total; F('total').focus(); return; }
+  const warn = editing && !isActive(editing) ? '' : fieldWarnText(checkin, checkout, state.editId);
+  if (warn) { errEl.textContent = warn; return; }
+  const guests = houses.length || field ? intVal('guests') : 0;
   if (editing) {
     saveEdit(editing, {
-      houses, checkin, checkout,
-      guests: houses.length ? intVal('guests') : 0,
+      houses, checkin, checkout, field,
+      guests,
       tentGuests: intVal('tentGuests'),
       tentRentals: intVal('tentRentals'),
       tentRentalsSmall: intVal('tentRentalsSmall'),
@@ -894,8 +970,8 @@ addForm.addEventListener('submit', async (e) => {
   btn.disabled = true;
   btn.textContent = 'กำลังบันทึก…';
   const out = await api('addBooking', {
-    houses, checkin, checkout,
-    guests: houses.length ? intVal('guests') : 0,
+    houses, checkin, checkout, field,
+    guests,
     tentGuests: intVal('tentGuests'),
     tentRentals: intVal('tentRentals'),
     tentRentalsSmall: intVal('tentRentalsSmall'),
@@ -913,7 +989,7 @@ addForm.addEventListener('submit', async (e) => {
       errEl.textContent = `${out.houses.map(houseName).join(', ')} เพิ่งมีคนจองไป กรุณาเลือกบ้านอื่น`;
       await load();
     } else {
-      errEl.textContent = errText(out.error);
+      errEl.textContent = errText(out.error) + idsText(out);
     }
     return;
   }
@@ -939,7 +1015,7 @@ async function saveEdit(b, payload) {
       errEl.textContent = `${out.houses.map(houseName).join(', ')} มีคนอื่นจองช่วงนี้แล้ว เลือกบ้านหรือวันอื่น`;
       await load();
     } else {
-      errEl.textContent = out.error === 'bad_request' ? 'ระบบยังแก้การจองไม่ได้ (ต้องอัปเดต Apps Script ก่อน)' : errText(out.error);
+      errEl.textContent = out.error === 'bad_request' ? 'ระบบยังแก้การจองไม่ได้ (ต้องอัปเดต Apps Script ก่อน)' : errText(out.error) + idsText(out);
     }
     return;
   }

@@ -190,6 +190,8 @@ let BOOKINGS = API_URL ? [] : [
 
 // บ้านหลังนี้ถูกจองซ้อนกับช่วงวันที่เลือกไหม
 const isBooked = (id, from, to) => BOOKINGS.some((b) => b.house === id && b.from < to && b.to > from);
+// ช่วงวันที่เลือกมีคนเหมาลานไหม (Code.gs ส่ง house 'field') → ปิดรับจองเต็นท์ทุกแบบ (บ้านพักยังจองได้ถ้าว่าง)
+const fieldClosed = (from, to) => isBooked('field', from, to);
 
 // ---------- สถานะของหน้า ----------
 const state = { checkin: '', checkout: '', selected: new Set(), loading: false, loadError: false };
@@ -369,6 +371,18 @@ function render() {
   dateNote.textContent = state.checkin && state.checkout ? dateProblem() : '';
   dateNote.hidden = !dateNote.textContent;
   renderCal();
+
+  // คืนที่เหมาลาน: ล้างจำนวนเต็นท์เป็น 0 และกด +/− ไม่ได้
+  const closed = dated && fieldClosed(state.checkin, state.checkout);
+  $('#tents').classList.toggle('is-closed', closed);
+  $('#tent-closed').hidden = !closed;
+  $('.tent-spot').classList.toggle('is-booked', closed);
+  ['#tent-guests', '#tent-rent', '#tent-rent-s'].forEach((sel) => {
+    const input = $(sel);
+    if (closed) input.value = 0;
+    input.disabled = closed;
+    document.querySelectorAll(`[data-qty="${sel}"]`).forEach((b) => { b.disabled = closed; });
+  });
 
   // ปุ่มลัด 3 แบบที่พัก + ลานเต็นท์บนแผนผัง: ขึ้นสถานะ "เลือกแล้ว" ตามที่เลือกอยู่
   const tentsOn = tentGuests() > 0 || rentCount() > 0;
@@ -722,6 +736,7 @@ const SERVER_ERRORS = {
   bad_name: 'กรุณากรอกชื่อผู้จอง',
   bad_note: 'หมายเหตุยาวเกินไป (ไม่เกิน 500 ตัวอักษร)',
   bad_house: 'กรุณาเลือกบ้านหรือเต็นท์อย่างน้อย 1 อย่าง',
+  field_closed: 'วันที่เลือก ลานกางเต็นท์ไม่ว่าง (มีการจองเหมาลาน) กรุณาเลือกบ้านพักหรือวันอื่น',
 };
 // ข้อความภาษาไทยของช่องที่ยังไม่ถูกต้อง (ไม่ใช้ข้อความของเบราว์เซอร์ ซึ่งอาจเป็นภาษาอังกฤษ)
 function fieldProblem(el) {
@@ -810,6 +825,11 @@ $('#details-form').addEventListener('submit', async (e) => {
         out.houses.forEach((h) => state.selected.delete(h));
         await loadBookings();
         go('pick');
+        return;
+      }
+      if (out.error === 'field_closed') {
+        errorEl.textContent = SERVER_ERRORS.field_closed;
+        await loadBookings();
         return;
       }
       if (out.error === 'too_late') {

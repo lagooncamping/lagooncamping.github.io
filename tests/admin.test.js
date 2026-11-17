@@ -286,6 +286,76 @@ test('แก้ไขต้องเข้าสู่ระบบก่อน �
   eq(call({ admin: 'editBooking', token, id: 'LG000000-0000', houses: [], checkin: '2026-11-10', checkout: '2026-11-11' }).error, 'not_found', 'รหัสไม่มี');
 });
 
+// ---------- เหมาลาน (17 พ.ย. 2569): จองได้จากหลังบ้านเท่านั้น · คืนที่เหมาลานหน้าเว็บจองเต็นท์ไม่ได้ ----------
+test('เหมาลาน: ต้องใส่ราคาเอง · บันทึกแล้วมีแถว field + บ้านทุกหลังที่เลือก', async () => {
+  await page.click('[data-tab=add]');
+  await page.check('#add-form [name=kind][value=field]', { force: true });
+  expect(!(await page.locator('#add-form [name=tentGuests]').isVisible()), 'เหมาลานต้องซ่อนช่องเต็นท์');
+  await page.fill('#add-form [name=checkin]', '2026-12-05');
+  await page.dispatchEvent('#add-form [name=checkin]', 'change');
+  await page.fill('#add-form [name=checkout]', '2026-12-06');
+  await page.dispatchEvent('#add-form [name=checkout]', 'change');
+  await page.click('#pick-all');
+  await page.fill('#add-form [name=guests]', '150');
+  await page.fill('#add-form [name=name]', 'งานแต่ง คุณเอ');
+  await save();
+  expect((await page.locator('#add-error').innerText()).includes('ราคา'), 'ไม่ใส่ราคา ต้องเตือน');
+  await page.fill('#add-form [name=total]', '30000');
+  await page.check('#add-form [name=paid][value=deposit]', { force: true });
+  await save();
+  const id = sheet.rows[sheet.rows.length - 1][1];
+  const r = rowsOf(id);
+  eq(r.map((x) => x.house), ['field', 'lagoon-1', 'lagoon-2', 'lagoon-3', 'studio', 'family-1', 'family-2'], 'แถวของงาน');
+  eq([r[0].guests, r[0].total, r[0].due, r[0].status], [150, 30000, 15000, 'ยืนยันแล้ว'], 'แขก/ราคา/มัดจำ/สถานะ');
+  test.fieldId = id;
+  const c = page.locator(`#b-${id}`).first();
+  await c.waitFor();
+  const text = await c.innerText();
+  expect(text.includes('เหมาลาน') && text.includes('แขกประมาณ 150'), 'การ์ดต้องบอกว่าเหมาลาน + จำนวนแขก');
+});
+
+test('เหมาลาน: หน้าเว็บรู้ว่าคืนนั้นปิดลาน · ลูกค้าจองเต็นท์/บ้านคืนนั้นไม่ได้', async () => {
+  const pub = JSON.parse(gs.doGet());
+  expect(pub.bookings.some((b) => b.house === 'field' && b.from === '2026-12-05'), 'doGet ต้องส่ง field');
+  expect(!JSON.stringify(pub).includes('งานแต่ง'), 'doGet ห้ามส่งชื่อลูกค้า');
+  const tent = call({ houses: [], checkin: '2026-12-05', checkout: '2026-12-06', guests: 0, tentGuests: 2, name: 'ลูกค้าเต็นท์', phone: '0812345678', payType: 'deposit' });
+  eq(tent.error, 'field_closed', 'จองเต็นท์คืนเหมาลาน');
+  const house = call({ houses: ['lagoon-1'], checkin: '2026-12-05', checkout: '2026-12-06', guests: 2, name: 'ลูกค้าบ้าน', phone: '0812345678', payType: 'deposit' });
+  eq(house.error, 'booked', 'บ้านที่รวมในงานต้องจองไม่ได้');
+  const after = call({ houses: [], checkin: '2026-12-06', checkout: '2026-12-07', guests: 0, tentGuests: 2, name: 'ลูกค้าเต็นท์', phone: '0812345678', payType: 'deposit' });
+  expect(after.ok, 'คืนถัดไปต้องจองเต็นท์ได้: ' + after.error);
+});
+
+test('เหมาลาน: หลังบ้านกันจองเต็นท์ทับ และกันเหมาลานทับคนที่จองเต็นท์แล้ว', async () => {
+  const token = call({ admin: 'login', pin: PIN }).token;
+  const t = call({ admin: 'addBooking', token, houses: [], checkin: '2026-12-05', checkout: '2026-12-06', tentRentals: 1, name: 'เต็นท์ทับ' });
+  eq(t.error, 'field_closed', 'แอดมินจองเต็นท์คืนเหมาลาน');
+  const twice = call({ admin: 'addBooking', token, field: true, houses: [], checkin: '2026-12-05', checkout: '2026-12-06', name: 'เหมาซ้อน', total: 1 });
+  eq(twice.error, 'booked', 'เหมาลานซ้อนกัน');
+  const camp = call({ admin: 'addBooking', token, houses: [], checkin: '2026-12-12', checkout: '2026-12-13', tentGuests: 4, name: 'แคมป์ก่อน' });
+  expect(camp.ok, 'จองเต็นท์ปกติ');
+  const ev = call({ admin: 'addBooking', token, field: true, houses: [], checkin: '2026-12-12', checkout: '2026-12-13', name: 'เหมาทีหลัง', total: 5000 });
+  eq([ev.error, ev.ids], ['tent_booked', [camp.id]], 'เหมาลานทับคนจองเต็นท์');
+  // ยกเลิกงาน → ลานเปิดคืน
+  eq(call({ admin: 'setStatus', token, id: test.fieldId, status: 'CANCELLED' }).ok, true, 'ยกเลิกงาน');
+  expect(!JSON.parse(gs.doGet()).bookings.some((b) => b.house === 'field'), 'ยกเลิกแล้วลานต้องเปิด');
+  eq(call({ admin: 'setStatus', token, id: test.fieldId, status: 'CONFIRMED' }).ok, true, 'เปิดงานกลับมา');
+});
+
+test('เหมาลาน: แก้ไขได้ (เอาบ้านออก เหลือเฉพาะลาน) · ปฏิทินมีแถวเหมาลาน', async () => {
+  const id = test.fieldId;
+  await reload();
+  await search('งานแต่ง');
+  await card(id).locator('[data-edit]').click();
+  expect(await page.locator('#add-form [name=kind][value=field]').isChecked(), 'ฟอร์มแก้ต้องเป็นแบบเหมาลาน');
+  for (const h of ['lagoon-1', 'lagoon-2', 'lagoon-3', 'studio', 'family-1', 'family-2']) await pick(h);
+  await save();
+  eq(rowsOf(id).map((x) => x.house), ['field'], 'เหลือแถวเหมาลานแถวเดียว');
+  eq(rowsOf(id)[0].total, 30000, 'ราคาเดิม');
+  await page.click('[data-tab=calendar]');
+  expect(await page.locator('#cal-scroll [data-free-field]').count() > 0, 'ต้องมีแถวเหมาลานในปฏิทิน');
+});
+
 test('หน้าแอดมินไม่มี error ใน console', async () => {
   eq(page.errors, [], 'error');
 });

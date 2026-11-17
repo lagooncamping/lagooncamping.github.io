@@ -9,6 +9,8 @@
   --off-bg: #ebe9e4;  --off-ink: #57564f;   /* ยกเลิกแล้ว / หมดเวลา */
   --blk-bg: #dde3ee;  --blk-ink: #2f3d58;   /* ปิดบ้าน */
   --booked: #2f6b3c;  --pending: #e0a106;  --blocked: #6a7894; --free: var(--surface);
+  --fld-bg: #f6e3f0;  --fld-ink: #7a2860;  --field: #b0418f;   /* เหมาลาน (17 พ.ย. 2569) */
+  --card-shadow: 0 1px 2px rgba(20, 30, 20, .06), 0 6px 18px rgba(20, 30, 20, .07);
 }
 @media (prefers-color-scheme: dark) {
   :root {
@@ -18,6 +20,8 @@
     --off-bg: #262824;  --off-ink: #b3b1a6;
     --blk-bg: #252c3a;  --blk-ink: #c3cde3;
     --booked: #5f9e6c;  --pending: #d4a531; --blocked: #7e8cab;
+    --fld-bg: #3a2134;  --fld-ink: #f1b6dd;  --field: #d77bbd;
+    --card-shadow: 0 1px 2px rgba(0, 0, 0, .3), 0 6px 18px rgba(0, 0, 0, .25);
   }
 }
 
@@ -236,3 +240,79 @@ body.admin { font-size: 18px; line-height: 1.6; padding-bottom: 96px; }
   font-weight: 600; box-shadow: var(--shadow); text-align: center;
 }
 [hidden] { display: none !important; }
+
+
+/* =========================================================
+   ปรับหลังบ้านให้สวยขึ้น (17 พ.ย. 2569) — หัวข้อ Kanit แบบหน้าเว็บหลัก การ์ดมีเงานุ่ม
+   แถบหัวสีเขียวไล่เฉด แท็บมีไอคอน สรุปวันนี้เป็นช่องตัวเลข · ปุ่มยังใหญ่ กดง่ายบนมือถือเหมือนเดิม
+   ========================================================= */
+.admin h1, .work h2, .tomorrow h2, .admin h2.sub, .stat b, .login h1 { font-family: var(--font-display); font-weight: 600; letter-spacing: .01em; }
+.admin h1 { font-size: 1.6rem; }
+.admin h2.sub { font-weight: 500; }
+
+/* เข้าสู่ระบบ */
+.login { min-height: 100vh; justify-content: center; }
+.login-logo { width: 88px; height: 88px; border-radius: 24px; box-shadow: var(--card-shadow); margin-bottom: 8px; }
+.login .brand { font-weight: 600; color: var(--forest); }
+.login h1 { font-size: 2rem; margin: 0; }
+.login form { background: var(--surface); border-radius: var(--radius); padding: 20px; box-shadow: var(--card-shadow); }
+
+/* หัวหน้า */
+.top { background: linear-gradient(135deg, #1f3b2c 0%, #2f5a3f 100%); padding: 10px 16px 12px; }
+.top-title { display: inline-flex; align-items: center; gap: 10px; font-family: var(--font-display); font-weight: 600; font-size: 1.2rem; }
+.top-title img { border-radius: 8px; background: #fff; }
+@media (prefers-color-scheme: dark) { .top { background: linear-gradient(135deg, #10130f 0%, #1c2a20 100%); } }
+
+/* แท็บ: ปุ่มกลม มีไอคอน · แท็บที่เลือกเป็นสีเขียว */
+.tabs { background: color-mix(in srgb, var(--bg) 92%, transparent); backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px); box-shadow: 0 4px 12px rgba(20, 30, 20, .06); border-bottom: 0; }
+.tabs button { border-radius: 999px; border-width: 1px; flex-direction: column; gap: 0; min-height: 54px; font-size: .95rem; }
+.tabs .ti { font-size: 1.1rem; line-height: 1; }
+.tabs button[aria-pressed=true] { background: var(--forest); border-color: var(--forest); color: var(--bg); box-shadow: 0 3px 10px color-mix(in srgb, var(--forest) 35%, transparent); }
+.tabs button.add { flex-direction: row; border-radius: 999px; }
+.tabs .count { position: absolute; top: -6px; right: -4px; }
+.tabs button { position: relative; }
+
+/* สรุปวันนี้: 4 ช่องตัวเลข */
+.stats { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin: 0 0 14px; }
+.stat { display: flex; flex-direction: column; gap: 0; background: var(--surface); border-radius: var(--radius-sm); padding: 12px 14px; box-shadow: var(--card-shadow); border: 1px solid var(--line); text-align: left; }
+.stat span { font-size: .9rem; color: var(--muted); }
+.stat b { font-size: 1.9rem; line-height: 1.2; }
+.stat small { font-size: .85rem; color: var(--muted); overflow-wrap: anywhere; }
+.admin button.stat { min-height: 0; font-weight: 400; align-items: flex-start; border-width: 1px; }
+.stat.is-due { background: var(--warn-bg); color: var(--warn-ink); border-color: var(--pending); }
+.stat.is-due span, .stat.is-due small { color: inherit; }
+.stat.is-field { background: var(--fld-bg); color: var(--fld-ink); border-color: var(--field); }
+.stat.is-field span, .stat.is-field small { color: inherit; }
+@media (min-width: 700px) { .stats { grid-template-columns: repeat(4, 1fr); } }
+
+/* กล่องงาน + การ์ด: ขอบบาง เงานุ่ม มุมโค้งมากขึ้น */
+.work, .tomorrow { border-width: 1px; border-radius: var(--radius); box-shadow: var(--card-shadow); }
+.bk { border-width: 1px; border-left-width: 6px; border-radius: 16px; box-shadow: var(--card-shadow); }
+.bk h3 { font-family: var(--font-display); font-weight: 500; }
+.empty { border-radius: 16px; text-align: center; }
+.estimate, .summary { border-radius: 16px; }
+.cal-scroll { border-radius: 16px; box-shadow: var(--card-shadow); }
+
+/* เหมาลาน */
+.bk.is-field { border-left-color: var(--field); }
+.field-badge { padding: 2px 10px; border-radius: 999px; font-weight: 600; font-size: .9rem; color: var(--fld-ink); background: var(--fld-bg); white-space: nowrap; margin-right: auto; }
+.bk-top .field-badge + .line-badge { margin-right: 0; }
+.admin .c-field { background: var(--field) !important; border-color: var(--field) !important; color: #fff; }
+.admin .c-field.is-pending { background: var(--fld-bg) !important; border-style: dashed !important; color: var(--fld-ink); }
+.legend i.c-field { background: var(--field); border-color: var(--field); }
+.admin .c-field-free { border-style: dotted !important; }
+.cal td button.c-field { width: 44px; }
+.field-info { margin: 0; padding: 12px 14px; border-radius: var(--radius-sm); background: var(--fld-bg); color: var(--fld-ink); font-size: .95rem; }
+.radios.two-opt { grid-template-columns: 1fr 1fr; }
+.radios.two-opt span { flex-direction: column; min-height: 64px; font-weight: 600; }
+.radios.two-opt small { font-weight: 400; font-size: .85rem; opacity: .85; }
+.radios.two-opt input[value=field]:checked + span { background: var(--fld-bg); border-color: var(--field); color: var(--fld-ink); }
+.admin button.pick-all { margin: 0 0 8px; width: 100%; border-color: var(--field); color: var(--fld-ink); background: var(--fld-bg); }
+/* ฟอร์มแบบเหมาลาน: ซ่อนช่องเต็นท์ · แบบปกติ: ซ่อนข้อความเหมาลาน */
+#add-form[data-kind="field"] .not-field,
+#add-form:not([data-kind="field"]) .only-field,
+#add-form[data-mode="block"] .only-field { display: none; }
+.tabs button.add[aria-pressed=true] { background: var(--sun); border-color: var(--ink); color: #1f231f; box-shadow: none; }
+/* ช่องวันที่ 2 ช่องคู่กัน: ไม่ให้ล้นขอบจอมือถือ (ช่องวันที่ของ iPhone/Chrome กว้างเกินคอลัมน์) */
+.two > label { min-width: 0; }
+.form input[type=date] { min-width: 0; max-width: 100%; }

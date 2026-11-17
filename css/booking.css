@@ -443,3 +443,10 @@ section.tent-card { padding: 22px 22px 24px; }
 /* ตัวหนังสือเล็กบนหน้าจอให้อ่านง่ายขึ้นบนมือถือ */
 .cal-note, .map figcaption, .status { font-size: .85rem; }
 .cal-legend { font-size: .82rem; }
+
+/* คืนที่มีคนเหมาลาน (จองจากหลังบ้าน): ปิดรับเต็นท์ · บ้านพักยังจองได้ (17 พ.ย. 2569) */
+.tent-closed { margin: 10px 0 0; padding: 10px 14px; border-radius: 12px; background: #fff1cc; color: #7a4f00; font-weight: 600; }
+.tent-card.is-closed .tent-opts { opacity: .45; }
+.tent-spot.is-booked { border-style: dashed; background: rgba(60,60,60,.45); }
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) .tent-closed { background: #3a2f12; color: #f5d27a; } }
+:root[data-theme="dark"] .tent-closed { background: #3a2f12; color: #f5d27a; }

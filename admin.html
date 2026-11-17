@@ -13,16 +13,18 @@
   <link rel="manifest" href="manifest-admin.webmanifest">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Anuphan:wght@400;500;600&family=Chonburi&display=swap">
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Anuphan:wght@400;500;600&family=Kanit:wght@500;600&display=swap">
   <link rel="stylesheet" href="css/style.css?v=20261116a">
-  <link rel="stylesheet" href="css/admin.css?v=20261027a">
+  <link rel="stylesheet" href="css/admin.css?v=20261117a">
 </head>
 <body class="admin">
 
   <!-- ===== เข้าสู่ระบบ ===== -->
   <main id="login" class="login" hidden>
-    <span class="brand">The Lagoon</span>
+    <img class="login-logo" src="img/favicon-192.png" alt="" width="88" height="88">
+    <span class="brand">The Lagoon Camping Resort</span>
     <h1>หลังบ้าน</h1>
+    <p class="muted">สำหรับแอดมินเท่านั้น</p>
     <form id="login-form" novalidate>
       <label for="pin">ใส่รหัส PIN</label>
       <input id="pin" name="pin" type="password" inputmode="numeric" pattern="[0-9]*" autocomplete="off"
@@ -37,7 +39,7 @@
   <div id="app" hidden>
     <header class="top">
       <div class="top-row">
-        <strong class="top-title">หลังบ้าน The Lagoon</strong>
+        <strong class="top-title"><img src="img/favicon-32.png" alt="" width="28" height="28"> หลังบ้าน The Lagoon</strong>
         <button type="button" class="ghost" id="logout">ออกจากระบบ</button>
       </div>
       <div class="top-row">
@@ -47,11 +49,11 @@
     </header>
 
     <nav class="tabs" aria-label="เมนูหลังบ้าน">
-      <button type="button" data-tab="today" aria-pressed="true">วันนี้</button>
-      <button type="button" data-tab="pending">รอชำระ <span class="count" id="pending-count" hidden></span></button>
-      <button type="button" data-tab="upcoming">กำลังจะมา</button>
-      <button type="button" data-tab="calendar">ปฏิทิน</button>
-      <button type="button" data-tab="all">ค้นหา</button>
+      <button type="button" data-tab="today" aria-pressed="true"><span class="ti" aria-hidden="true">☀️</span>วันนี้</button>
+      <button type="button" data-tab="pending"><span class="ti" aria-hidden="true">⏳</span>รอชำระ <span class="count" id="pending-count" hidden></span></button>
+      <button type="button" data-tab="upcoming"><span class="ti" aria-hidden="true">📅</span>กำลังจะมา</button>
+      <button type="button" data-tab="calendar"><span class="ti" aria-hidden="true">🗓️</span>ปฏิทิน</button>
+      <button type="button" data-tab="all"><span class="ti" aria-hidden="true">🔍</span>ค้นหา</button>
       <button type="button" data-tab="add" class="add">+ เพิ่มการจอง</button>
     </nav>
 
@@ -82,6 +84,7 @@
           <li><i class="c-booked"></i>จองแล้ว</li>
           <li><i class="c-pending"></i>รอชำระ</li>
           <li><i class="c-blocked"></i>ปิดบ้าน</li>
+          <li><i class="c-field"></i>เหมาลาน</li>
         </ul>
         <div class="cal-scroll" id="cal-scroll" tabindex="0" aria-label="ตารางบ้านว่าง เลื่อนซ้ายขวาได้"></div>
         <div id="cal-detail"></div>
@@ -118,17 +121,28 @@
       <section id="v-add" class="view" hidden aria-labelledby="h-add">
         <h1 id="h-add">เพิ่มการจอง</h1>
         <p class="hint" id="add-hint">สำหรับลูกค้าที่โทร/ทัก LINE หรือมาถึงหน้ารีสอร์ท · บันทึกแล้วเป็น “ยืนยันแล้ว” ทันที</p>
-        <form id="add-form" class="form" data-mode="add" novalidate>
+        <form id="add-form" class="form" data-mode="add" data-kind="normal" novalidate>
+          <!-- แบบการจอง: ปกติ / เหมาลาน (เหมาลานจองได้จากหลังบ้านเท่านั้น ไม่มีในหน้าจองลูกค้า) -->
+          <fieldset class="not-block kind">
+            <legend>แบบการจอง</legend>
+            <div class="radios two-opt">
+              <label><input type="radio" name="kind" value="normal" checked><span>จองปกติ<small>บ้าน / เต็นท์</small></span></label>
+              <label><input type="radio" name="kind" value="field"><span>🎪 เหมาลาน<small>งานแต่ง / กลุ่มใหญ่</small></span></label>
+            </div>
+          </fieldset>
+          <p class="field-info only-field">เหมาลาน = ปิดลานกางเต็นท์ทั้งลานในคืนที่เลือก ลูกค้าจองเต็นท์จากหน้าเว็บไม่ได้ · บ้านพักที่เลือกด้านล่างจะถูกปิดด้วย · ราคาตกลงกับลูกค้าเป็นรายกรณี</p>
           <div class="two">
             <label>วันเข้าพัก<input type="date" name="checkin" required></label>
             <label>วันออก<input type="date" name="checkout" required></label>
           </div>
           <p class="muted" id="add-nights"></p>
           <fieldset>
-            <legend>เลือกบ้าน (กดได้หลายหลัง)</legend>
+            <legend><span class="not-field">เลือกบ้าน (กดได้หลายหลัง)</span><span class="only-field">บ้านพักที่รวมในงาน (ไม่เลือก = เหมาเฉพาะลาน)</span></legend>
+            <button type="button" class="small only-field pick-all" id="pick-all">เลือกบ้านทั้ง 6 หลัง</button>
             <div class="house-picks" id="add-houses"></div>
           </fieldset>
-          <fieldset class="not-block">
+          <p class="error field-warn" id="field-warn" role="alert"></p>
+          <fieldset class="not-block not-field">
             <legend>ลานกางเต็นท์</legend>
             <div class="counter">
               <span>นำเต็นท์มาเอง (ท่าน)</span>
@@ -150,12 +164,12 @@
             </div>
           </fieldset>
           <div class="counter not-block">
-            <span>คนพักในบ้าน (ท่าน)</span>
+            <span id="guests-label">คนพักในบ้าน (ท่าน)</span>
             <button type="button" data-step="guests" data-d="-1" aria-label="ลดจำนวนคน">−</button>
             <input type="number" name="guests" min="0" max="30" value="2" inputmode="numeric" aria-label="คนพักในบ้าน (ท่าน)">
             <button type="button" data-step="guests" data-d="1" aria-label="เพิ่มจำนวนคน">+</button>
           </div>
-          <label class="not-block">ชื่อลูกค้า<input type="text" name="name" maxlength="100" required autocomplete="off"></label>
+          <label class="not-block"><span id="name-label">ชื่อลูกค้า</span><input type="text" name="name" maxlength="100" required autocomplete="off"></label>
           <label class="not-block">เบอร์โทร<input type="tel" name="phone" maxlength="30" inputmode="tel" autocomplete="off"></label>
           <label><span id="note-label">หมายเหตุ</span><textarea name="note" rows="2" maxlength="500"></textarea></label>
           <fieldset class="not-edit">
@@ -181,6 +195,6 @@
 
   <div class="toast" id="toast" role="status" aria-live="polite" hidden></div>
 
-  <script src="js/admin.js?v=20261027a"></script>
+  <script src="js/admin.js?v=20261117a"></script>
 </body>
 </html>
